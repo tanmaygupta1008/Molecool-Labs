@@ -52,13 +52,34 @@
 
 
 // src/components/ElementModal.jsx
+// src/components/ElementModal.jsx
 import Atom3DModel from './Atom3DModel';
 
 const ElementModal = ({ element, onClose }) => {
   if (!element) return null;
   
-  // Destructure fields for display
-  const { name, symbol, atomic_number, atomic_mass, category, summary, melt, boil, phase, discovered_by, bohr_model_3d } = element;
+  // Destructure all relevant fields for display
+  const { 
+    name, 
+    symbol, 
+    number, // Using 'number' for consistency with periodic table (atomic_number)
+    atomic_mass, 
+    category, 
+    summary, 
+    melt, 
+    boil, 
+    phase, 
+    discovered_by, 
+    bohr_model_3d,
+    electron_configuration, // Electron configuration string
+    shells, // Array of electron counts in shells
+  } = element;
+
+  // Function to format the shell electrons array (e.g., [2, 8, 18, 32] -> 2, 8, 18, 32)
+  const formatShells = (shellsArray) => {
+    if (!shellsArray || shellsArray.length === 0) return 'N/A';
+    return shellsArray.join(', ');
+  };
 
   return (
     <div 
@@ -75,24 +96,43 @@ const ElementModal = ({ element, onClose }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* 3D Model Area */}
+          
+          {/* 3D Model Area (Spans 2 columns) */}
           <div className="md:col-span-2 h-80 w-full bg-black rounded-lg border border-gray-700">
-            {/* Pass the GLB URL from Firebase */}
             <Atom3DModel glbUrl={bohr_model_3d} /> 
           </div>
           
-          {/* Summary and Properties */}
+          {/* Summary and Properties (Spans 1 column) */}
           <div className="md:col-span-1">
-            <p className="text-sm italic text-gray-400 mb-3">{summary.substring(0, 150)}...</p>
+            
+            {/* Summary */}
+            <p className="text-sm italic text-gray-400 mb-3">
+                {summary ? summary.substring(0, 150) + (summary.length > 150 ? '...' : '') : 'Summary not available.'}
+            </p>
+            
             <div className="space-y-2 text-sm">
-                <p><span className="font-semibold text-cyan-300">Atomic No:</span> {atomic_number}</p>
+                <p><span className="font-semibold text-cyan-300">Atomic No:</span> {number || element.atomic_number}</p>
                 <p><span className="font-semibold text-cyan-300">Atomic Mass:</span> {atomic_mass.toFixed(4)} u</p>
                 <p><span className="font-semibold text-cyan-300">Category:</span> <span className="capitalize">{category}</span></p>
                 <p><span className="font-semibold text-cyan-300">Phase:</span> {phase}</p>
+                
+                {/* Electron Configuration */}
+                <p className="break-words">
+                    <span className="font-semibold text-cyan-300">Config: </span> 
+                    {electron_configuration || 'N/A'}
+                </p>
+
+                {/* Shell Electrons */}
+                <p>
+                    <span className="font-semibold text-cyan-300">Shells (e-): </span> 
+                    {formatShells(shells)}
+                </p>
+
                 <p><span className="font-semibold text-cyan-300">Melting Pt:</span> {melt ? `${melt.toFixed(2)} K` : 'N/A'}</p>
                 <p><span className="font-semibold text-cyan-300">Boiling Pt:</span> {boil ? `${boil.toFixed(2)} K` : 'N/A'}</p>
-                <p><span className="font-semibold text-cyan-300">Discovered By:</span> {discovered_by}</p>
+                <p><span className="font-semibold text-cyan-300">Discovered By:</span> {discovered_by || 'Unknown'}</p>
             </div>
+            
             <p className="mt-4 text-xs text-gray-400 italic">
                 * Drag and zoom the 3D model above to interact.
             </p>
