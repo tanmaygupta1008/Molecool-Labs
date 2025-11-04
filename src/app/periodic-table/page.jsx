@@ -97,75 +97,114 @@
 
 
 // src/app/periodic-table/page.jsx
-'use client'; 
+'use client';
 
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import ElementCell from '@/components/ElementCell'; 
-import ElementModal from '@/components/ElementModal'; 
-// NOTE: We only import the DB, the CATEGORY_COLORS are now handled in the Cell component
+import ElementCell from '@/components/ElementCell';
+import ElementModal from '@/components/ElementModal';
 
 const PeriodicTablePage = () => {
   const [elements, setElements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedElement, setSelectedElement] = useState(null);
+  const [highlightedCategory, setHighlightedCategory] = useState(null); // ✅ category to highlight
 
   useEffect(() => {
     const fetchElements = async () => {
       try {
         setLoading(true);
-        // Query the 'elements' collection, ordered by atomic number ('number' field)
         const q = query(collection(db, 'elements'), orderBy('atomic_number'));
-        const querySnapshot = await getDocs(q);
-        
-        const elementsData = querySnapshot.docs.map(doc => ({
-          ...doc.data(),
-          // Ensure key number fields are correctly parsed, though Firestore often handles this
-          number: doc.data().number, 
-          xpos: doc.data().xpos,
-          ypos: doc.data().ypos,
-        }));
-        
-        setElements(elementsData);
-      } catch (error) {
-        console.error("Error fetching documents: ", error);
-        // Handle error (e.g., show an error message to the user)
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map(doc => doc.data());
+        setElements(data);
+      } catch (e) {
+        console.error('Error loading elements', e);
       } finally {
         setLoading(false);
       }
     };
-
     fetchElements();
-  }, []); 
-  
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex justify-center items-center">
-        <p className="text-xl text-cyan-400 animate-pulse">Fetching elements and models from the Cloud... 🧪</p>
+        <p className="text-xl text-cyan-400 animate-pulse">
+          Fetching elements and models from the Cloud... 🧪
+        </p>
       </div>
     );
   }
 
-  // Use ypos from Firebase data for filtering
-  const mainTableElements = elements.filter(e => e.ypos <= 7);
-  // Lanthanides (ypos=9) and Actinides (ypos=10)
+  const categoryColors = [                                                                      // colors correspond to CATEGORY_COLORS in ElementCell
+    { category: "diatomic nonmetal", name: 'diatomic nonmetal', color: '#2563EB' },           // bg-blue-600
+    { category: "alkali metal", name: 'Alkali Metals', color: '#DC2626' },                    // bg-red-600
+    { category: "alkaline earth metal", name: 'Alkaline Earth Metals', color: '#EA580C' },    // bg-orange-600
+    { category: "transition metal", name: 'Transition Metals', color: '#CA8A04' },            // bg-yellow-600
+    { category: "noble gas", name: 'Noble Gases', color: '#9333EA' },                         // bg-purple-600
+    { category: "halogen", name: 'Halogens', color: '#0891B2' },                              // bg-cyan-600
+    { category: "lanthanide", name: 'Lanthanides', color: '#DB2777' },                        // bg-pink-600
+    { category: "actinide", name: 'Actinides', color: '#C026D3' },                            // bg-fuchsia-600
+    { category: "post-transition metal", name: 'Post-Transition Metals', color: '#16A34A' },  // bg-gray-600
+    { category: "metalloid", name: 'Metalloids', color: '#65A30D' },                          // bg-lime-600
+    { category: "polyatomic nonmetal", name: 'Nonmetals', color: '#3B82F6' },                 // bg-blue-500
+    
+  ];
+
+  const handleLegendClick = (category) => {
+    setHighlightedCategory((prev) =>
+      prev === category.toLowerCase() ? null : category.toLowerCase()
+    );
+  };
+
+  const mainElements = elements.filter(e => e.ypos <= 7);
   const lanthActinides = elements.filter(e => e.ypos >= 9);
 
   return (
     <div className="min-h-screen bg-black text-white p-4 sm:p-8">
-      {/* Header */}
-      <header className="mb-8">
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-center text-cyan-400">
+      <header className="mb-8 text-center">
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-cyan-400">
           Molecool Labs Periodic Table
         </h1>
-        <p className="text-center text-gray-400 mt-2">
-            Click an element to see its detailed properties and 3D GLB model!
+        <p className="text-gray-400 mt-2">
+          Click an element or a legend category to explore!
         </p>
       </header>
-      
-      {/* 1. Main Grid Container */}
-      <div 
+
+      {/* Legend */}
+      <div className="mb-8 text-center">
+        <h2 className="text-2xl text-cyan-400 font-semibold">Legend</h2>
+        <div className="flex flex-wrap justify-center gap-6 mt-4">
+          {categoryColors.map(({ category, color, name }) => {
+            const isActive =
+              highlightedCategory === category.toLowerCase();
+            return (
+              <button
+                key={category}
+                onClick={() => handleLegendClick(category)}
+                className={`flex items-center px-3 py-1 rounded-md transition-all duration-300 border
+                  ${
+                    isActive
+                      ? 'scale-110 border-cyan-400 shadow-lg shadow-cyan-400/40'
+                      : 'border-gray-600'
+                  }
+                `}
+              >
+                <div
+                  className="w-6 h-6 rounded-sm"
+                  style={{ backgroundColor: color }}
+                ></div>
+                <span className="ml-2 text-gray-300">{name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Periodic Table Grid */}
+      <div
         className="grid gap-1 mx-auto"
         style={{
           gridTemplateColumns: `repeat(18, minmax(0, 1fr))`,
@@ -173,56 +212,65 @@ const PeriodicTablePage = () => {
           maxWidth: '1200px',
         }}
       >
-        
-        {/* Render Main Table Elements (Uses xpos/ypos from ElementCell) */}
-        {mainTableElements.map(element => (
-          <ElementCell 
-            key={element.number} 
-            element={element} 
-            onClick={setSelectedElement} 
+        {mainElements.map((el) => (
+          <ElementCell
+            key={el.atomic_number}
+            element={el}
+            onClick={setSelectedElement}
+            highlightedCategory={highlightedCategory} // ✅ Pass to all
           />
         ))}
 
-        {/* --- SPACER AREA --- */}
-        <div style={{ gridColumn: '3 / span 15', gridRow: 6 }} className="h-2"></div>
-        <div style={{ gridColumn: '3 / span 15', gridRow: 7 }} className="h-2"></div>
+        <div style={{ gridColumn: '3 / span 15', gridRow: 6 }}></div>
+        <div style={{ gridColumn: '3 / span 15', gridRow: 7 }}></div>
 
-        {/* 2. Lanthanides Container (ypos=9) */}
-        <div 
-            style={{ 
-                gridColumn: '4 / span 14', 
-                gridRow: 9, 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(14, 1fr)', 
-                marginTop: '1.5rem',
-            }}
-            className="gap-1"
+        <div
+          style={{
+            gridColumn: '4 / span 14',
+            gridRow: 9,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(14, 1fr)',
+            marginTop: '1.5rem',
+          }}
+          className="gap-1"
         >
-            {lanthActinides.filter(e => e.ypos === 9).map(element => (
-                <ElementCell key={element.number} element={element} onClick={setSelectedElement} />
+          {lanthActinides
+            .filter((e) => e.ypos === 9)
+            .map((el) => (
+              <ElementCell
+                key={el.atomic_number}
+                element={el}
+                onClick={setSelectedElement}
+                highlightedCategory={highlightedCategory}
+              />
             ))}
         </div>
-        
-        {/* 3. Actinides Container (ypos=10) */}
-        <div 
-            style={{ 
-                gridColumn: '4 / span 14', 
-                gridRow: 10, 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(14, 1fr)',
-            }}
-            className="gap-1 mt-1"
+
+        <div
+          style={{
+            gridColumn: '4 / span 14',
+            gridRow: 10,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(14, 1fr)',
+          }}
+          className="gap-1 mt-1"
         >
-            {lanthActinides.filter(e => e.ypos === 10).map(element => (
-                <ElementCell key={element.number} element={element} onClick={setSelectedElement} />
+          {lanthActinides
+            .filter((e) => e.ypos === 10)
+            .map((el) => (
+              <ElementCell
+                key={el.atomic_number}
+                element={el}
+                onClick={setSelectedElement}
+                highlightedCategory={highlightedCategory}
+              />
             ))}
         </div>
       </div>
 
-      {/* 4. 3D Rendering Popup Modal */}
-      <ElementModal 
-        element={selectedElement} 
-        onClose={() => setSelectedElement(null)} 
+      <ElementModal
+        element={selectedElement}
+        onClose={() => setSelectedElement(null)}
       />
     </div>
   );
