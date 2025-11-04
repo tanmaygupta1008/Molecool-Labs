@@ -37,9 +37,13 @@ import NavBar from '../components/navbar';
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      {/* Set the body class for the dark theme globally */}
-      <NavBar /> 
-      <body className="bg-black">{children}</body> 
+      {/* The NavBar must be placed inside the <body> tag to prevent the 
+        "nav cannot be a child of html" hydration error. 
+      */}
+      <body className="bg-black">
+        <NavBar /> 
+        {children}
+      </body> 
     </html>
   );
 }
