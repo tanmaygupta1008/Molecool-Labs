@@ -478,7 +478,7 @@ const BondLengthLabel = ({ midPoint, length, orientation, atomRefs }) => {
             center 
             distanceFactor={10} 
             rotation={rotationEulers} 
-            occlude={atomRefs}       
+            // occlude={atomRefs}       
             zIndexRange={[100, 0]} 
         >
             <div className="bg-transparent px-1 py-0.5 rounded text-xs text-white pointer-events-none whitespace-nowrap">
