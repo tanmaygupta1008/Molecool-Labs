@@ -47,14 +47,13 @@ import MacroView from './views/MacroView';
 import MicroView from './views/MicroView';
 import NanoView from './views/NanoView';
 
-const ReactionViewer = ({ reaction, viewMode, progress }) => {
+// ⬅️ FIX: Added 'environment' to props
+const ReactionViewer = ({ reaction, viewMode, progress, environment }) => {
   return (
     <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black">
-      {/* Increased pixel ratio for sharpness */}
       <Canvas dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
         <PerspectiveCamera makeDefault position={[0, 0, 12]} fov={45} />
         
-        {/* CLEAN Studio Lighting - No more dark/grainy look */}
         <Environment preset="city" blur={1} />
         <ambientLight intensity={0.8} />
         <directionalLight position={[10, 10, 10]} intensity={1.5} castShadow />
@@ -62,15 +61,22 @@ const ReactionViewer = ({ reaction, viewMode, progress }) => {
 
         {/* View Modes */}
         {viewMode === 'MACRO' && <MacroView reaction={reaction} progress={progress} />}
-        {viewMode === 'MICRO' && <MicroView reaction={reaction} progress={progress} />}
+        
+        {viewMode === 'MICRO' && (
+            <MicroView 
+                reaction={reaction} 
+                progress={progress} 
+                environment={environment} // ⬅️ FIX: Pass environment to MicroView for physics
+            />
+        )}
+        
         {viewMode === 'NANO' && <NanoView reaction={reaction} progress={progress} />}
 
         <OrbitControls enablePan={true} maxDistance={20} minDistance={5} />
 
-        {/* Minimal Post-Processing: Just a subtle glow, no noise/blur */}
         <EffectComposer disableNormalPass>
             <Bloom 
-                luminanceThreshold={1.2} // Only very bright things glow
+                luminanceThreshold={1.2} 
                 mipmapBlur 
                 intensity={0.5} 
                 radius={0.6} 
