@@ -47,32 +47,45 @@ import MacroView from './views/MacroView';
 import MicroView from './views/MicroView';
 import NanoView from './views/NanoView';
 
-// ⬅️ FIX: Added 'environment' to props
 const ReactionViewer = ({ reaction, viewMode, progress, environment }) => {
   return (
     <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black">
+      {/* - dpr={[1, 2]}: Handles high-DPI screens (Retina)
+         - antialias: true: Smooth edges
+      */}
       <Canvas dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
-        <PerspectiveCamera makeDefault position={[0, 0, 12]} fov={45} />
+        
+        {/* 🎥 CAMERA ADJUSTMENT:
+           - position: [0, 0, 20] -> Moved back (was 12) to fit content between sidebars.
+           - fov: 50 -> Slightly wider angle (was 45).
+        */}
+        <PerspectiveCamera makeDefault position={[0, 0, 20]} fov={50} />
         
         <Environment preset="city" blur={1} />
         <ambientLight intensity={0.8} />
         <directionalLight position={[10, 10, 10]} intensity={1.5} castShadow />
         <directionalLight position={[-10, 5, -10]} intensity={0.5} />
 
-        {/* View Modes */}
-        {viewMode === 'MACRO' && <MacroView reaction={reaction} progress={progress} />}
-        
-        {viewMode === 'MICRO' && (
-            <MicroView 
-                reaction={reaction} 
-                progress={progress} 
-                environment={environment} // ⬅️ FIX: Pass environment to MicroView for physics
-            />
-        )}
-        
-        {viewMode === 'NANO' && <NanoView reaction={reaction} progress={progress} />}
+        {/* --- VIEW MODES --- */}
+        <group>
+            {viewMode === 'MACRO' && <MacroView reaction={reaction} progress={progress} />}
+            
+            {viewMode === 'MICRO' && (
+                <MicroView 
+                    reaction={reaction} 
+                    progress={progress} 
+                    environment={environment} 
+                />
+            )}
+            
+            {viewMode === 'NANO' && <NanoView reaction={reaction} progress={progress} />}
+        </group>
 
-        <OrbitControls enablePan={true} maxDistance={20} minDistance={5} />
+        {/* 🎮 CONTROLS ADJUSTMENT:
+            - maxDistance: 35 -> Allows zooming out further (was 20).
+            - minDistance: 5 -> Prevents clipping by zooming too close.
+        */}
+        <OrbitControls enablePan={true} maxDistance={35} minDistance={5} />
 
         <EffectComposer disableNormalPass>
             <Bloom 
