@@ -39,7 +39,7 @@
 //       // H2 Group 1
 //       { element: "H", id: 2, startPos: [-3, 2, 0], endPos: [-2.5, 0.8, 0] }, // To Left NH3
 //       { element: "H", id: 3, startPos: [-3, 2.5, 0], endPos: [-1.5, 0.8, 0] }, // To Left NH3
-      
+
 //       // H2 Group 2
 //       { element: "H", id: 4, startPos: [0, 3, 0], endPos: [-2, -0.8, 0.5] }, // To Left NH3
 //       { element: "H", id: 5, startPos: [0, 3.5, 0], endPos: [2, -0.8, 0.5] }, // To Right NH3
@@ -131,7 +131,7 @@ export const REACTIONS = {
     optimalPressure: 1, // ATM
     conditionsDesc: "Requires initial heat above 500°C to ignite.",
 
-    macro: { color: "#ffaa00", intensity: 2.0, type: "fire" },
+    macro: { color: "#ffaa00", intensity: 2.0, type: "fire", setup: "burn" }, // Use BurnStation
 
     atoms: [
       { element: "C", id: 0, startPos: [0, 0, 0], endPos: [0, 0, 0] },
@@ -144,6 +144,24 @@ export const REACTIONS = {
       { element: "O", id: 7, startPos: [3, 0, 0], endPos: [1.2, 0, 0] },
       { element: "O", id: 8, startPos: [3, 1, 0], endPos: [3.2, 0, 0] },
     ],
+  },
+
+  // --- 1.5 MAGNESIUM COMBUSTION (NEW) ---
+  magnesium_combustion: {
+    id: "magnesium_combustion",
+    name: "Burning Magnesium",
+    equation: "2Mg + O₂ → 2MgO",
+    description: "Magnesium burns in air with a brilliant white light to form white magnesium oxide ash.",
+    activationEnergy: 0.6,
+    optimalTemp: 600,
+    optimalPressure: 1,
+    conditionsDesc: "Burner required to ignite magnesium ribbon.",
+    macro: { color: "#ffffff", intensity: 5.0, type: "flash", setup: "burn" },
+    atoms: [
+      // Placeholder atoms for now, focused on Macro View
+      { element: "Mg", id: 0, startPos: [-1, 0, 0], endPos: [-0.5, 0, 0] },
+      { element: "O", id: 1, startPos: [1, 0, 0], endPos: [0.5, 0, 0] },
+    ]
   },
 
   // --- 2. HABER PROCESS ---

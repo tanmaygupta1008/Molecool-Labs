@@ -1,0 +1,623 @@
+[
+    {
+        "id": "magnesium-burning",
+        "name": "Magnesium Burning in Air",
+        "type": "Combination + Redox",
+        "equation": "2Mg + O₂ → 2MgO",
+        "apparatus": [
+            {
+                "id": "bunsen-burner",
+                "model": "BunsenBurner",
+                "position": [
+                    0,
+                    0,
+                    0
+                ],
+                "isOn": true
+            },
+            {
+                "id": "tongs",
+                "model": "Tongs",
+                "position": [
+                    -1.113,
+                    4.136,
+                    0.023
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    -0.5
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            {
+                "id": "magnesium",
+                "model": "MagnesiumRibbon",
+                "position": [
+                    0.034,
+                    3.493,
+                    0.568
+                ],
+                "rotation": [
+                    1.665,
+                    -0.444,
+                    -0.118
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            {
+                "id": "mat",
+                "model": "HeatproofMat",
+                "position": [
+                    0,
+                    -0.05,
+                    0
+                ]
+            }
+        ],
+        "macroView": {
+            "visuals": [
+                "Bright white flame animation",
+                "Formation of white powder (MgO)",
+                "Heat haze effect"
+            ],
+            "steps": [
+                "Hold Magnesium Ribbon with Tongs",
+                "Place over Bunsen Burner flame",
+                "Observe bright white flash",
+                "Collect white ash in crucible (optional)"
+            ]
+        },
+        "microView": {
+            "description": "Mg loses electrons to Oxygen, forming ionic lattice",
+            "particles": [
+                "Mg",
+                "O2",
+                "MgO"
+            ]
+        }
+    },
+    {
+        "id": "zinc-hcl",
+        "name": "Zinc + Hydrochloric Acid",
+        "type": "Single Displacement",
+        "equation": "Zn + 2HCl → ZnCl₂ + H₂↑",
+        "apparatus": [
+            {
+                "id": "flask",
+                "model": "ConicalFlask",
+                "position": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            {
+                "id": "trough",
+                "model": "WaterTrough",
+                "position": [
+                    2.878,
+                    0,
+                    0
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            {
+                "id": "gas-jar",
+                "model": "GasJar",
+                "position": [
+                    3.364,
+                    1.815,
+                    -0.152
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    2.866
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "hasLid": false,
+                "customAnchors": [
+                    {
+                        "id": "custom-1770911702870",
+                        "position": [
+                            0,
+                            0.5,
+                            0
+                        ]
+                    }
+                ],
+                "isEditingAnchors": false
+            },
+            {
+                "id": "zinc",
+                "model": "ZincGranules",
+                "position": [
+                    0,
+                    0.5,
+                    0
+                ]
+            },
+            {
+                "id": "rubbercork-1267",
+                "model": "RubberCork",
+                "position": [
+                    0,
+                    2.5,
+                    0
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1.7499999999999998,
+                    1.7499999999999998,
+                    1.7499999999999998
+                ]
+            },
+            {
+                "id": "delivery-tube-8018",
+                "model": "DeliveryTube",
+                "position": [
+                    0,
+                    0,
+                    0
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "points": [
+                    [
+                        0,
+                        3.2,
+                        0
+                    ],
+                    [
+                        0.2246989317402725,
+                        3.637557656650103,
+                        0
+                    ],
+                    [
+                        0.8979747085017911,
+                        3.6377891692677653,
+                        0
+                    ],
+                    [
+                        2.016442351781275,
+                        0.796731367087532,
+                        0
+                    ],
+                    [
+                        2.3385393132610024,
+                        0.2519104697807222,
+                        0
+                    ],
+                    [
+                        2.913398964816176,
+                        0.2759348141871304,
+                        0
+                    ],
+                    [
+                        3.2279413630089167,
+                        1.3338679523248023,
+                        -0.152
+                    ]
+                ],
+                "tubeMode": "curved",
+                "isEditingPoints": false
+            }
+        ],
+        "macroView": {
+            "visuals": [
+                "Effervescence/Bubbling in flask",
+                "Zinc solid dissolving",
+                "Bubbles moving through tube to gas jar"
+            ],
+            "steps": [
+                "Add Zinc granules to flask",
+                "Pour HCl acid",
+                "Observe bubbling",
+                "Collect H2 gas over water"
+            ]
+        }
+    },
+    {
+        "id": "sodium-water",
+        "name": "Sodium + Water",
+        "type": "Metal + Water",
+        "equation": "2Na + 2H₂O → 2NaOH + H₂",
+        "apparatus": [
+            {
+                "id": "trough",
+                "model": "WaterTrough",
+                "position": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            {
+                "id": "safety-shield",
+                "model": "SafetyShield",
+                "position": [
+                    0,
+                    0,
+                    1.5
+                ]
+            },
+            {
+                "id": "forceps",
+                "model": "Forceps",
+                "position": [
+                    1,
+                    1,
+                    0
+                ]
+            }
+        ],
+        "macroView": {
+            "visuals": [
+                "Silver sodium pellet darting on water surface",
+                "Fizzing pathway",
+                "Possible yellow flame",
+                "Water turns pink with Phenolphthalein"
+            ]
+        }
+    },
+    {
+        "id": "precipitation-agcl",
+        "name": "Precipitation (AgNO₃ + NaCl)",
+        "type": "Double Displacement",
+        "equation": "AgNO₃ + NaCl → AgCl↓ + NaNO₃",
+        "apparatus": [
+            {
+                "id": "test-tube-1",
+                "model": "TestTube",
+                "position": [
+                    -0.5,
+                    1,
+                    0
+                ]
+            },
+            {
+                "id": "test-tube-2",
+                "model": "TestTube",
+                "position": [
+                    0.5,
+                    1,
+                    0
+                ]
+            },
+            {
+                "id": "dropper",
+                "model": "Dropper",
+                "position": [
+                    0.5,
+                    2.5,
+                    0
+                ]
+            }
+        ],
+        "macroView": {
+            "visuals": [
+                "Clear liquids mixing",
+                "Immediate formation of cloudy white precipitate"
+            ]
+        }
+    },
+    {
+        "id": "neutralization",
+        "name": "Neutralization (HCl + NaOH)",
+        "type": "Neutralization",
+        "equation": "HCl + NaOH → NaCl + H₂O",
+        "apparatus": [
+            {
+                "id": "retort-stand",
+                "model": "RetortStand",
+                "position": [
+                    0,
+                    0,
+                    -0.5
+                ]
+            },
+            {
+                "id": "burette",
+                "model": "Burette",
+                "position": [
+                    0,
+                    2,
+                    0
+                ]
+            },
+            {
+                "id": "clamp",
+                "model": "Clamp",
+                "position": [
+                    0,
+                    2,
+                    -0.4
+                ]
+            },
+            {
+                "id": "flask",
+                "model": "ConicalFlask",
+                "position": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            {
+                "id": "indicator",
+                "model": "DropperBottle",
+                "position": [
+                    1,
+                    0.5,
+                    0
+                ]
+            }
+        ],
+        "macroView": {
+            "visuals": [
+                "Slow drip from burette",
+                "Color change in flask (e.g., Pink to Colorless if using Phenolphthalein)"
+            ]
+        }
+    },
+    {
+        "id": "decomposition-caco3",
+        "name": "Thermal Decomposition of CaCO₃",
+        "type": "Decomposition",
+        "equation": "CaCO₃ → CaO + CO₂",
+        "apparatus": [
+            {
+                "id": "bunsen-burner",
+                "model": "BunsenBurner",
+                "position": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            {
+                "id": "stand",
+                "model": "RetortStand",
+                "position": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            {
+                "id": "test-tube",
+                "model": "TestTube",
+                "position": [
+                    0,
+                    2,
+                    0
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0.5
+                ]
+            },
+            {
+                "id": "delivery-tube",
+                "model": "DeliveryTube",
+                "position": [
+                    0.5,
+                    2.5,
+                    0
+                ]
+            },
+            {
+                "id": "test-tube-lime",
+                "model": "TestTube",
+                "position": [
+                    1.5,
+                    1,
+                    0
+                ]
+            }
+        ],
+        "macroView": {
+            "visuals": [
+                "Heating solid powder",
+                "Bubbling in limewater",
+                "Limewater turning milky"
+            ]
+        }
+    },
+    {
+        "id": "iron-cuso4",
+        "name": "Iron + Copper Sulfate",
+        "type": "Single Displacement",
+        "equation": "Fe + CuSO₄ → FeSO₄ + Cu",
+        "apparatus": [
+            {
+                "id": "beaker",
+                "model": "Beaker",
+                "position": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            {
+                "id": "iron-nail",
+                "model": "IronNail",
+                "position": [
+                    0,
+                    0.5,
+                    0
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0.7854
+                ]
+            },
+            {
+                "id": "rod",
+                "model": "StirringRod",
+                "position": [
+                    0.2,
+                    1,
+                    0
+                ]
+            }
+        ],
+        "macroView": {
+            "visuals": [
+                "Blue solution slowly turning pale green",
+                "Reddish-brown copper depositing on nail"
+            ]
+        }
+    },
+    {
+        "id": "methane-combustion",
+        "name": "Combustion of Methane",
+        "type": "Combustion",
+        "equation": "CH₄ + 2O₂ → CO₂ + 2H₂O",
+        "apparatus": [
+            {
+                "id": "gas-tap",
+                "model": "GasTap",
+                "position": [
+                    -1,
+                    0,
+                    0
+                ]
+            },
+            {
+                "id": "burner",
+                "model": "BunsenBurner",
+                "position": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        ],
+        "macroView": {
+            "visuals": [
+                "Clean blue flame (complete combustion)",
+                "Water vapor condensing on cold surface (optional)"
+            ]
+        }
+    },
+    {
+        "id": "electrolysis-water",
+        "name": "Electrolysis of Water",
+        "type": "Decomposition",
+        "equation": "2H₂O → 2H₂ + O₂",
+        "apparatus": [
+            {
+                "id": "setup",
+                "model": "ElectrolysisSetup",
+                "position": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            {
+                "id": "power",
+                "model": "PowerSupply",
+                "position": [
+                    1.5,
+                    0,
+                    0
+                ]
+            }
+        ],
+        "macroView": {
+            "visuals": [
+                "Bubbles forming at electrodes",
+                "Volume difference (2x Hydrogen vs Oxygen)",
+                "Power supply indicator on"
+            ]
+        }
+    },
+    {
+        "id": "nh4cl-naoh",
+        "name": "Ammonium Chloride + Sodium Hydroxide",
+        "type": "Double Displacement + Decomposition",
+        "equation": "NH₄Cl + NaOH → NH₃ + NaCl + H₂O",
+        "apparatus": [
+            {
+                "id": "bunsen-burner",
+                "model": "BunsenBurner",
+                "position": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            {
+                "id": "test-tube",
+                "model": "TestTube",
+                "position": [
+                    0,
+                    1.5,
+                    0
+                ]
+            },
+            {
+                "id": "tongs",
+                "model": "Tongs",
+                "position": [
+                    0,
+                    1.5,
+                    0.5
+                ]
+            },
+            {
+                "id": "litmus",
+                "model": "LitmusPaper",
+                "position": [
+                    0.5,
+                    2.5,
+                    0
+                ]
+            }
+        ],
+        "macroView": {
+            "visuals": [
+                "Heating mixture",
+                "Red litmus turning blue at mouth of tube due to ammonia gas"
+            ]
+        }
+    }
+]
