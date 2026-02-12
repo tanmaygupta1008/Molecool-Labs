@@ -549,16 +549,36 @@
                 "position": [
                     0,
                     0,
+                    0.709
+                ],
+                "rotation": [
+                    0,
+                    0,
                     0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
             },
             {
                 "id": "power",
                 "model": "PowerSupply",
                 "position": [
-                    1.5,
+                    -1.079,
+                    -0.003,
+                    -3.746
+                ],
+                "rotation": [
+                    0,
                     0,
                     0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
             }
         ],
