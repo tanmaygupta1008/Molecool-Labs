@@ -52,7 +52,7 @@
 
 //   return (
 //     <div className="relative w-full h-screen bg-black overflow-hidden font-sans text-white">
-      
+
 //       {/* BACKGROUND: 3D SCENE */}
 //       <div className="absolute inset-0 z-0">
 //          <ReactionViewer 
@@ -69,7 +69,7 @@
 //             <FlaskConical size={20} />
 //             <span className="text-xs font-bold tracking-widest uppercase">Experiment Protocol</span>
 //           </div>
-          
+
 //           {/* Reaction Selector (Styled) */}
 //           <div className="relative mb-4 group">
 //             <select 
@@ -157,29 +157,44 @@ import ReactionControls from '@/components/reactions/ReactionControls';
 import EnergyProfile from '@/components/reactions/EnergyProfile';
 import ReactionLibrary from '@/components/reactions/ReactionLibrary';
 import ReactorConditions from '@/components/reactions/ReactorConditions';
-import { REACTIONS } from '@/lib/reactionsData';
+
+// Import JSON Configuration
+// import REACTIONS_LIST from '@/data/reactions.json'; // REMOVED to avoid HMR
 
 const ChemicalReactionsPage = () => {
-  const [currentReaction, setCurrentReaction] = useState(REACTIONS.methane_combustion);
-  const [viewMode, setViewMode] = useState('MICRO');
+  // Initialize with the first reaction in the JSON list
+  const [reactionsList, setReactionsList] = useState([]);
+  const [currentReaction, setCurrentReaction] = useState(null);
+
+  // Fetch data on mount
+  useEffect(() => {
+    fetch('/api/reactions', { cache: 'no-store', next: { revalidate: 0 } })
+      .then(res => res.json())
+      .then(data => {
+        setReactionsList(data);
+        if (data.length > 0) setCurrentReaction(data[0]);
+      })
+      .catch(err => console.error("Failed to load reactions", err));
+  }, []);
+  const [viewMode, setViewMode] = useState('MACRO');
   const [progress, setProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  
+
   // Speed State (Default 1x)
   const [simulationSpeed, setSimulationSpeed] = useState(1);
 
   const [envConditions, setEnvConditions] = useState({
-      temp: 25,    
-      pressure: 1   
+    temp: 25,
+    pressure: 1
   });
 
   // Reset conditions when reaction changes
   useEffect(() => {
-      setEnvConditions({ temp: 25, pressure: 1 }); 
+    setEnvConditions({ temp: 25, pressure: 1 });
   }, [currentReaction]);
 
   const playingRef = useRef(false);
-  
+
   // Animation Loop
   useEffect(() => {
     let animationFrameId;
@@ -191,24 +206,25 @@ const ChemicalReactionsPage = () => {
             setIsPlaying(false);
             return 1;
           }
-          
+
+          if (!currentReaction) return prev;
+
           // Physics Calculation (Arrhenius-like effect)
-          // If temp is low compared to optimal, reaction slows down
-          const tempRatio = Math.max(0.1, envConditions.temp / currentReaction.optimalTemp);
-          const physicsMultiplier = Math.min(1.5, tempRatio); 
-          
+          const optimalTemp = currentReaction.optimalTemp || 300; // Use JSON val or default
+          const tempRatio = Math.max(0.1, envConditions.temp / optimalTemp);
+          const physicsMultiplier = Math.min(1.5, tempRatio);
+
           // SPEED CALCULATION:
-          // Base Step (0.002) * Physics Conditions * User Speed Setting
           const step = 0.002 * physicsMultiplier * simulationSpeed;
-          
-          return prev + step; 
+
+          return prev + step;
         });
       }
       animationFrameId = requestAnimationFrame(loop);
     };
     loop();
     return () => cancelAnimationFrame(animationFrameId);
-  }, [envConditions.temp, currentReaction.optimalTemp, simulationSpeed]); // Re-run if speed changes
+  }, [envConditions.temp, currentReaction, simulationSpeed]);
 
   const togglePlay = () => {
     const newState = !isPlaying;
@@ -218,87 +234,92 @@ const ChemicalReactionsPage = () => {
   };
 
   const handleReactionChange = (id) => {
-    setCurrentReaction(REACTIONS[id]);
-    setProgress(0);
-    setIsPlaying(false);
-    playingRef.current = false;
+    // Find reaction by ID from the fetched list
+    const selectedReaction = reactionsList.find(r => r.id === id);
+    if (selectedReaction) {
+      setCurrentReaction(selectedReaction);
+      setProgress(0);
+      setIsPlaying(false);
+      playingRef.current = false;
+    }
   };
+
+  if (!currentReaction) return <div className="text-white text-center mt-20">Loading Reactions...</div>;
 
   return (
     <div className="fixed inset-0 w-full h-full bg-black overflow-hidden font-sans text-white">
-      
+
       {/* BACKGROUND: 3D SCENE */}
       <div className="absolute inset-0 z-0">
-         <ReactionViewer 
-            reaction={currentReaction} 
-            viewMode={viewMode} 
-            progress={progress}
-            environment={envConditions} 
+        <ReactionViewer
+          reaction={currentReaction}
+          viewMode={viewMode}
+          progress={viewMode === 'MACRO' ? 0 : progress}
+          environment={envConditions}
         />
       </div>
 
       {/* LEFT PANEL: Reaction Library */}
       {/* ⬅️ FIX: Changed 'top-6' to 'top-24' to clear Navbar */}
       <div className="absolute top-24 left-6 bottom-28 w-80 z-20 flex flex-col pointer-events-none">
-          <div className="h-full pointer-events-auto shadow-2xl rounded-2xl overflow-hidden">
-            <ReactionLibrary 
-                reactions={REACTIONS} 
-                currentReaction={currentReaction} 
-                onSelect={handleReactionChange} 
-            />
-          </div>
+        <div className="h-full pointer-events-auto shadow-2xl rounded-2xl overflow-hidden">
+          <ReactionLibrary
+            reactions={reactionsList}
+            currentReaction={currentReaction}
+            onSelect={handleReactionChange}
+          />
+        </div>
       </div>
 
       {/* RIGHT SIDEBAR: Mode Switcher + Controls */}
       {/* ⬅️ FIX: Changed 'top-6' to 'top-24' to clear Navbar */}
       <div className="absolute top-24 right-6 bottom-28 w-72 z-20 flex flex-col gap-3 pointer-events-none">
-          
-          {/* Mode Switcher */}
-          <div className="bg-black/60 backdrop-blur-md p-1 rounded-xl border border-white/10 flex gap-1 shadow-lg pointer-events-auto self-end shrink-0">
-                {['MACRO', 'MICRO', 'NANO'].map(mode => (
-                    <button 
-                        key={mode}
-                        onClick={() => setViewMode(mode)}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-300 ${
-                            viewMode === mode 
-                            ? 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)]' 
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
-                        }`}
-                    >
-                        {mode} VIEW
-                    </button>
-                ))}
-          </div>
 
-          {/* Controls Area */}
-          <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-y-auto custom-scrollbar pointer-events-auto pb-2">
-              <ReactorConditions 
-                  conditions={envConditions} 
-                  setConditions={setEnvConditions}
-                  optimalConditions={{
-                      temp: currentReaction.optimalTemp, 
-                      pressure: currentReaction.optimalPressure,
-                      desc: currentReaction.conditionsDesc
-                  }}
-              />
-              <div className="bg-black/60 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-xl shrink-0">
-                 <EnergyProfile progress={progress} activationEnergy={currentReaction.activationEnergy} />
-              </div>
+        {/* Mode Switcher */}
+        <div className="bg-black/60 backdrop-blur-md p-1 rounded-xl border border-white/10 flex gap-1 shadow-lg pointer-events-auto self-end shrink-0">
+          {['MACRO', 'MICRO', 'NANO'].map(mode => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-300 ${viewMode === mode
+                ? 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)]'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
+            >
+              {mode} VIEW
+            </button>
+          ))}
+        </div>
+
+        {/* Controls Area */}
+        <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-y-auto custom-scrollbar pointer-events-auto pb-2">
+          <ReactorConditions
+            conditions={envConditions}
+            setConditions={setEnvConditions}
+            optimalConditions={{
+              temp: currentReaction.optimalTemp,
+              pressure: currentReaction.optimalPressure,
+              desc: currentReaction.conditionsDesc
+            }}
+          />
+          <div className="bg-black/60 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-xl shrink-0">
+            <EnergyProfile progress={progress} activationEnergy={currentReaction.activationEnergy} />
           </div>
+        </div>
       </div>
 
       {/* BOTTOM CENTER: Playback Control Deck */}
       <div className="absolute bottom-6 left-0 right-0 z-30 flex justify-center px-4 pointer-events-none">
-         <div className="w-full max-w-2xl pointer-events-auto">
-            <ReactionControls 
-                progress={progress} 
-                setProgress={(val) => { setProgress(val); setIsPlaying(false); playingRef.current = false; }} 
-                isPlaying={isPlaying} 
-                togglePlay={togglePlay} 
-                speed={simulationSpeed}
-                setSpeed={setSimulationSpeed}
-            />
-         </div>
+        <div className="w-full max-w-2xl pointer-events-auto">
+          <ReactionControls
+            progress={progress}
+            setProgress={(val) => { setProgress(val); setIsPlaying(false); playingRef.current = false; }}
+            isPlaying={isPlaying}
+            togglePlay={togglePlay}
+            speed={simulationSpeed}
+            setSpeed={setSimulationSpeed}
+          />
+        </div>
       </div>
     </div>
   );
