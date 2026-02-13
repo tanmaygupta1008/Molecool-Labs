@@ -426,6 +426,60 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
                 }
             }
 
+            // --- AUTO-SNAP LOGIC FOR CLAMP (TO RETORT STAND) ---
+            if (item.model === 'Clamp') {
+                const CLAMP_SNAP_THRESHOLD = 0.5;
+                const ROD_OFFSET_Z = -0.4;
+                const CLAMP_LOOP_OFFSET_X = -1.65;
+
+                let closestDist = Infinity;
+                let snapPos = null;
+
+                const rotY = newRot[1];
+                const loopOffsetLocal = new THREE.Vector3(CLAMP_LOOP_OFFSET_X, 0, 0);
+                loopOffsetLocal.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotY);
+
+                allItems.forEach(other => {
+                    if (other.model === 'RetortStand') {
+                        const standPos = new THREE.Vector3(...other.position);
+                        const standRot = new THREE.Euler(...(other.rotation || [0, 0, 0]));
+                        const rodOffsetLocal = new THREE.Vector3(0, 0, ROD_OFFSET_Z);
+                        rodOffsetLocal.applyEuler(standRot);
+
+                        const rodWorldX = standPos.x + rodOffsetLocal.x;
+                        const rodWorldZ = standPos.z + rodOffsetLocal.z;
+
+                        const targetX = rodWorldX - loopOffsetLocal.x;
+                        const targetZ = rodWorldZ - loopOffsetLocal.z;
+
+                        const currentDist = Math.sqrt(Math.pow(newPos[0] - targetX, 2) + Math.pow(newPos[2] - targetZ, 2));
+
+                        if (currentDist < CLAMP_SNAP_THRESHOLD && currentDist < closestDist) {
+                            closestDist = currentDist;
+
+                            const rodBaseY = standPos.y;
+                            const minY = rodBaseY + 0.5;
+                            const maxY = rodBaseY + 4.5;
+
+                            let targetY = newPos[1];
+                            if (targetY < minY) targetY = minY;
+                            if (targetY > maxY) targetY = maxY;
+
+                            snapPos = [targetX, targetY, targetZ];
+                        }
+                    }
+                });
+
+                if (snapPos) {
+                    newPos[0] = snapPos[0];
+                    newPos[1] = snapPos[1];
+                    newPos[2] = snapPos[2];
+                    document.body.style.cursor = 'crosshair';
+                }
+            }
+
+
+
             // --- GROUP MOVEMENT LOGIC ---
             // If we moved (delta > 0), check for connected tubes
             if (item.model === 'DeliveryTube' && delta.lengthSq() > 0.0001) {
@@ -513,7 +567,7 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
     };
 
     const componentProps = {};
-    if (item.model === 'Tongs') componentProps.angle = item.angle || 0;
+    if (item.model === 'Tongs' || item.model === 'Clamp') componentProps.angle = item.angle || 0;
     if (item.model === 'BunsenBurner') componentProps.isOn = item.isOn || false;
     if (item.model === 'GasJar') { componentProps.hasLid = item.hasLid !== false; componentProps.holeCount = item.holeCount || 0; }
     if (item.model === 'RubberCork') componentProps.holes = item.holes || 1;
@@ -1092,6 +1146,19 @@ export default function ApparatusEditorPage() {
                                         value={item.angle || 0}
                                         onChange={(e) => handleUpdateItem(item.id, { angle: parseFloat(e.target.value) })}
                                         className="w-full accent-yellow-400"
+                                    />
+                                </div>
+                            )}
+
+                            {item.model === 'Clamp' && (
+                                <div className="flex flex-col gap-1 mt-2">
+                                    <label className="text-xs text-blue-300">Clamp Opening</label>
+                                    <input
+                                        type="range"
+                                        min="0" max="1" step="0.05"
+                                        value={item.angle || 0}
+                                        onChange={(e) => handleUpdateItem(item.id, { angle: parseFloat(e.target.value) })}
+                                        className="w-full accent-blue-400"
                                     />
                                 </div>
                             )}
