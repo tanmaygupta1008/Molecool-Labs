@@ -42,6 +42,23 @@ export const getApparatusAnchors = (item) => {
             case 'GasJar':
                 standard.push({ id: 'mouth', localPos: [0, 2.5, 0], localNormal: [0, 1, 0] });
                 break;
+            case 'ElectrolysisSetup':
+                // Electrodes/Wires top positions
+                // Anode (Left, Red wire top): [-0.3, 1.65, 0] (Base 1.4 + 0.25 cylinder half height)
+                // Cathode (Right, Black wire top): [0.3, 1.65, 0]
+                standard.push({ id: 'anode', localPos: [-0.3, 1.65, 0], localNormal: [0, 1, 0] });
+                standard.push({ id: 'cathode', localPos: [0.3, 1.65, 0], localNormal: [0, 1, 0] });
+                break;
+            case 'PowerSupply':
+                // Terminals are at +/- 0.8, 0.3, 0.75.
+                // Cylinders rotated 90deg X, so they point forward (Z).
+                // Length 0.15. Center Z=0.75. Tip Z = 0.75 + 0.075 = 0.825?
+                // Visual check: Cylinder args [0.08, 0.08, 0.15, 16].
+                // Rotation [Math.PI/2, 0, 0].
+                // The tip is at local Z + half height = 0.75 + 0.075 = 0.825.
+                standard.push({ id: 'pos', localPos: [-0.8, 0.3, 0.825], localNormal: [0, 0, 1] });
+                standard.push({ id: 'neg', localPos: [0.8, 0.3, 0.825], localNormal: [0, 0, 1] });
+                break;
             case 'RubberCork':
                 const holes = item.holes || 1;
                 const topY = 0.4;
