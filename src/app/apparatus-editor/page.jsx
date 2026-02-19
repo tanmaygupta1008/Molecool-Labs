@@ -739,8 +739,10 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
                 {isSelected && <axesHelper args={[2]} />}
                 <Component
                     {...componentProps}
+                    {...componentProps}
                     height={item.height}
                     legAngle={item.legAngle}
+                    customHeight={item.customHeight || 1}
                 />
 
                 {isSelected && (item.model === 'DeliveryTube' || item.model === 'Wire') && item.isEditingPoints && (
@@ -1497,6 +1499,27 @@ export default function ApparatusEditorPage() {
                                 </div>
                             )}
 
+                            {item.model === 'WaterTrough' && (
+                                <div className="mt-4 p-4 bg-[#161616] rounded-xl border border-gray-800">
+                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+                                        Trough Height: {(item.customHeight || 1).toFixed(1)}x
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="0.5"
+                                        max="3.0"
+                                        step="0.1"
+                                        className="w-full accent-cyan-500"
+                                        value={item.customHeight || 1}
+                                        onChange={(e) => handleUpdateItem(item.id, { customHeight: parseFloat(e.target.value) })}
+                                    />
+                                    <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                                        <span>Small</span>
+                                        <span>Deep</span>
+                                    </div>
+                                </div>
+                            )}
+
                             {item.model === 'TripodStand' && (
                                 <div className="flex flex-col gap-2 mt-2 border-t border-white/10 pt-2">
                                     <div className="flex flex-col gap-1">
@@ -1559,7 +1582,7 @@ export default function ApparatusEditorPage() {
                                         <div className="flex flex-col gap-1 bg-white/5 p-2 rounded border border-white/10">
                                             <p className="text-[10px] text-neutral-400 text-center mb-1">Length Adjustments</p>
 
-                                            {/* Helper Function for Entension */}
+                                            {/* Helper Function for Extension */}
                                             {(() => {
                                                 const applyExtension = (side, amount) => {
                                                     const points = item.points || [[0, 0, 0], [0, 1, 0]];
