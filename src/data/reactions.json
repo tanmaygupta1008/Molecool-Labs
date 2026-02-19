@@ -74,7 +74,103 @@
                 "Place over Bunsen Burner flame",
                 "Observe bright white flash",
                 "Collect white ash in crucible (optional)"
-            ]
+            ],
+            "visualRules": {
+                "initialState": {
+                    "magnesium": {
+                        "color": "#c0c0c0",
+                        "model": "MagnesiumRibbon",
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    "burner": {
+                        "flameColor": "#3b82f6",
+                        "intensity": 0.6,
+                        "isOn": true
+                    }
+                },
+                "timeline": {
+                    "0": {
+                        "description": "User picks up Magnesium with Tongs",
+                        "animations": [
+                            {
+                                "target": "tongs",
+                                "type": "move",
+                                "position": [
+                                    -0.5,
+                                    3.5,
+                                    0
+                                ],
+                                "duration": 1
+                            },
+                            {
+                                "target": "magnesium",
+                                "type": "attach_to",
+                                "parent": "tongs",
+                                "offset": [
+                                    0.1,
+                                    -0.6,
+                                    0
+                                ]
+                            }
+                        ]
+                    },
+                    "1": {
+                        "description": "Place Magnesium in flame",
+                        "animations": [
+                            {
+                                "target": "tongs",
+                                "type": "move_to_object",
+                                "destinationId": "bunsen-burner",
+                                "offset": [
+                                    0,
+                                    3.8,
+                                    0
+                                ],
+                                "duration": 1.5
+                            }
+                        ],
+                        "effects": [
+                            {
+                                "type": "flame_interaction",
+                                "intensity": 1.2,
+                                "colorShift": "#ffffff"
+                            }
+                        ]
+                    },
+                    "2": {
+                        "description": "Reaction occurs - Bright Flash",
+                        "effects": [
+                            {
+                                "type": "flash",
+                                "color": "#ffffff",
+                                "intensity": 5,
+                                "duration": 0.3,
+                                "delay": 0.5
+                            },
+                            {
+                                "type": "smoke",
+                                "color": "#eeeeee",
+                                "density": 0.8,
+                                "duration": 3
+                            }
+                        ],
+                        "transformations": [
+                            {
+                                "target": "magnesium",
+                                "newModel": "MagnesiumOxideAsh",
+                                "delay": 0.8
+                            }
+                        ],
+                        "sounds": [
+                            "magnesium_burn"
+                        ]
+                    }
+                }
+            }
         },
         "microView": {
             "description": "Mg loses electrons to Oxygen, forming ionic lattice",
@@ -348,42 +444,84 @@
                     0,
                     0,
                     -0.5
-                ]
+                ],
+                "height": 7.5
             },
             {
                 "id": "burette",
                 "model": "Burette",
                 "position": [
+                    0.063,
+                    4.019,
+                    1.399
+                ],
+                "rotation": [
                     0,
-                    2,
+                    0,
                     0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
             },
             {
                 "id": "clamp",
                 "model": "Clamp",
                 "position": [
+                    0.04817921179713158,
+                    6.1,
+                    0.7492964450184838
+                ],
+                "rotation": [
                     0,
-                    2,
-                    -0.4
-                ]
+                    -1.54159265358979,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "headAngle": 1.55840734641021
             },
             {
                 "id": "flask",
                 "model": "ConicalFlask",
                 "position": [
+                    0.151,
+                    -0.027,
+                    1.546
+                ],
+                "rotation": [
                     0,
                     0,
                     0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
             },
             {
                 "id": "indicator",
                 "model": "DropperBottle",
                 "position": [
-                    1,
-                    0.5,
+                    2.534,
+                    -0.044,
+                    -0.633
+                ],
+                "rotation": [
+                    0,
+                    0,
                     0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
             }
         ],
@@ -600,37 +738,101 @@
                 "id": "bunsen-burner",
                 "model": "BunsenBurner",
                 "position": [
+                    0.18,
+                    0,
+                    -1.728
+                ],
+                "isOn": true,
+                "rotation": [
                     0,
                     0,
                     0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
             },
             {
                 "id": "test-tube",
                 "model": "TestTube",
                 "position": [
+                    0.10969892517790836,
+                    4.699999999999999,
+                    -1.7179593931566144
+                ],
+                "rotation": [
                     0,
-                    1.5,
+                    0,
                     0
-                ]
-            },
-            {
-                "id": "tongs",
-                "model": "Tongs",
-                "position": [
-                    0,
-                    1.5,
-                    0.5
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
             },
             {
                 "id": "litmus",
                 "model": "LitmusPaper",
                 "position": [
-                    0.5,
-                    2.5,
+                    0.018,
+                    6.888,
+                    -1.835
+                ],
+                "rotation": [
+                    0,
+                    0,
                     0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
+            },
+            {
+                "id": "retortstand-0769",
+                "model": "RetortStand",
+                "position": [
+                    0.044,
+                    0.112,
+                    -3.567
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "height": 8.5
+            },
+            {
+                "id": "clamp-5801",
+                "model": "Clamp",
+                "position": [
+                    0.09217921179713318,
+                    6.1,
+                    -2.3177035549815175
+                ],
+                "rotation": [
+                    0,
+                    -1.54159265358979,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "headAngle": -1.54159265358979,
+                "size": 1,
+                "angle": 0.3
             }
         ],
         "macroView": {
