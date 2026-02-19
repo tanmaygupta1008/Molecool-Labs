@@ -132,6 +132,14 @@ const NavBar = () => {
               Editor 🛠️
             </Link>
 
+            {/* ⬅️ NEW: Reactant Config Link */}
+            <Link
+              href="/reactant-config"
+              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-base font-medium transition duration-150"
+            >
+              Reactants 🧪
+            </Link>
+
             <Link
               href="/ar-vr"
               className="bg-cyan-600 text-white hover:bg-cyan-700 px-3 py-2 rounded-md text-base font-medium transition duration-150 ml-2"
