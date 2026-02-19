@@ -5,7 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, PerspectiveCamera, Grid } from '@react-three/drei';
 import MacroView from '@/components/reactions/views/MacroView';
 import { Save, Play, Pause, RefreshCw, Code, LayoutTemplate } from 'lucide-react';
-import InitialStateEditor from './components/InitialStateEditor';
+// import InitialStateEditor from './components/InitialStateEditor'; // Removed
 import TimelineEditor from './components/TimelineEditor';
 import StepDetailEditor from './components/StepDetailEditor';
 
@@ -21,8 +21,19 @@ const ReactionRefinerPage = () => {
     const [selectedStepIndex, setSelectedStepIndex] = useState(null);
     const [saveStatus, setSaveStatus] = useState(null); // 'saving', 'success', 'error'
     // Playback State
-    const [progress, setProgress] = useState(0);
+    const [progress, setProgress] = useState(0); // 0 to 1
     const [isPlaying, setIsPlaying] = useState(false);
+    const [playbackSpeed, setPlaybackSpeed] = useState(1); // 1x, 0.5x, etc.
+    const [isLooping, setIsLooping] = useState(false);
+
+    // Calculate Total Duration
+    const totalDuration = useMemo(() => {
+        if (!currentReaction?.macroView?.visualRules?.timeline) return 10; // Default 10s
+        return Object.values(currentReaction.macroView.visualRules.timeline).reduce((acc, step) => {
+            if (step.disabled) return acc;
+            return acc + (parseFloat(step.duration) || 0) + (parseFloat(step.delay) || 0);
+        }, 0) || 10; // Fallback to 10s if empty
+    }, [currentReaction?.macroView?.visualRules?.timeline]);
 
     // Fetch Reactions on Mount
     useEffect(() => {
@@ -103,193 +114,213 @@ const ReactionRefinerPage = () => {
     // Animation Loop
     useEffect(() => {
         let animationFrame;
-        const loop = () => {
+        let lastTime = performance.now();
+
+        const loop = (currentTime) => {
+            const dt = (currentTime - lastTime) / 1000; // seconds
+            lastTime = currentTime;
+
             if (isPlaying) {
                 setProgress(prev => {
-                    if (prev >= 1) {
-                        setIsPlaying(false);
-                        return 1;
-                    }
-                    return prev + 0.005; // Speed
-                });
-                animationFrame = requestAnimationFrame(loop);
-            }
-        };
-        loop();
-        return () => cancelAnimationFrame(animationFrame);
-    }, [isPlaying]);
+                    // Check if totalDuration is valid to avoid NaN
+                    if (!totalDuration || totalDuration === 0) return 0;
 
+                    const increment = (dt * playbackSpeed) / totalDuration;
+                    const nextProgress = prev + increment;
+
+                    if (nextProgress >= 1) {
+                        if (isLooping) {
+                            return 0;
+                        } else {
+                            setIsPlaying(false);
+                            return 1;
+                        }
+                    }
+                    return nextProgress;
+                });
+            }
+            animationFrame = requestAnimationFrame(loop);
+        };
+        animationFrame = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(animationFrame);
+    }, [isPlaying, totalDuration, playbackSpeed, isLooping]);
 
 
     if (!currentReaction) return <div className="text-white p-10">Loading Refiner...</div>;
 
     return (
-        <div className="flex h-screen w-full bg-[#111] text-white overflow-hidden">
+        <div className="flex h-screen w-full bg-[#111] text-white overflow-hidden font-sans">
+            {/* 3-Column Layout */}
 
-            {/* LEFT PANEL: Editor */}
-            <div className="w-1/3 flex flex-col border-r border-white/10 bg-[#1a1a1a] min-h-0">
-                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-[#222]">
-                    <h2 className="font-bold text-cyan-400 flex items-center gap-2">
-                        🎨 Reaction Refiner
+            {/* --- LEFT PANEL: TIMELINE (20-25%) --- */}
+            <div className="w-80 flex-shrink-0 flex flex-col border-r border-white/10 bg-[#1a1a1a]">
+                <div className="p-3 border-b border-white/10 bg-[#222] flex justify-between items-center">
+                    <h2 className="font-bold text-cyan-400 text-sm flex items-center gap-2">
+                        ⏱️ Timeline
                     </h2>
-                    <div className="flex gap-2">
-                        <select
-                            className="bg-black/50 border border-white/20 rounded px-2 py-1 text-xs"
-                            value={selectedReactionId || ''}
-                            onChange={(e) => setSelectedReactionId(e.target.value)}
-                        >
-                            {reactions.map(r => (
-                                <option key={r.id} value={r.id}>{r.name}</option>
-                            ))}
-                        </select>
-                        <button
-                            onClick={() => setViewMode(viewMode === 'VISUAL' ? 'JSON' : 'VISUAL')}
-                            className="p-1 bg-white/10 rounded hover:bg-white/20 text-xs"
-                            title="Toggle Mode"
-                        >
-                            {viewMode === 'VISUAL' ? <Code size={14} /> : <LayoutTemplate size={14} />}
-                        </button>
-                    </div>
+                    <select
+                        className="bg-black/50 border border-white/20 rounded px-2 py-0.5 text-[10px] w-32"
+                        value={selectedReactionId || ''}
+                        onChange={(e) => setSelectedReactionId(e.target.value)}
+                    >
+                        {reactions.map(r => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                    </select>
                 </div>
 
-                <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-0 flex flex-col">
                     {viewMode === 'JSON' ? (
-                        <textarea
-                            className="w-full h-full bg-[#0d0d0d] text-green-400 font-mono text-xs p-4 resize-none focus:outline-none"
-                            value={jsonInput}
-                            onChange={(e) => {
-                                setJsonInput(e.target.value);
-                                try {
-                                    const parsed = JSON.parse(e.target.value);
-                                    setCurrentReaction(prev => ({
-                                        ...prev,
-                                        macroView: { ...prev.macroView, visualRules: parsed }
-                                    }));
-                                } catch (e) { }
-                            }}
-                            spellCheck={false}
-                        />
-                    ) : (
-                        <div className="flex-1 flex flex-col overflow-hidden p-4 gap-4 h-full">
-                            {/* VISUAL EDITOR LAYOUT */}
-                            <div className="flex-shrink-0 max-h-[40%] overflow-y-auto custom-scrollbar">
-                                <InitialStateEditor
-                                    initialState={currentReaction.macroView?.visualRules?.initialState}
-                                    onChange={(data) => handleVisualChange('initialState', data)}
-                                />
-                            </div>
-
-                            <div className="flex-1 flex gap-4 min-h-0">
-                                <div className="w-1/3 h-full flex flex-col min-h-0">
-                                    <TimelineEditor
-                                        timeline={currentReaction.macroView?.visualRules?.timeline}
-                                        selectedStepIndex={selectedStepIndex}
-                                        onSelectStep={setSelectedStepIndex}
-                                        onChange={(data) => handleVisualChange('timeline', data)}
-                                    />
-                                </div>
-                                <div className="flex-1 h-full flex flex-col min-h-0">
-                                    <StepDetailEditor
-                                        step={currentReaction.macroView?.visualRules?.timeline?.[selectedStepIndex]}
-                                        onChange={(updatedStep) => {
-                                            const newTimeline = { ...currentReaction.macroView?.visualRules?.timeline };
-                                            newTimeline[selectedStepIndex] = updatedStep;
-                                            handleVisualChange('timeline', newTimeline);
-                                        }}
-                                        onPreview={() => {
-                                            const totalSteps = Object.keys(currentReaction.macroView?.visualRules?.timeline || {}).length;
-                                            if (totalSteps > 0 && selectedStepIndex !== null) {
-                                                const stepWidth = 1 / totalSteps;
-                                                const startProgress = parseInt(selectedStepIndex) * stepWidth;
-                                                setProgress(startProgress);
-                                                setIsPlaying(true);
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            </div>
+                        <div className="p-4 text-xs text-gray-500 text-center mt-10">
+                            Switch to Visual Mode to edit Timeline
                         </div>
+                    ) : (
+                        <TimelineEditor
+                            timeline={currentReaction.macroView?.visualRules?.timeline}
+                            selectedStepIndex={selectedStepIndex}
+                            onSelectStep={setSelectedStepIndex}
+                            onChange={(data) => handleVisualChange('timeline', data)}
+                            // Playback Props
+                            isPlaying={isPlaying}
+                            onPlayPause={() => setIsPlaying(!isPlaying)}
+                            progress={progress}
+                            onSeek={setProgress}
+                            playbackSpeed={playbackSpeed}
+                            setPlaybackSpeed={setPlaybackSpeed}
+                            isLooping={isLooping}
+                            setIsLooping={setIsLooping}
+                            totalDuration={totalDuration}
+                        />
                     )}
                 </div>
+            </div>
 
-                <div className="p-4 border-t border-white/10 bg-[#222] flex gap-2">
+
+            {/* --- CENTER PANEL: 3D PREVIEW (Flex - Fill) --- */}
+            <div className="flex-1 flex flex-col relative bg-black min-w-0">
+                <div className="absolute top-4 left-4 z-10 flex gap-2">
+                    <button
+                        onClick={() => setViewMode(viewMode === 'VISUAL' ? 'JSON' : 'VISUAL')}
+                        className="bg-black/60 backdrop-blur border border-white/10 text-white/70 hover:text-white px-3 py-1.5 rounded-md text-xs flex items-center gap-2 transition-all"
+                    >
+                        {viewMode === 'VISUAL' ? <Code size={14} /> : <LayoutTemplate size={14} />}
+                        {viewMode === 'VISUAL' ? 'View JSON' : 'Visual Editor'}
+                    </button>
+                </div>
+
+                {viewMode === 'JSON' ? (
+                    <textarea
+                        className="w-full h-full bg-[#0d0d0d] text-green-400 font-mono text-xs p-6 resize-none focus:outline-none"
+                        value={jsonInput}
+                        onChange={(e) => {
+                            setJsonInput(e.target.value);
+                            try {
+                                const parsed = JSON.parse(e.target.value);
+                                setCurrentReaction(prev => ({
+                                    ...prev,
+                                    macroView: { ...prev.macroView, visualRules: parsed }
+                                }));
+                            } catch (e) { }
+                        }}
+                        spellCheck={false}
+                    />
+                ) : (
+                    <Canvas dpr={[1, 2]} gl={{ antialias: true }}>
+                        <PerspectiveCamera makeDefault position={[0, 2, 8]} fov={50} />
+                        <OrbitControls makeDefault />
+                        <Environment preset="city" />
+                        <ambientLight intensity={0.5} />
+                        <directionalLight position={[5, 10, 5]} intensity={1} />
+                        <Grid infiniteGrid sectionColor="#333" cellColor="#222" fadeDistance={30} />
+                        <group position={[0, -2, 0]}>
+                            <MacroView
+                                reaction={currentReaction}
+                                progress={progress}
+                            />
+                        </group>
+                    </Canvas>
+                )}
+            </div>
+
+
+            {/* --- RIGHT PANEL: PROPERTIES (20-25%) --- */}
+            <div className="w-96 flex-shrink-0 flex flex-col border-l border-white/10 bg-[#1a1a1a]">
+                <div className="p-3 border-b border-white/10 bg-[#222] flex justify-between items-center">
+                    <h2 className="font-bold text-cyan-400 text-sm flex items-center gap-2">
+                        🛠️ Properties
+                    </h2>
                     <button
                         onClick={handleSave}
                         disabled={saveStatus === 'saving'}
                         className={`
-                            flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded text-xs font-bold transition-colors
+                            px-3 py-1 rounded text-[10px] font-bold transition-colors flex items-center gap-1.5
                             ${saveStatus === 'success' ? 'bg-green-600 text-white' : 'bg-cyan-700 hover:bg-cyan-600'}
                             ${saveStatus === 'error' ? 'bg-red-600' : ''}
                         `}
                     >
-                        <Save size={14} />
-                        {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'success' ? 'Saved!' : 'Save Changes'}
+                        <Save size={12} />
+                        {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'success' ? 'Saved' : 'Save'}
                     </button>
                 </div>
-            </div>
 
-            {/* RIGHT PANEL: Preview */}
-            <div className="flex-1 relative bg-black">
-                <Canvas dpr={[1, 2]} gl={{ antialias: true }}>
-                    <PerspectiveCamera makeDefault position={[0, 2, 8]} fov={50} />
-                    <OrbitControls makeDefault />
-                    <Environment preset="city" />
-                    <ambientLight intensity={0.5} />
-                    <directionalLight position={[5, 10, 5]} intensity={1} />
-
-                    <Grid infiniteGrid sectionColor="#333" cellColor="#222" fadeDistance={30} />
-
-                    <group position={[0, -2, 0]}>
-                        <MacroView
-                            reaction={currentReaction}
-                            progress={progress}
-                        />
-                    </group>
-                </Canvas>
-
-                {/* Playback Controls Overlay */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md border border-white/10 p-2 rounded-full flex items-center gap-4 px-6 shadow-xl">
-                    <button
-                        onClick={() => setIsPlaying(!isPlaying)}
-                        className="w-10 h-10 rounded-full bg-cyan-500 hover:bg-cyan-400 flex items-center justify-center text-black transition-transform hover:scale-110 active:scale-95"
-                    >
-                        {isPlaying ? <Pause size={20} fill="black" /> : <Play size={20} fill="black" className="ml-1" />}
-                    </button>
-
-                    <div className="flex flex-col gap-1 w-64">
-                        <div className="flex justify-between text-[10px] text-cyan-200 font-mono">
-                            <span>PROGRESS</span>
-                            <span>{Math.round(progress * 100)}%</span>
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
+                    {viewMode === 'JSON' ? (
+                        <div className="text-xs text-gray-500 text-center mt-10">
+                            Switch to Visual Mode to edit Properties
                         </div>
-                        <input
-                            type="range"
-                            min="0" max="1" step="0.001"
-                            value={progress}
-                            onChange={(e) => {
-                                setProgress(parseFloat(e.target.value));
-                                setIsPlaying(false);
-                            }}
-                            className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-                        />
-                    </div>
+                    ) : (
+                        <>
+                            {/* Section: Initial State configuration (Removed as per user request/redundancy) */}
+                            {/* Users should use Step 1 for initial setup properties */}
 
-                    <button
-                        onClick={() => {
-                            setProgress(0);
-                            setIsPlaying(false);
-                        }}
-                        className="p-2 text-white/50 hover:text-white transition-colors"
-                    >
-                        <RefreshCw size={16} />
-                    </button>
-                </div>
+                            {/* Section: Step Details (Visible only when a step is selected) */}
+                            {selectedStepIndex !== null ? (
+                                <div className="bg-[#111] rounded-lg border border-white/5 overflow-hidden flex flex-col min-h-[400px]">
+                                    <div className="bg-[#1f1f1f] px-3 py-2 border-b border-white/5 font-semibold text-xs text-cyan-300 flex justify-between">
+                                        <span>Step {parseInt(selectedStepIndex) + 1} Details</span>
+                                        <span className="text-white/30 font-mono">#{selectedStepIndex}</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <StepDetailEditor
+                                            step={currentReaction.macroView?.visualRules?.timeline?.[selectedStepIndex]}
+                                            apparatusList={currentReaction.apparatus || []}
+                                            onChange={(updatedStep) => {
+                                                const newTimeline = { ...currentReaction.macroView?.visualRules?.timeline };
+                                                newTimeline[selectedStepIndex] = updatedStep;
+                                                handleVisualChange('timeline', newTimeline);
+                                            }}
+                                            onPreview={() => {
+                                                const timeline = currentReaction.macroView?.visualRules?.timeline || {};
+                                                let startTime = 0;
+                                                // Sum duration+delay of all previous steps
+                                                for (let i = 0; i < selectedStepIndex; i++) {
+                                                    const s = timeline[i];
+                                                    if (s && !s.disabled) {
+                                                        startTime += (parseFloat(s.duration) || 0) + (parseFloat(s.delay) || 0);
+                                                    }
+                                                }
 
-                <div className="absolute top-4 right-4 bg-black/50 text-white/50 text-[10px] px-2 py-1 rounded pointer-events-none">
-                    PREVIEW MODE
+                                                if (totalDuration > 0) {
+                                                    setProgress(startTime / totalDuration);
+                                                    setIsPlaying(true);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="border border-dashed border-white/10 rounded-lg p-6 text-center text-gray-600 text-xs bg-white/5">
+                                    Select a step from the Timeline on the left to edit its properties.
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
+
         </div>
     );
 };
+
 
 export default ReactionRefinerPage;

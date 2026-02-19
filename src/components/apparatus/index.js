@@ -26,6 +26,7 @@ export { default as PowerSupply } from './PowerSupply';
 export { default as Wire } from './Wire';
 
 export { default as MagnesiumRibbon } from './MagnesiumRibbon';
+export { default as MagnesiumOxideAsh } from './MagnesiumOxideAsh';
 export { default as ZincGranules } from './ZincGranules';
 export { default as Forceps } from './Forceps';
 export { default as SafetyShield } from './SafetyShield';

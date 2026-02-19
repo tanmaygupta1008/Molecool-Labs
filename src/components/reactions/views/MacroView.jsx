@@ -38,6 +38,7 @@ const APPARATUS_MAP = {
     'ElectrolysisSetup': Apparatus.ElectrolysisSetup,
     'PowerSupply': Apparatus.PowerSupply,
     'MagnesiumRibbon': Apparatus.MagnesiumRibbon,
+    'MagnesiumOxideAsh': Apparatus.MagnesiumOxideAsh,
     'ZincGranules': Apparatus.ZincGranules,
     'Forceps': Apparatus.Forceps,
     'SafetyShield': Apparatus.SafetyShield,
@@ -107,9 +108,119 @@ const ApparatusItem = ({ item, apparatusRefs, progress }) => {
     );
 };
 
+
+
+// --- ANIMATION & TRANSFORMATION LOGIC ---
+// Helper to derive current apparatus state from timeline
+const useDerivedApparatus = (reaction, progress) => {
+    // 1. Initial State
+    // Deep clone to avoid mutating original
+    let currentApparatus = JSON.parse(JSON.stringify(reaction.apparatus || []));
+    const timeline = reaction.macroView?.visualRules?.timeline || {};
+    const totalSteps = Object.keys(timeline).length;
+
+    if (totalSteps === 0) return { apparatus: currentApparatus, currentStepIndex: 0 };
+
+    // 2. Determine Current Step & Step Progress
+    // Calculate Total Duration & Find Current Step based on real durations
+    let totalDuration = 0;
+    const stepDurations = [];
+    for (let i = 0; i < totalSteps; i++) {
+        const s = timeline[i.toString()];
+        const dur = (parseFloat(s?.duration) || 0) + (parseFloat(s?.delay) || 0);
+        stepDurations.push(dur);
+        totalDuration += dur;
+    }
+    if (totalDuration === 0) totalDuration = 10; // Fallback
+
+    const currentTime = progress * totalDuration;
+    let currentStepIndex = 0;
+    let accumulatedTime = 0;
+    let stepProgress = 0;
+
+    for (let i = 0; i < totalSteps; i++) {
+        const dur = stepDurations[i];
+        if (currentTime <= accumulatedTime + dur) {
+            currentStepIndex = i;
+            // Calculate 0-1 progress within this specific step
+            stepProgress = dur > 0 ? (currentTime - accumulatedTime) / dur : 1;
+            break;
+        }
+        accumulatedTime += dur;
+        // If we dictate the last step, ensure we clamp
+        if (i === totalSteps - 1) {
+            currentStepIndex = i;
+            stepProgress = 1;
+        }
+    }
+
+    // 3. Apply Transformations (Permanent changes from previous steps)
+    for (let i = 0; i <= currentStepIndex; i++) {
+        const step = timeline[i.toString()];
+        if (step && step.transformations) {
+            step.transformations.forEach(trans => {
+                const target = currentApparatus.find(a => a.id === trans.target);
+                if (target) {
+                    if (trans.newModel) target.model = trans.newModel;
+                    if (trans.visible !== undefined) target.visible = trans.visible;
+                    if (trans.scale) target.scale = trans.scale;
+                    if (trans.color) target.color = trans.color;
+                }
+            });
+        }
+    }
+
+    // 4. Calculate Animations (Interpolated changes for CURRENT step)
+    const currentStepConfig = timeline[currentStepIndex.toString()];
+    if (currentStepConfig && currentStepConfig.animations) {
+        currentStepConfig.animations.forEach(anim => {
+            const target = currentApparatus.find(a => a.id === anim.target);
+            if (target) {
+                if (anim.type === 'move') {
+                    if (anim.position) {
+                        const start = target.position || [0, 0, 0];
+                        const end = anim.position;
+                        target.position = [
+                            start[0] + (end[0] - start[0]) * stepProgress,
+                            start[1] + (end[1] - start[1]) * stepProgress,
+                            start[2] + (end[2] - start[2]) * stepProgress
+                        ];
+                    }
+                } else if (anim.type === 'scale') {
+                    if (anim.scale) {
+                        const start = target.scale || [1, 1, 1];
+                        const end = anim.scale;
+                        target.scale = [
+                            start[0] + (end[0] - start[0]) * stepProgress,
+                            start[1] + (end[1] - start[1]) * stepProgress,
+                            start[2] + (end[2] - start[2]) * stepProgress
+                        ];
+                    }
+                } else if (anim.type === 'rotate') {
+                    target.rotation = [
+                        (target.rotation?.[0] || 0) + stepProgress * Math.PI * (anim.speed || 1),
+                        target.rotation?.[1] || 0,
+                        target.rotation?.[2] || 0
+                    ];
+                }
+            }
+        });
+    }
+
+    return { apparatus: currentApparatus, currentStepIndex };
+};
+
+// --- MAIN MACRO VIEW MANAGER ---
+const MacroView = ({ reaction, progress }) => {
+    if (reaction.apparatus && reaction.apparatus.length > 0) {
+        return <DynamicSetup reaction={reaction} progress={progress} />;
+    }
+    return null;
+};
+
 const DynamicSetup = ({ reaction, progress }) => {
-    // 1. Get List of Apparatus from JSON (Derived with Animations)
-    const apparatusList = useDerivedApparatus(reaction, progress);
+    // 1. Get List of Apparatus & Current Step from Helper
+    const { apparatus: apparatusList, currentStepIndex } = useDerivedApparatus(reaction, progress);
 
     // Stub to hold object refs for World Position lookups
     const apparatusRefs = useRef({});
@@ -134,12 +245,11 @@ const DynamicSetup = ({ reaction, progress }) => {
                         />
                     ))}
 
-                    {/* Visual Effects Overlay */}
                     {/* Visual Effects Overlay (New Engine) */}
                     <VisualRuleEngine
                         apparatusList={apparatusList}
                         visualRules={reaction.macroView?.visualRules}
-                        stepIndex={Math.floor(progress * (reaction.macroView?.visualRules?.timeline ? Object.keys(reaction.macroView.visualRules.timeline).length : 1))}
+                        stepIndex={currentStepIndex}
                         isPlaying={progress > 0 && progress < 1}
                     />
 
@@ -153,88 +263,6 @@ const DynamicSetup = ({ reaction, progress }) => {
             <gridHelper args={[50, 50, '#333', '#111']} position={[0, -4.99, 0]} />
         </group >
     );
-};
-
-// --- ANIMATION & TRANSFORMATION LOGIC ---
-// Helper to derive current apparatus state from timeline
-const useDerivedApparatus = (reaction, progress) => {
-    // 1. Initial State
-    // Deep clone to avoid mutating original
-    let currentApparatus = JSON.parse(JSON.stringify(reaction.apparatus || []));
-    const timeline = reaction.macroView?.visualRules?.timeline || {};
-    const totalSteps = Object.keys(timeline).length;
-
-    if (totalSteps === 0) return currentApparatus;
-
-    // 2. Determine Current Step & Step Progress
-    // progress is 0-1. Map to step index.
-    const stepDuration = 1 / totalSteps;
-    const currentStepIndex = Math.min(Math.floor(progress / stepDuration), totalSteps - 1);
-    const stepProgress = (progress % stepDuration) / stepDuration; // 0-1 within current step
-
-    // 3. Apply Transformations (Permanent changes from previous steps)
-    for (let i = 0; i <= currentStepIndex; i++) {
-        const step = timeline[i.toString()];
-        if (step && step.transformations) {
-            step.transformations.forEach(trans => {
-                const target = currentApparatus.find(a => a.id === trans.target);
-                // Only apply if we are past the delay point (simple logic: apply if step is done or partly done)
-                // For simplicity: Transformations happen at start of step unless we add complex timing
-                if (target && trans.newModel) {
-                    target.model = trans.newModel;
-                }
-            });
-        }
-    }
-
-    // 4. Calculate Animations (Interpolated changes for CURRENT step)
-    const currentStepConfig = timeline[currentStepIndex.toString()];
-    if (currentStepConfig && currentStepConfig.animations) {
-        currentStepConfig.animations.forEach(anim => {
-            const target = currentApparatus.find(a => a.id === anim.target);
-            if (target) {
-                if (anim.type === 'move') {
-                    // Interpolate Position
-                    // Assume start pos is current pos (this is tricky if multiple moves happen)
-                    // Better: We need "Base State" vs "Animated State"
-                    // For now, simple lerp from current to target
-                    if (anim.position) {
-                        const start = target.position || [0, 0, 0];
-                        const end = anim.position;
-                        // Linear interpolation based on stepProgress
-                        // Note: complex sequences need a proper timeline engine
-                        target.position = [
-                            start[0] + (end[0] - start[0]) * stepProgress,
-                            start[1] + (end[1] - start[1]) * stepProgress,
-                            start[2] + (end[2] - start[2]) * stepProgress
-                        ];
-                    }
-                } else if (anim.type === 'rotate') {
-                    // Simple rotation
-                    target.rotation = [
-                        (target.rotation?.[0] || 0) + stepProgress * Math.PI, // just spin for now as placeholder
-                        target.rotation?.[1] || 0,
-                        target.rotation?.[2] || 0
-                    ];
-                }
-            }
-        });
-    }
-
-    return currentApparatus;
-};
-
-// --- MAIN MACRO VIEW MANAGER ---
-const MacroView = ({ reaction, progress }) => {
-    // Determine if we use the new dynamic system (check for 'apparatus' array)
-    // or fallback to hardcoded legacy views (for backward compatibility if any)
-
-    if (reaction.apparatus && reaction.apparatus.length > 0) {
-        return <DynamicSetup reaction={reaction} progress={progress} />;
-    }
-
-    // FALLBACK for any legacy usage
-    return null;
 };
 
 export default MacroView;
