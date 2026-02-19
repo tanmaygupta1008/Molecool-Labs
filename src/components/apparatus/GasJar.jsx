@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Cylinder } from '@react-three/drei';
+import * as THREE from 'three';
+import { CHEMICALS } from '../../data/chemicals';
 
 const Hole = ({ position }) => (
     <Cylinder args={[0.05, 0.05, 0.11, 16]} position={position}>
@@ -7,7 +9,43 @@ const Hole = ({ position }) => (
     </Cylinder>
 );
 
-const GasJar = ({ hasLid = true, holeCount = 0, ...props }) => {
+const GasJar = ({ hasLid = true, holeCount = 0, reactants = [], ...props }) => {
+    // Calculate contents
+    const { liquidVolume, liquidColor, solids, gasColor, gasOpacity } = useMemo(() => {
+        let lVol = 0;
+        let lr = 0, lg = 0, lb = 0, lCount = 0;
+        let gr = 0, gg = 0, gb = 0, gCount = 0;
+        const solidItems = [];
+
+        reactants.forEach(r => {
+            const chemical = CHEMICALS.find(c => c.id === r.chemicalId);
+            const color = chemical?.color || '#ffffff';
+            const c = new THREE.Color(color);
+
+            if (r.state === 'l' || r.state === 'aq') {
+                lVol += (parseFloat(r.amount) || 0);
+                lr += c.r; lg += c.g; lb += c.b;
+                lCount++;
+            } else if (r.state === 's') {
+                solidItems.push({ ...r, color });
+            } else if (r.state === 'g') {
+                gr += c.r; gg += c.g; gb += c.b;
+                gCount++;
+            }
+        });
+
+        const lColor = lCount > 0 ? new THREE.Color(lr / lCount, lg / lCount, lb / lCount).getStyle() : '#aaddff';
+        const gColor = gCount > 0 ? new THREE.Color(gr / gCount, gg / gCount, gb / gCount).getStyle() : '#ffffff';
+        const gOp = gCount > 0 ? 0.2 : 0; // faint gas
+
+        return { liquidVolume: lVol, liquidColor: lColor, solids: solidItems, gasColor: gColor, gasOpacity: gOp };
+    }, [reactants]);
+
+    // Dimensions
+    const radius = 0.48;
+    const height = 1.45;
+
+    const liquidHeight = Math.min((liquidVolume / 200) * height, height); // 200mL max
     return (
         <group {...props}>
             {/* Tall Cylinder Body */}
@@ -55,6 +93,31 @@ const GasJar = ({ hasLid = true, holeCount = 0, ...props }) => {
                     )}
                 </group>
             )}
+            {/* Render Liquid */}
+            {liquidVolume > 0 && (
+                <group position={[0, 0.05 + liquidHeight / 2, 0]}>
+                    <Cylinder args={[radius, radius, liquidHeight, 32]}>
+                        <meshPhysicalMaterial color={liquidColor} transparent opacity={0.8} side={2} />
+                    </Cylinder>
+                </group>
+            )}
+
+            {/* Render Gas (Fills the jar) */}
+            {gasOpacity > 0 && (
+                <group position={[0, 0.8, 0]}>
+                    <Cylinder args={[radius, radius, height, 32]}>
+                        <meshBasicMaterial color={gasColor} transparent opacity={gasOpacity} side={2} depthWrite={false} />
+                    </Cylinder>
+                </group>
+            )}
+
+            {/* Render Solids */}
+            {solids.map((s, i) => (
+                <mesh key={i} position={[(Math.random() - 0.5) * 0.8, 0.1 + (i * 0.1), (Math.random() - 0.5) * 0.8]} rotation={[Math.random(), Math.random(), Math.random()]}>
+                    <dodecahedronGeometry args={[0.12, 0]} />
+                    <meshStandardMaterial color={s.color} roughness={0.9} />
+                </mesh>
+            ))}
         </group>
     );
 };

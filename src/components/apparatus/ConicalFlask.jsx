@@ -1,50 +1,65 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
+import { CHEMICALS } from '../../data/chemicals';
 
-const ConicalFlask = (props) => {
+const ConicalFlask = ({ reactants = [], ...props }) => {
     const points = useMemo(() => {
         const p = [];
-        // Profile of a conical flask (Erlenmeyer)
-        // Starting from bottom center (0,0) -> outward to radius -> up taper -> neck
-        // Actually LatheGeometry spins around Y. So we define x,y points.
-
-        // 1. Base (flat bottom)
-        // p.push(new THREE.Vector2(0, 0)); // Center
-        // For a hollow object, we usually use double side material or construct thickness. 
-        // But standard Lathe is a surface.
-
-        // Let's draw the OUTER profile.
-        // Base radius ~1.0
-
         const baseRadius = 1.0;
         const neckRadius = 0.35;
         const height = 2.5;
         const neckStart = 1.8;
 
-        // Bottom edge
         p.push(new THREE.Vector2(0, 0));
         p.push(new THREE.Vector2(baseRadius, 0));
-
-        // Rounded corner at base (optional, keeping it simple for now or adding a small chamfer)
         p.push(new THREE.Vector2(baseRadius, 0.1));
-
-        // Tapered body up to neck
         p.push(new THREE.Vector2(neckRadius, neckStart));
-
-        // Neck
         p.push(new THREE.Vector2(neckRadius, height));
-
-        // Flared Rim
         p.push(new THREE.Vector2(neckRadius + 0.1, height + 0.1));
-        p.push(new THREE.Vector2(neckRadius, height + 0.1)); // Inner rim lip
+        p.push(new THREE.Vector2(neckRadius, height + 0.1));
 
         return p;
     }, []);
 
+    // Calculate contents
+    const { liquidVolume, liquidColor, solids } = useMemo(() => {
+        let vol = 0;
+        let rSum = 0, gSum = 0, bSum = 0, count = 0;
+        const solidItems = [];
+
+        reactants.forEach(r => {
+            const chemical = CHEMICALS.find(c => c.id === r.chemicalId);
+            const color = chemical?.color || '#ffffff';
+
+            if (r.state === 'l' || r.state === 'aq') {
+                vol += (parseFloat(r.amount) || 0); // Amount in mL
+
+                // Simple color mixing
+                const c = new THREE.Color(color);
+                rSum += c.r;
+                gSum += c.g;
+                bSum += c.b;
+                count++;
+            } else if (r.state === 's') {
+                solidItems.push({ ...r, color });
+            }
+        });
+
+        const mixedColor = count > 0
+            ? new THREE.Color(rSum / count, gSum / count, bSum / count).getStyle()
+            : '#aaddff';
+
+        return { liquidVolume: vol, liquidColor: mixedColor, solids: solidItems };
+    }, [reactants]);
+
+    // Map volume to height (Approximation)
+    // Max volume ~250mL -> Height ~1.8 (Neck start)
+    const maxVol = 250;
+    const liquidHeight = Math.min((liquidVolume / maxVol) * 1.8, 2.2);
+
     return (
         <group {...props}>
             <mesh position={[0, 0, 0]}>
-                {/* Lathe Geometry: points, segments */}
                 <latheGeometry args={[points, 32]} />
                 <meshPhysicalMaterial
                     color="#ffffff"
@@ -53,12 +68,45 @@ const ConicalFlask = (props) => {
                     transparent
                     roughness={0}
                     thickness={0.1}
-                    side={THREE.DoubleSide} // Important to see inside and outside
-                    depthWrite={false} // Ensure internal liquids/bubbles are visible
+                    side={THREE.DoubleSide}
+                    depthWrite={false}
                 />
             </mesh>
 
-            {/* Thermal Glow Overlay (Base Heating) */}
+            {/* Render Liquid */}
+            {liquidVolume > 0 && (
+                <group position={[0, liquidHeight / 2, 0]}>
+                    {/* Simplified liquid shape: Cylinder with tapered top if needed, 
+                       but standard cylinder is often "good enough" for small amounts.
+                       For Conical Flask, a cone is better. */}
+                    <mesh rotation={[0, 0, 0]}>
+                        <cylinderGeometry args={[
+                            0.35 + (1.0 - 0.35) * (1 - (liquidHeight / 1.8)), // Top radius interpolation
+                            1.0, // Bottom radius
+                            liquidHeight,
+                            32
+                        ]} />
+                        <meshPhysicalMaterial
+                            color={liquidColor}
+                            transparent
+                            opacity={0.8}
+                            transmission={0.2}
+                            roughness={0.1}
+                            side={THREE.DoubleSide}
+                        />
+                    </mesh>
+                </group>
+            )}
+
+            {/* Render Solids */}
+            {solids.map((s, i) => (
+                <mesh key={i} position={[(Math.random() - 0.5) * 0.5, 0.1 + (i * 0.1), (Math.random() - 0.5) * 0.5]} rotation={[Math.random(), Math.random(), Math.random()]}>
+                    <dodecahedronGeometry args={[0.15, 0]} />
+                    <meshStandardMaterial color={s.color} roughness={0.9} />
+                </mesh>
+            ))}
+
+            {/* Thermal Glow Overlay */}
             {props.isHeating && (
                 <mesh position={[0, 0.1, 0]}>
                     <cylinderGeometry args={[1.0, 1.0, 0.2, 32]} />
@@ -72,11 +120,6 @@ const ConicalFlask = (props) => {
                     />
                 </mesh>
             )}
-
-            {/* Liquid inside (optional, simplified cone) for realism? 
-          User didn't ask for liquid but it helps the look. Leaving empty for now as per "apparatus" focus.
-      */}
-
         </group>
     );
 };
