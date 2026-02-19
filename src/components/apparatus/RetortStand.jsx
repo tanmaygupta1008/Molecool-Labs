@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Cylinder } from '@react-three/drei';
 
-const RetortStand = (props) => {
+const RetortStand = ({ height = 5, ...props }) => {
     return (
         <group {...props}>
             {/* Base */}
@@ -10,7 +10,7 @@ const RetortStand = (props) => {
             </Box>
 
             {/* Vertical Rod */}
-            <Cylinder args={[0.05, 0.05, 5, 16]} position={[0, 2.55, -0.4]}>
+            <Cylinder args={[0.05, 0.05, height, 16]} position={[0, (height / 2) + 0.05, -0.4]}>
                 <meshStandardMaterial color="#888" metalness={0.7} roughness={0.3} />
             </Cylinder>
         </group>

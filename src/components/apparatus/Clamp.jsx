@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Cylinder, Sphere, Torus } from '@react-three/drei';
 
-const Clamp = ({ angle = 0, ...props }) => {
+const Clamp = ({ angle = 0, headAngle = 0, size = 1, ...props }) => {
     // === MATERIALS ===
     const chrome = <meshStandardMaterial color="#eeeeee" metalness={0.9} roughness={0.1} />;
     const blackPlastic = <meshStandardMaterial color="#222222" metalness={0.2} roughness={0.5} />;
@@ -56,72 +56,75 @@ const Clamp = ({ angle = 0, ...props }) => {
             </group>
 
 
-            {/* === 2. TRIANGULAR BODY === */}
-            <group position={[0, 0, 0]} rotation={[Math.PI / 2, Math.PI, 0]}>
-                <Cylinder args={[0.4, 0.4, 0.2, 3]} rotation={[0, Math.PI / 6, 0]}>
-                    {chrome}
-                </Cylinder>
-            </group>
-
-            {/* === 3. SCREWS === */}
-            {/* Top Screw */}
-            <group position={[-0.1, 0.35, 0]} rotation={[0, 0, -0.9]}>
-                <Cylinder args={[0.03, 0.03, 0.5, 16]}>
-                    {steel}
-                </Cylinder>
-                <group position={[0, 0.25, 0]}>
-                    <Cylinder args={[0.1, 0.1, 0.04, 16]}>
-                        {blackPlastic}
-                    </Cylinder>
-                </group>
-            </group>
-
-            {/* Bottom Screw */}
-            <group position={[-0.1, -0.35, 0]} rotation={[0, 0, 0.9]}>
-                <Cylinder args={[0.03, 0.03, 0.5, 16]}>
-                    {steel}
-                </Cylinder>
-                <group position={[0, -0.25, 0]}>
-                    <Cylinder args={[0.1, 0.1, 0.04, 16]}>
-                        {blackPlastic}
-                    </Cylinder>
-                </group>
-            </group>
-
-
-            {/* === 4. JAWS === */}
-            <group position={[0.2, 0, 0]}>
-
-                {/* Upper Jaw Prong */}
-                <group rotation={[0, 0, 0.5 + rotationOffset]}>
-                    <Cylinder args={[0.035, 0.035, 0.5, 16]} position={[0.25, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+            {/* === ROTATABLE HEAD === */}
+            <group rotation={[headAngle, 0, 0]} scale={[size, size, size]}>
+                {/* === 2. TRIANGULAR BODY === */}
+                <group position={[0, 0, 0]} rotation={[Math.PI / 2, Math.PI, 0]}>
+                    <Cylinder args={[0.4, 0.4, 0.2, 3]} rotation={[0, Math.PI / 6, 0]}>
                         {chrome}
                     </Cylinder>
-                    <group position={[0.5, 0, 0]} rotation={[0, 0, -1.0]}>
-                        <Cylinder args={[0.035, 0.035, 0.3, 16]} position={[0.15, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-                            {chrome}
-                        </Cylinder>
-                        <Sphere args={[0.036, 16, 16]} position={[0.3, 0, 0]}>
+                </group>
+
+                {/* === 3. SCREWS === */}
+                {/* Top Screw */}
+                <group position={[-0.1, 0.35, 0]} rotation={[0, 0, -0.9]}>
+                    <Cylinder args={[0.03, 0.03, 0.5, 16]}>
+                        {steel}
+                    </Cylinder>
+                    <group position={[0, 0.25, 0]}>
+                        <Cylinder args={[0.1, 0.1, 0.04, 16]}>
                             {blackPlastic}
-                        </Sphere>
+                        </Cylinder>
                     </group>
                 </group>
 
-                {/* Lower Jaw Prong */}
-                <group rotation={[0, 0, -(0.5 + rotationOffset)]}>
-                    <Cylinder args={[0.035, 0.035, 0.5, 16]} position={[0.25, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-                        {chrome}
+                {/* Bottom Screw */}
+                <group position={[-0.1, -0.35, 0]} rotation={[0, 0, 0.9]}>
+                    <Cylinder args={[0.03, 0.03, 0.5, 16]}>
+                        {steel}
                     </Cylinder>
-                    <group position={[0.5, 0, 0]} rotation={[0, 0, 1.0]}>
-                        <Cylinder args={[0.035, 0.035, 0.3, 16]} position={[0.15, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-                            {chrome}
-                        </Cylinder>
-                        <Sphere args={[0.036, 16, 16]} position={[0.3, 0, 0]}>
+                    <group position={[0, -0.25, 0]}>
+                        <Cylinder args={[0.1, 0.1, 0.04, 16]}>
                             {blackPlastic}
-                        </Sphere>
+                        </Cylinder>
                     </group>
                 </group>
 
+
+                {/* === 4. JAWS === */}
+                <group position={[0.2, 0, 0]}>
+
+                    {/* Upper Jaw Prong */}
+                    <group rotation={[0, 0, 0.5 + rotationOffset]}>
+                        <Cylinder args={[0.035, 0.035, 0.5, 16]} position={[0.25, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+                            {chrome}
+                        </Cylinder>
+                        <group position={[0.5, 0, 0]} rotation={[0, 0, -1.0]}>
+                            <Cylinder args={[0.035, 0.035, 0.3, 16]} position={[0.15, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+                                {chrome}
+                            </Cylinder>
+                            <Sphere args={[0.036, 16, 16]} position={[0.3, 0, 0]}>
+                                {blackPlastic}
+                            </Sphere>
+                        </group>
+                    </group>
+
+                    {/* Lower Jaw Prong */}
+                    <group rotation={[0, 0, -(0.5 + rotationOffset)]}>
+                        <Cylinder args={[0.035, 0.035, 0.5, 16]} position={[0.25, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+                            {chrome}
+                        </Cylinder>
+                        <group position={[0.5, 0, 0]} rotation={[0, 0, 1.0]}>
+                            <Cylinder args={[0.035, 0.035, 0.3, 16]} position={[0.15, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+                                {chrome}
+                            </Cylinder>
+                            <Sphere args={[0.036, 16, 16]} position={[0.3, 0, 0]}>
+                                {blackPlastic}
+                            </Sphere>
+                        </group>
+                    </group>
+
+                </group>
             </group>
         </group>
     );

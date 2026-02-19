@@ -1,66 +1,456 @@
 import React, { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Cylinder, Box, Sphere, MeshDistortMaterial, Torus, Cone } from '@react-three/drei';
+import { extend, useFrame } from '@react-three/fiber';
+import { Cylinder, Box, Sphere, MeshDistortMaterial, Torus, Cone, shaderMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
-const Flame = () => {
-  const outerRef = useRef();
-  const innerRef = useRef();
+// Custom Shader for Gaseous Flame
+const FlameMaterial = shaderMaterial(
+  {
+    time: 0,
+    color: new THREE.Color(0.2, 0.6, 1.0),
+    opacity: 0.6,
+    noiseScale: 1.0,
+    rimFalloff: 0.1, // Default small fade
+    edgeSoftness: 0.4 // Default sharpness
+  },
+  // Vertex Shader
+  `
+    varying vec2 vUv;
+    varying float vElevation;
+    varying vec3 vViewPosition;
+    varying vec3 vNormal;
+
+    uniform float time;
+    uniform float noiseScale;
+
+    // Simple Perlin-like noise function
+    vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+    vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+    vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+    vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+    float snoise(vec3 v) {
+      const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+      const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+      vec3 i  = floor(v + dot(v, C.yyy) );
+      vec3 x0 = v - i + dot(i, C.xxx) ;
+      vec3 g = step(x0.yzx, x0.xyz);
+      vec3 l = 1.0 - g;
+      vec3 i1 = min( g.xyz, l.zxy );
+      vec3 i2 = max( g.xyz, l.zxy );
+      vec3 x1 = x0 - i1 + C.xxx;
+      vec3 x2 = x0 - i2 + C.yyy;
+      vec3 x3 = x0 - D.yyy;
+      i = mod289(i);
+      vec4 p = permute( permute( permute(
+                i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+              + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+              + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+      float n_ = 0.142857142857;
+      vec3  ns = n_ * D.wyz - D.xzx;
+      vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+      vec4 x_ = floor(j * ns.z);
+      vec4 y_ = floor(j - 7.0 * x_ );
+      vec4 x = x_ *ns.x + ns.yyyy;
+      vec4 y = y_ *ns.x + ns.yyyy;
+      vec4 h = 1.0 - abs(x) - abs(y);
+      vec4 b0 = vec4( x.xy, y.xy );
+      vec4 b1 = vec4( x.zw, y.zw );
+      vec4 s0 = floor(b0)*2.0 + 1.0;
+      vec4 s1 = floor(b1)*2.0 + 1.0;
+      vec4 sh = -step(h, vec4(0.0));
+      vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+      vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+      vec3 p0 = vec3(a0.xy,h.x);
+      vec3 p1 = vec3(a0.zw,h.y);
+      vec3 p2 = vec3(a1.xy,h.z);
+      vec3 p3 = vec3(a1.zw,h.w);
+      vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+      p0 *= norm.x;
+      p1 *= norm.y;
+      p2 *= norm.z;
+      p3 *= norm.w;
+      vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+      m = m * m;
+      return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
+    }
+
+    void main() {
+      vUv = uv;
+      vNormal = normalize(normalMatrix * normal);
+      vec3 pos = position;
+
+      // 1. Asymmetry / Wavering
+      float waverX = snoise(vec3(0.0, time * 2.0, 0.0)); 
+      float waverZ = snoise(vec3(10.0, time * 1.5, 0.0));
+      pos.x += waverX * 0.08 * smoothstep(0.2, 1.0, uv.y); 
+      pos.z += waverZ * 0.08 * smoothstep(0.2, 1.0, uv.y);
+
+      // 2. Turbulence
+      float mainNoise = snoise(vec3(pos.x * 2.5, pos.y * 2.5 - time * 3.0, pos.z * 2.5));
+      float fineNoise = snoise(vec3(pos.x * 6.0, pos.y * 6.0 - time * 5.0, pos.z * 6.0));
+      
+      float combinedNoise = mainNoise + fineNoise * 0.4;
+      
+      float displacementFactor = smoothstep(0.0, 1.0, uv.y); 
+      
+      pos += normal * combinedNoise * 0.1 * displacementFactor * noiseScale;
+      vElevation = combinedNoise;
+
+      vec4 modelPosition = modelMatrix * vec4(pos, 1.0);
+      vec4 viewPosition = viewMatrix * modelPosition;
+      vViewPosition = -viewPosition.xyz;
+      gl_Position = projectionMatrix * viewPosition;
+    }
+  `,
+  // Fragment Shader
+  `
+    varying vec2 vUv;
+    varying float vElevation;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+
+    uniform vec3 color;
+    uniform float opacity; // This is a float
+    uniform float time;
+    uniform float rimFalloff;
+    uniform float edgeSoftness; // New uniform for controlling blur
+
+    void main() {
+      // 1. Fresnel / Edge Softness
+      vec3 viewDir = normalize(vViewPosition);
+      vec3 normal = normalize(vNormal);
+      float fresnel = dot(viewDir, normal);
+      float edgeAlpha = smoothstep(0.0, edgeSoftness, abs(fresnel)); 
+
+      // 2. Vertical Fade
+      float startFade = 1.0 - rimFalloff;
+      float topFade = 1.0 - smoothstep(startFade, 1.0, vUv.y);
+      float baseFade = smoothstep(0.0, 0.1, vUv.y);
+
+      // 3. Core intensity & Hot spots
+      float noiseVariation = vElevation; 
+      
+      vec3 hotColor = vec3(0.8, 0.9, 1.0); // Whitish blue
+      vec3 mainColor = color;
+      
+      vec3 finalColor = mix(mainColor, hotColor, smoothstep(0.2, 0.8, noiseVariation));
+      
+      float alpha = opacity * topFade * baseFade * edgeAlpha;
+
+      gl_FragColor = vec4(finalColor, alpha);
+    }
+  `
+);
+
+// Custom Shader for Impact Glow (Radial Gradient)
+const ImpactMaterial = shaderMaterial(
+  {
+    color: new THREE.Color(1.0, 1.0, 1.0),
+    opacity: 0.6
+  },
+  // Vertex
+  `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+    `,
+  // Fragment
+  `
+    varying vec2 vUv;
+    uniform vec3 color;
+    uniform float opacity;
+    void main() {
+      float dist = distance(vUv, vec2(0.5));
+      float strength = 1.0 - smoothstep(0.0, 0.5, dist);
+      gl_FragColor = vec4(color, strength * opacity);
+    }
+    `
+);
+
+// Custom Shader for Heat Shimmer (Air Distortion)
+const ShimmerMaterial = shaderMaterial(
+  {
+    time: 0,
+    amount: 1.0
+  },
+  // Vertex
+  `
+    varying vec2 vUv;
+    varying vec3 vPos;
+    void main() {
+      vUv = uv;
+      vPos = position;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  // Fragment
+  `
+    varying vec2 vUv;
+    varying vec3 vPos;
+    uniform float time;
+    
+    // Simplex 2D noise
+    vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+    float snoise(vec2 v){
+      const vec4 C = vec4(0.211324865405187, 0.366025403784439,
+               -0.577350269189626, 0.024390243902439);
+      vec2 i  = floor(v + dot(v, C.yy) );
+      vec2 x0 = v - i + dot(i, C.xx);
+      vec2 i1;
+      i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+      vec4 x12 = x0.xyxy + C.xxzz;
+      x12.xy -= i1;
+      i = mod(i, 289.0);
+      vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+      + i.x + vec3(0.0, i1.x, 1.0 ));
+      vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+      m = m*m ;
+      m = m*m ;
+      vec3 x = 2.0 * fract(p * C.www) - 1.0;
+      vec3 h = abs(x) - 0.5;
+      vec3 ox = floor(x + 0.5);
+      vec3 a0 = x - ox;
+      m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+      vec3 g;
+      g.x  = a0.x  * x0.x  + h.x  * x0.y;
+      g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+      return 130.0 * dot(m, g);
+    }
+
+    void main() {
+       // Moving noise pattern
+       float noise = snoise(vec2(vPos.x * 5.0, vPos.y * 5.0 - time * 2.0));
+       
+       // Heat haze alpha
+       // Fades out at edges and top
+       float alpha = smoothstep(0.0, 0.5, abs(noise)) * 0.1;
+       float fade = 1.0 - smoothstep(0.0, 1.0, vUv.y);
+       
+       // In a real engine we'd grab the screen texture and distort UVs.
+       // Here we just render faint white wisps to simulate the density change visibility.
+       gl_FragColor = vec4(1.0, 1.0, 1.0, alpha * fade * 0.3);
+    }
+  `
+);
+
+extend({ FlameMaterial, ImpactMaterial, ShimmerMaterial });
+
+const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, apparatusType = "standard" }) => {
+  const materialRef = useRef();
+  const spreadRef1 = useRef();
+  const shimmerRef = useRef();
+
+  // Burner tip Y position
+  // Burner tip Y position
+  const burnerTipY = 3.35;
+  const isConical = apparatusType === "conical";
+  const isFlat = apparatusType === "beaker" || isConical;
+
+  // --- GEOMETRY LOGIC ---
+  const stemRadius = 0.12;
+
+  // These will be determined by the type logic below
+  let stemHeight, stemPosY, spreadGeometry;
+
+  if (isFlat) {
+    // --- FLAT BOTTOM MODEL (Spreading Funnel + Wall Licks) ---
+    // Instead of a flat disk, we use a "Spreading Cone" that transitions 
+    // from the narrow stem to the wide base of the apparatus.
+
+    const spreadHeight = 0.35; // Height of the transition from stem to base
+
+    // Stem stops where the spread begins
+    const stemTopY = flameTargetY - spreadHeight;
+    stemHeight = Math.max(0.01, stemTopY - burnerTipY);
+    stemPosY = burnerTipY + stemHeight / 2;
+
+    const spreadBottomRadius = stemRadius; // Starts narrow
+    const spreadTopRadius = isConical ? baseRadius * 0.9 : baseRadius * 0.8; // Ends slightly inside the glass base
+
+
+
+    spreadGeometry = (
+      <group>
+        {/* 3. High Pressure Impact Center (Glow) */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, flameTargetY - 0.02, 0]}>
+          <planeGeometry args={[spreadBottomRadius * 2.5, spreadBottomRadius * 2.5]} />
+          <impactMaterial color="#ffffff" opacity={0.6} transparent blending={THREE.AdditiveBlending} depthWrite={false} />
+        </mesh>
+
+        {/* 1. Spreading Cone (The "Impact" zone) */}
+        {/* Inverted cone: Top=Wide, Bottom=Narrow */}
+        <Cylinder
+          args={[spreadTopRadius, spreadBottomRadius, spreadHeight, 32, 1, true]}
+          position={[0, flameTargetY - spreadHeight / 2, 0]}
+        >
+          <flameMaterial
+            ref={spreadRef1}
+            color={new THREE.Color("#00aaff")}
+            opacity={0.8}
+            rimFalloff={0.6} // Strong falloff for diffusion
+            noiseScale={1.8}
+            transparent
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </Cylinder>
+
+      </group>
+    );
+
+  } else {
+    // --- ROUND BOTTOM MODEL (Stem + Cup) ---
+    const cupBottomY = flameTargetY - 0.25;
+    const cupHeight = 0.6;
+    const stemTopY = Math.max(burnerTipY + 0.1, cupBottomY);
+    stemHeight = stemTopY - burnerTipY;
+    stemPosY = burnerTipY + stemHeight / 2;
+
+    const cupRadiusBottom = stemRadius;
+    const cupRadiusTop = baseRadius + 0.1;
+
+    spreadGeometry = (
+      <Cylinder
+        args={[cupRadiusTop, cupRadiusBottom, cupHeight, 32, 1, true]}
+        position={[0, stemTopY + cupHeight / 2, 0]}
+      >
+        <flameMaterial
+          ref={spreadRef1}
+          color={new THREE.Color("#00aaff")}
+          opacity={0.5}
+          rimFalloff={0.5} // Gradual vertical fade
+          edgeSoftness={1.0} // Very blurry edges
+          noiseScale={1.5}
+          transparent
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </Cylinder>
+    );
+  }
 
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
+    if (materialRef.current) {
+      materialRef.current.time = t;
 
-    // Outer flame flickering - rises and distorts
-    if (outerRef.current) {
-      outerRef.current.scale.y = 1 + Math.sin(t * 15) * 0.1 + Math.random() * 0.05;
-      outerRef.current.scale.x = 1 - Math.sin(t * 5) * 0.05;
-      outerRef.current.scale.z = outerRef.current.scale.x;
-    }
+      // Micro-flicker animation
+      // 1. Opacity flicker: High frequency, low amplitude
+      // Base opacity is 0.8 (from shader prop default or passed prop)
+      // We oscillate slightly around a base value
+      const flicker = Math.sin(t * 20.0) * 0.05 + Math.sin(t * 45.0) * 0.05;
+      materialRef.current.opacity = 0.8 + flicker;
 
-    // Inner flame flickering - faster, more subtle jitter
-    if (innerRef.current) {
-      innerRef.current.scale.y = 1 + Math.sin(t * 20) * 0.02;
-      innerRef.current.position.y = 0.3 + Math.random() * 0.01;
+      // 2. Micro-scale noise jitter
+      // varied noise scale for "breathing" effect
+      materialRef.current.noiseScale = 1.0 + Math.sin(t * 5.0) * 0.2;
+
+      // Animate Spread Parts
+
+      if (spreadRef1.current) {
+        spreadRef1.current.time = t;
+        spreadRef1.current.opacity = 0.8 + flicker;
+        spreadRef1.current.noiseScale = 1.0 + Math.sin(t * 5.0) * 0.2;
+      }
+
+      // Animate Heat Shimmer
+      if (shimmerRef.current) {
+        shimmerRef.current.time = t;
+      }
     }
   });
 
   return (
-    <group position={[0, 3.25, 0]}>
-      {/* Outer Flame - Wispy, tall, transparent blue envelope */}
-      {/* Using a Cone with open bottom to simulate the flame jet */}
-      {/* Outer Flame - Wispy, tall, transparent blue envelope */}
-      {/* Using a Cone with open bottom to simulate the flame jet */}
-      <Cone ref={outerRef} args={[0.25, 2.2, 32, 6, true]} position={[0, 0.7, 0]}>
-        <MeshDistortMaterial
-          color="#0055ff"
-          speed={4}
-          distort={0.3}
-          radius={0.5}
-          transparent
-          opacity={0.4}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-          side={THREE.DoubleSide}
-        />
-      </Cone>
+    <group>
+      {isHeating ? (
+        <group>
+          {/* Common Stem */}
+          <Cylinder
+            args={[stemRadius, stemRadius * 0.8, stemHeight, 32, 1, true]}
+            position={[0, stemPosY, 0]}
+          >
+            <flameMaterial
+              ref={materialRef}
+              color={new THREE.Color("#0033cc")}
+              opacity={0.8}
+              noiseScale={0.5}
+              transparent
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+              side={THREE.DoubleSide}
+            />
+          </Cylinder>
 
-      {/* Inner Core - Sharp, bright cyan/white cone, typical of 'roaring' flame */}
-      <Cone ref={innerRef} args={[0.08, 0.6, 32]} position={[0, 0.3, 0]}>
-        <meshStandardMaterial
-          color="#88ffff"
-          emissive="#00ffff"
-          emissiveIntensity={3}
-          transparent
-          opacity={0.9}
-          roughness={0}
-          toneMapped={false}
-        />
-      </Cone>
+          {/* Type-Specific Spread */}
+          {spreadGeometry}
+
+          {/* Core Glow */}
+          <pointLight position={[0, flameTargetY, 0]} intensity={1.5} color="#4488ff" distance={3} decay={2} />
+
+          {/* --- NEW: Distinct Inner Cone (Unburned Gas) --- */}
+          {/* Sharp, pale blue cone at the base. Non-turbulent. */}
+          <Cylinder
+            args={[0.02, 0.1, 0.6, 32, 1, true]} // Tapered cone
+            position={[0, burnerTipY + 0.3, 0]}
+          >
+            <meshBasicMaterial
+              color="#aaddff"
+              transparent
+              opacity={0.9}
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+              side={THREE.DoubleSide}
+            />
+          </Cylinder>
+
+
+
+          {/* --- NEW: Heat Shimmer (Air Distortion) --- */}
+          <mesh position={[0, flameTargetY + 1.2, 0]}>
+            <cylinderGeometry args={[0.5, 0.3, 1.8, 16, 1, true]} />
+            <shimmerMaterial ref={shimmerRef} transparent blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+          </mesh>
+        </group>
+      ) : (
+        // IDLE MODE: Standard tall flame
+        <group>
+          {/* Idle Outer */}
+          <Cone args={[0.2, 2.0, 32, 1, true]} position={[0, 3.35 + 1.0, 0]}>
+            <flameMaterial
+              ref={materialRef}
+              color={new THREE.Color("#0044aa")} // Darker idle
+              opacity={0.5}
+              noiseScale={0.5}
+              transparent
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+              side={THREE.DoubleSide}
+            />
+          </Cone>
+          {/* Idle Inner */}
+          <Cylinder
+            args={[0.01, 0.08, 0.4, 32, 1, true]}
+            position={[0, 3.35 + 0.2, 0]}
+          >
+            <meshBasicMaterial
+              color="#88ccff"
+              transparent
+              opacity={0.8}
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+            />
+          </Cylinder>
+        </group>
+      )}
     </group>
   );
 };
 
-const BunsenBurner = ({ isOn = false, ...props }) => {
+const BunsenBurner = ({ isOn = false, isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, apparatusType = "standard", ...props }) => {
   return (
     <group {...props}>
       {/* 1. Base - Stepped metallic base */}
@@ -111,7 +501,7 @@ const BunsenBurner = ({ isOn = false, ...props }) => {
       </group>
 
       {/* 5. Flame */}
-      {isOn && <Flame />}
+      {isOn && <Flame isHeating={isHeating} baseRadius={baseRadius} flameTargetY={flameTargetY} apparatusType={apparatusType} />}
 
       {/* Light */}
       {isOn && (

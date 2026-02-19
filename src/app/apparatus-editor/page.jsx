@@ -2,13 +2,17 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, TransformControls, Grid, Environment, ContactShadows, Html, useGLTF } from '@react-three/drei';
+import { OrbitControls, TransformControls, Grid, Environment, ContactShadows, Html, useGLTF, useCursor } from '@react-three/drei';
 import * as THREE from 'three';
 import { useRouter } from 'next/navigation';
 
 // Import apparatus map - we'll need to duplicate or export this from MacroView/Apparatus index
 // For now, let's assume we can import from '../../components/apparatus' directly like MacroView did
 import * as Apparatus from '../../components/apparatus'; // Adjust import path if needed
+import Clamp from '../../components/apparatus/Clamp';
+import PowerSupply from '../../components/apparatus/PowerSupply';
+import Wire from '../../components/apparatus/Wire';
+import RubberCork from '../../components/apparatus/RubberCork';
 import { getApparatusAnchors } from '../../utils/apparatus-anchors';
 
 // import reactionsData from '../../data/reactions.json'; // REMOVED to avoid HMR issues
@@ -32,13 +36,13 @@ const APPARATUS_MAP = {
     'WaterTrough': Apparatus.WaterTrough,
     'GasJar': Apparatus.GasJar,
     'DeliveryTube': Apparatus.DeliveryTube,
-    'RubberCork': Apparatus.RubberCork,
-    'Cork': Apparatus.RubberCork,
+    'RubberCork': RubberCork,
+    'Cork': RubberCork,
     'Burette': Apparatus.Burette,
     'RetortStand': Apparatus.RetortStand,
-    'Clamp': Apparatus.Clamp,
+    'Clamp': Clamp,
     'ElectrolysisSetup': Apparatus.ElectrolysisSetup,
-    'PowerSupply': Apparatus.PowerSupply,
+    'PowerSupply': PowerSupply,
     'MagnesiumRibbon': Apparatus.MagnesiumRibbon,
     'ZincGranules': Apparatus.ZincGranules,
     'Forceps': Apparatus.Forceps,
@@ -47,6 +51,7 @@ const APPARATUS_MAP = {
     'IronNail': Apparatus.IronNail,
     'GasTap': Apparatus.GasTap,
     'LitmusPaper': Apparatus.LitmusPaper,
+    'Wire': Wire,
 };
 
 // --- COMPONENTS ---
@@ -428,7 +433,7 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
 
             // --- AUTO-SNAP LOGIC FOR CLAMP (TO RETORT STAND) ---
             if (item.model === 'Clamp') {
-                const CLAMP_SNAP_THRESHOLD = 0.5;
+                const CLAMP_SNAP_THRESHOLD = 2.0;
                 const ROD_OFFSET_Z = -0.4;
                 const CLAMP_LOOP_OFFSET_X = -1.65;
 
@@ -480,7 +485,138 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
 
 
 
-            // --- GROUP MOVEMENT LOGIC ---
+            // --- AUTO-SNAP LOGIC FOR GLASSWARE (TO CLAMP) ---
+            const GLASSWARE_TYPES = ['TestTube', 'BoilingTube', 'ConicalFlask', 'RoundBottomFlask', 'Beaker'];
+            if (GLASSWARE_TYPES.includes(item.model)) {
+                // Increased threshold for easier snapping
+                const GLASS_SNAP_THRESHOLD = 1.0;
+                const GRIP_OFFSETS = {
+                    'TestTube': 1.4,
+                    'BoilingTube': 1.4,
+                    'ConicalFlask': 2.2,
+                    'RoundBottomFlask': 2.0,
+                    'Beaker': 1.5
+                };
+                const CLAMP_SETTINGS = {
+                    'TestTube': { size: 1.0, angle: 0.3 },
+                    'BoilingTube': { size: 1.0, angle: 0.4 },
+                    'ConicalFlask': { size: 1.2, angle: 0.5 },
+                    'RoundBottomFlask': { size: 1.2, angle: 0.5 },
+                    'Beaker': { size: 1.5, angle: 0.7 }
+                };
+
+                const gripOffset = GRIP_OFFSETS[item.model] || 1.0;
+                let snapPos = null;
+                let targetClampId = null;
+                let closestDist = Infinity;
+
+                allItems.forEach(other => {
+                    if (other.model === 'Clamp') {
+                        const clampPos = new THREE.Vector3(...(other.position || [0, 0, 0]));
+                        const clampRot = new THREE.Euler(...(other.rotation || [0, 0, 0]));
+                        const headAngle = other.headAngle || 0;
+                        const size = other.size || 1;
+
+                        const gripLocal = new THREE.Vector3(0.6 * size, 0, 0);
+                        gripLocal.applyAxisAngle(new THREE.Vector3(1, 0, 0), headAngle);
+                        gripLocal.applyEuler(clampRot);
+
+                        const gripWorld = clampPos.clone().add(gripLocal);
+
+                        const glassTargetPos = gripWorld.clone().sub(new THREE.Vector3(0, gripOffset, 0));
+
+                        const dist = new THREE.Vector3(...newPos).distanceTo(glassTargetPos);
+
+                        if (dist < GLASS_SNAP_THRESHOLD && dist < closestDist) {
+                            closestDist = dist;
+                            snapPos = [glassTargetPos.x, glassTargetPos.y, glassTargetPos.z];
+                            targetClampId = other.id;
+                        }
+                    }
+                });
+
+                if (snapPos) {
+                    newPos[0] = snapPos[0];
+                    newPos[1] = snapPos[1];
+                    newPos[2] = snapPos[2];
+                    document.body.style.cursor = 'crosshair';
+
+                    if (targetClampId) {
+                        const settings = CLAMP_SETTINGS[item.model];
+                        const targetClamp = allItems.find(c => c.id === targetClampId);
+                        if (targetClamp && settings) {
+                            if (targetClamp.size !== settings.size || Math.abs((targetClamp.angle || 0) - settings.angle) > 0.01) {
+                                setTimeout(() => {
+                                    if (typeof updateItem === 'function') {
+                                        updateItem(targetClampId, { size: settings.size, angle: settings.angle });
+                                    }
+                                }, 0);
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            // --- GROUP MOVEMENT LOGIC (RETORT STAND + CLAMPS) ---
+            if (item.model === 'RetortStand' && delta.lengthSq() > 0.0001) {
+                const attachedClamps = [];
+                const standPos = new THREE.Vector3(...oldPos); // Use OLD pos to check attachment
+                const standRot = new THREE.Euler(...(item.rotation || [0, 0, 0]));
+                const ROD_OFFSET_Z = -0.4;
+                const CLAMP_LOOP_OFFSET_X = -1.65;
+                const ATTACH_THRESHOLD = 0.1; // Strict attach check
+
+                allItems.forEach(other => {
+                    if (other.model === 'Clamp') {
+                        const clampPos = new THREE.Vector3(...(other.position || [0, 0, 0]));
+                        const clampRot = new THREE.Euler(...(other.rotation || [0, 0, 0]));
+
+                        // Calculate where the clamp *should* be if attached
+                        const rodOffsetLocal = new THREE.Vector3(0, 0, ROD_OFFSET_Z);
+                        rodOffsetLocal.applyEuler(standRot);
+                        const rodWorldX = standPos.x + rodOffsetLocal.x;
+                        const rodWorldZ = standPos.z + rodOffsetLocal.z;
+
+                        const loopOffsetLocal = new THREE.Vector3(CLAMP_LOOP_OFFSET_X, 0, 0);
+                        loopOffsetLocal.applyAxisAngle(new THREE.Vector3(0, 1, 0), clampRot.y);
+
+                        const targetX = rodWorldX - loopOffsetLocal.x;
+                        const targetZ = rodWorldZ - loopOffsetLocal.z;
+
+                        // Check 2D distance (X/Z)
+                        const dist = Math.sqrt(Math.pow(clampPos.x - targetX, 2) + Math.pow(clampPos.z - targetZ, 2));
+
+                        if (dist < ATTACH_THRESHOLD) {
+                            attachedClamps.push(other);
+                        }
+                    }
+                });
+
+                if (attachedClamps.length > 0) {
+                    const updates = [];
+                    // Update Self
+                    updates.push({ id: item.id, position: newPos, rotation: newRot, scale: newScale });
+
+                    // Update Clamps
+                    attachedClamps.forEach(clamp => {
+                        const cp = clamp.position || [0, 0, 0];
+                        updates.push({
+                            id: clamp.id,
+                            position: [cp[0] + delta.x, cp[1] + delta.y, cp[2] + delta.z]
+                            // We don't rotate clamps if stand rotates for now, just translate
+                        });
+                    });
+
+                    if (typeof onUpdateItems === 'function') {
+                        onUpdateItems(updates);
+                        return; // Skip default update
+                    }
+                }
+            }
+
+
+            // --- GROUP MOVEMENT LOGIC (TUBES) ---
             // If we moved (delta > 0), check for connected tubes
             if (item.model === 'DeliveryTube' && delta.lengthSq() > 0.0001) {
                 // BFS to find all connected tubes
@@ -568,10 +704,17 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
 
     const componentProps = {};
     if (item.model === 'Tongs' || item.model === 'Clamp') componentProps.angle = item.angle || 0;
+    if (item.model === 'Clamp') {
+        componentProps.headAngle = item.headAngle || 0;
+        componentProps.size = item.size || 1;
+    }
     if (item.model === 'BunsenBurner') componentProps.isOn = item.isOn || false;
     if (item.model === 'GasJar') { componentProps.hasLid = item.hasLid !== false; componentProps.holeCount = item.holeCount || 0; }
     if (item.model === 'RubberCork') componentProps.holes = item.holes || 1;
     if (item.model === 'DeliveryTube' && item.points?.length > 0) componentProps.points = item.points;
+    if (item.model === 'Wire' && item.points?.length > 0) componentProps.points = item.points;
+    if (item.model === 'Wire') componentProps.color = item.color || 'red';
+
 
     return (
         <group>
@@ -594,9 +737,13 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
                 }}
             >
                 {isSelected && <axesHelper args={[2]} />}
-                <Component {...componentProps} />
+                <Component
+                    {...componentProps}
+                    height={item.height}
+                    legAngle={item.legAngle}
+                />
 
-                {isSelected && item.model === 'DeliveryTube' && item.isEditingPoints && (
+                {isSelected && (item.model === 'DeliveryTube' || item.model === 'Wire') && item.isEditingPoints && (
                     <TubePointEditor
                         points={item.points || [[0, 0, 0], [0, 1, 0], [0.5, 1.5, 0], [1.5, 1.5, 0], [1.5, 0.5, 0]]}
                         position={item.position}
@@ -644,7 +791,21 @@ const TubeBuilderTool = ({ allItems, builderState, setBuilderState, onCreateTube
 
     // 1. Calculate all available anchors
     const anchors = useMemo(() => {
-        return allItems.flatMap(item => getApparatusAnchors(item));
+        const allAnchors = allItems.flatMap(item => {
+            // getApparatusAnchors returns World Space anchors relative to the item's current transform
+            const itemAnchors = getApparatusAnchors(item).map(a => ({
+                ...a,
+                parentId: item.id,
+                // Ensure position is an array for safety, though getApparatusAnchors returns arrays
+                position: Array.isArray(a.position) ? a.position : new THREE.Vector3(...a.position).toArray(),
+                normal: a.normal || [0, 1, 0]
+            }));
+
+            // Power Supply Terminals & others are now handled in getApparatusAnchors utils
+
+            return itemAnchors;
+        });
+        return allAnchors;
     }, [allItems]);
 
     // 2. Handle Mouse Move for Phantom Tube & ROBUST Anchor Detection
@@ -877,7 +1038,7 @@ export default function ApparatusEditorPage() {
     const [status, setStatus] = useState('');
 
     // Tube Builder State
-    const [tubeBuilder, setTubeBuilder] = useState({ active: false, mode: 'straight', startAnchor: null });
+    const [builderState, setTubeBuilderState] = useState({ active: false, mode: 'straight', startAnchor: null });
     // Planar Mode State (New)
     const [planarMode, setPlanarMode] = useState(false); // Default to false to match current behavior, but easy to toggle.
     const [transformMode, setTransformMode] = useState('translate');
@@ -957,6 +1118,43 @@ export default function ApparatusEditorPage() {
         if (customPoints && customPoints.length > 0) {
             // Use points from Builder (Polyline/Smart)
             points = customPoints;
+
+            // AUTOMATIC ARCH FOR WIRES
+            // If it's a wire and we only have Start/End (no manual intermediate points),
+            // generate an extensive curve to avoid clipping.
+            if (mode === 'wire' && points.length === 2) {
+                const pStart = new THREE.Vector3(...points[0]);
+                const pEnd = new THREE.Vector3(...points[1]);
+
+                // Calculate "Arch" - midpoint raised up
+                const dist = pStart.distanceTo(pEnd);
+                const mid = new THREE.Vector3().lerpVectors(pStart, pEnd, 0.5);
+
+                // Configurable Arch Height usually depends on distance
+                // But for lab wires, they usually go UP significantly.
+                // Let's bias it UP.
+                mid.y += Math.max(0.5, dist * 0.5);
+
+                // Maybe 2 control points?
+                // Control 1: 1/3 way, raised bit less
+                // Control 2: 2/3 way, raised bit less
+                // A quadratic or cubic bezier feel.
+
+                // Let's use a simple 3-point arch for now: Start -> Mid(High) -> End
+                // But CatmullRom might smooth it too much or make it weird.
+                // Let's add 3 intermediate points for broad arch.
+                const p1 = new THREE.Vector3().lerpVectors(pStart, pEnd, 0.25);
+                p1.y += Math.max(0.3, dist * 0.3);
+
+                const p2 = new THREE.Vector3().lerpVectors(pStart, pEnd, 0.5);
+                p2.y += Math.max(0.5, dist * 0.5);
+
+                const p3 = new THREE.Vector3().lerpVectors(pStart, pEnd, 0.75);
+                p3.y += Math.max(0.3, dist * 0.3);
+
+                points = [pStart.toArray(), p1.toArray(), p2.toArray(), p3.toArray(), pEnd.toArray()];
+            }
+
         } else {
             // Fallback (shouldn't happen with new builder, but keep for safety)
             const start = new THREE.Vector3(...startAnchor.position);
@@ -980,16 +1178,28 @@ export default function ApparatusEditorPage() {
         }
 
         // Create Item
-        const id = `delivery-tube-${Date.now().toString().slice(-4)}`;
+        const isWire = mode === 'wire';
+        const modelType = isWire ? 'Wire' : 'DeliveryTube';
+        const id = `${modelType.toLowerCase()}-${Date.now().toString().slice(-4)}`;
+
+        // Determine Wire Color if it is a wire
+        let color = 'red';
+        if (isWire && startAnchor && startAnchor.id) {
+            if (startAnchor.id.includes('neg') || startAnchor.id.includes('cathode') || startAnchor.id.includes('black')) {
+                color = 'black';
+            }
+        }
+
         const newItem = {
             id,
-            model: 'DeliveryTube',
+            model: modelType,
             position: [0, 0, 0], // The points are world space, so group pos is 0,0,0
             rotation: [0, 0, 0],
             scale: [1, 1, 1],
             points: points,
-            tubeMode: mode, // Save the mode!
-            isEditingPoints: false
+            tubeMode: mode,
+            isEditingPoints: false,
+            color: isWire ? color : undefined
         };
 
         const updatedApparatus = [...(currentReaction.apparatus || []), newItem];
@@ -1028,14 +1238,14 @@ export default function ApparatusEditorPage() {
                     {/* Transform Modes */}
                     <div className="flex gap-2">
                         <button
-                            className={`flex-1 text-xs py-1 rounded ${!tubeBuilder.active && transformMode === 'translate' ? 'bg-blue-600' : 'hover:bg-white/10'}`}
-                            onClick={() => { setTubeBuilder({ ...tubeBuilder, active: false }); setTransformMode('translate'); }}
+                            className={`flex-1 text-xs py-1 rounded ${!builderState.active && transformMode === 'translate' ? 'bg-blue-600' : 'hover:bg-white/10'}`}
+                            onClick={() => { setTubeBuilderState({ ...builderState, active: false }); setTransformMode('translate'); }}
                         >
                             Move
                         </button>
                         <button
-                            className={`flex-1 text-xs py-1 rounded ${!tubeBuilder.active && transformMode === 'rotate' ? 'bg-blue-600' : 'hover:bg-white/10'}`}
-                            onClick={() => { setTubeBuilder({ ...tubeBuilder, active: false }); setTransformMode('rotate'); }}
+                            className={`flex-1 text-xs py-1 rounded ${!builderState.active && transformMode === 'rotate' ? 'bg-blue-600' : 'hover:bg-white/10'}`}
+                            onClick={() => { setTubeBuilderState({ ...builderState, active: false }); setTransformMode('rotate'); }}
                         >
                             Rotate
                         </button>
@@ -1055,21 +1265,21 @@ export default function ApparatusEditorPage() {
                         </div>
                         <div className="flex gap-2">
                             <button
-                                className={`flex-1 text-xs py-1 rounded ${tubeBuilder.active && tubeBuilder.mode === 'straight' ? 'bg-purple-600' : 'bg-purple-900/30 hover:bg-purple-900/50'}`}
-                                onClick={() => setTubeBuilder({ active: true, mode: 'straight', startAnchor: null, points: [] })}
+                                className={`flex-1 text-xs py-1 rounded ${builderState.active && builderState.mode === 'straight' ? 'bg-purple-600' : 'bg-purple-900/30 hover:bg-purple-900/50'}`}
+                                onClick={() => setTubeBuilderState({ active: true, mode: 'straight', startAnchor: null, points: [] })}
                             >
                                 Polyline
                             </button>
                             <button
-                                className={`flex-1 text-xs py-1 rounded ${tubeBuilder.active && tubeBuilder.mode === 'curved' ? 'bg-purple-600' : 'bg-purple-900/30 hover:bg-purple-900/50'}`}
-                                onClick={() => setTubeBuilder({ active: true, mode: 'curved', startAnchor: null, points: [] })}
+                                className={`flex-1 text-xs py-1 rounded ${builderState.active && builderState.mode === 'curved' ? 'bg-purple-600' : 'bg-purple-900/30 hover:bg-purple-900/50'}`}
+                                onClick={() => setTubeBuilderState({ active: true, mode: 'curved', startAnchor: null, points: [] })}
                             >
                                 Curved
                             </button>
                         </div>
-                        {tubeBuilder.active && (
+                        {builderState.active && (
                             <p className="text-[10px] text-neutral-400 mt-1">
-                                {tubeBuilder.startAnchor
+                                {builderState.startAnchor
                                     ? "Click empty space to add points, or anchor to finish."
                                     : "Click 1st anchor to start."}
                             </p>
@@ -1160,6 +1370,66 @@ export default function ApparatusEditorPage() {
                                         onChange={(e) => handleUpdateItem(item.id, { angle: parseFloat(e.target.value) })}
                                         className="w-full accent-blue-400"
                                     />
+                                    <label className="text-xs text-blue-300 mt-1">Head Rotation</label>
+                                    <input
+                                        type="range"
+                                        min={-Math.PI} max={Math.PI} step="0.1"
+                                        value={item.headAngle || 0}
+                                        onChange={(e) => handleUpdateItem(item.id, { headAngle: parseFloat(e.target.value) })}
+                                        className="w-full accent-blue-400"
+                                    />
+                                    <label className="text-xs text-blue-300 mt-1">Stand Rotation</label>
+                                    <input
+                                        type="range"
+                                        min={-Math.PI} max={Math.PI} step="0.05"
+                                        value={item.rotation ? item.rotation[1] : 0}
+                                        onChange={(e) => {
+                                            const newY = parseFloat(e.target.value);
+                                            const currentPos = new THREE.Vector3(...(item.position || [0, 0, 0]));
+                                            const currentRot = new THREE.Euler(...(item.rotation || [0, 0, 0]));
+
+                                            // Pivot Offset (Local)
+                                            // The clamp loop is at x = -1.65
+                                            const pivotOffsetLocal = new THREE.Vector3(-1.65, 0, 0);
+
+                                            // 1. Calculate World Pivot Position from Current State
+                                            const currentOffsetWorld = pivotOffsetLocal.clone().applyEuler(currentRot);
+                                            const pivotWorld = currentPos.clone().add(currentOffsetWorld);
+
+                                            // 2. Calculate New Position based on New Rotation
+                                            const newRotEuler = new THREE.Euler(currentRot.x, newY, currentRot.z);
+                                            const newOffsetWorld = pivotOffsetLocal.clone().applyEuler(newRotEuler);
+
+                                            // NewPos = PivotWorld - NewOffsetWorld
+                                            const newPos = pivotWorld.clone().sub(newOffsetWorld);
+
+                                            handleUpdateItem(item.id, {
+                                                rotation: [currentRot.x, newY, currentRot.z],
+                                                position: [newPos.x, newPos.y, newPos.z]
+                                            });
+                                        }}
+                                        className="w-full accent-blue-400"
+                                    />
+                                    <label className="text-xs text-blue-300 mt-1">Vertical Position</label>
+                                    <input
+                                        type="range"
+                                        min="0.5" max="10" step="0.1"
+                                        value={item.position ? item.position[1] : 1}
+                                        onChange={(e) => {
+                                            const newY = parseFloat(e.target.value);
+                                            const currentPos = item.position || [0, 0, 0];
+                                            handleUpdateItem(item.id, { position: [currentPos[0], newY, currentPos[2]] });
+                                        }}
+                                        className="w-full accent-blue-400"
+                                    />
+                                    <label className="text-xs text-blue-300 mt-1">Clamp Size</label>
+                                    <input
+                                        type="range"
+                                        min="0.5" max="2" step="0.1"
+                                        value={item.size || 1}
+                                        onChange={(e) => handleUpdateItem(item.id, { size: parseFloat(e.target.value) })}
+                                        className="w-full accent-blue-400"
+                                    />
                                 </div>
                             )}
 
@@ -1211,6 +1481,44 @@ export default function ApparatusEditorPage() {
                                         onChange={(e) => handleUpdateItem(item.id, { holes: parseInt(e.target.value) })}
                                         className="w-full accent-orange-400"
                                     />
+                                </div>
+                            )}
+
+                            {item.model === 'RetortStand' && (
+                                <div className="flex flex-col gap-1 mt-2">
+                                    <label className="text-xs text-blue-300">Rod Height: {item.height || 5}</label>
+                                    <input
+                                        type="range"
+                                        min="2" max="10" step="0.5"
+                                        value={item.height || 5}
+                                        onChange={(e) => handleUpdateItem(item.id, { height: parseFloat(e.target.value) })}
+                                        className="w-full accent-blue-400"
+                                    />
+                                </div>
+                            )}
+
+                            {item.model === 'TripodStand' && (
+                                <div className="flex flex-col gap-2 mt-2 border-t border-white/10 pt-2">
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-xs text-blue-300">Height: {item.height || 3.0}</label>
+                                        <input
+                                            type="range"
+                                            min="2.0" max="5.0" step="0.1"
+                                            value={item.height || 3.0}
+                                            onChange={(e) => handleUpdateItem(item.id, { height: parseFloat(e.target.value) })}
+                                            className="w-full accent-blue-400"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-xs text-blue-300">Leg Angle: {((item.legAngle || 0.15) * 180 / Math.PI).toFixed(0)}°</label>
+                                        <input
+                                            type="range"
+                                            min="0" max="0.5" step="0.01"
+                                            value={item.legAngle || 0.15}
+                                            onChange={(e) => handleUpdateItem(item.id, { legAngle: parseFloat(e.target.value) })}
+                                            className="w-full accent-blue-400"
+                                        />
+                                    </div>
                                 </div>
                             )}
 
@@ -1438,6 +1746,21 @@ export default function ApparatusEditorPage() {
                 })()}
 
                 <div className="mt-auto pt-4">
+                    <div className="flex gap-2 mb-2">
+                        <button
+                            onClick={() => setTubeBuilderState(prev => ({ ...prev, active: !prev.active, mode: 'straight' }))}
+                            className={`flex-1 py-1 rounded text-xs ${builderState.active && builderState.mode !== 'wire' ? 'bg-blue-600 text-white' : 'bg-neutral-700 text-neutral-300'}`}
+                        >
+                            {builderState.active && builderState.mode !== 'wire' ? 'Cancel Tube' : 'Add Tube'}
+                        </button>
+                        <button
+                            onClick={() => setTubeBuilderState(prev => ({ ...prev, active: !prev.active, mode: 'wire' }))}
+                            className={`flex-1 py-1 rounded text-xs ${builderState.active && builderState.mode === 'wire' ? 'bg-red-600 text-white' : 'bg-neutral-700 text-neutral-300'}`}
+                        >
+                            {builderState.active && builderState.mode === 'wire' ? 'Cancel Wire' : 'Add Wire'}
+                        </button>
+                    </div>
+
                     <button
                         onClick={handleSave}
                         className="w-full bg-green-600 hover:bg-green-500 text-white rounded py-2 font-semibold transition-colors"
@@ -1476,18 +1799,18 @@ export default function ApparatusEditorPage() {
                             onSelect={setSelectedApparatusId}
                             updateItem={handleUpdateItem}
                             onUpdateItems={handleUpdateItems}
-                            transformMode={selectedApparatusId === item.id && !tubeBuilder.active ? transformMode : 'none'}
+                            transformMode={selectedApparatusId === item.id && !builderState.active ? transformMode : 'none'}
                             allItems={currentReaction.apparatus}
-                            isBuilding={tubeBuilder.active}
+                            isBuilding={builderState.active}
                         />
                     ))}
 
                     {/* Smart Tube Builder Overlay */}
-                    {tubeBuilder.active && currentReaction && (
+                    {builderState.active && currentReaction && (
                         <TubeBuilderTool
                             allItems={currentReaction.apparatus}
-                            builderState={tubeBuilder}
-                            setBuilderState={setTubeBuilder}
+                            builderState={builderState}
+                            setBuilderState={setTubeBuilderState}
                             onCreateTube={handleCreateSmartTube}
                         />
                     )}
@@ -1501,8 +1824,8 @@ export default function ApparatusEditorPage() {
                     <p>Q/E: Up/Down</p>
                     <p>Click Object: Select</p>
                     <p>Drag Arrows/Rings: Transform</p>
-                    {tubeBuilder.active && (
-                        <p className="text-purple-400 mt-2 font-bold">MODE: TUBE BUILDER ({tubeBuilder.mode})</p>
+                    {builderState.active && (
+                        <p className="text-purple-400 mt-2 font-bold">MODE: TUBE BUILDER ({builderState.mode})</p>
                     )}
                 </div>
             </div>

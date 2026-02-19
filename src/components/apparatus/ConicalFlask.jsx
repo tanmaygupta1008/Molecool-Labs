@@ -54,8 +54,24 @@ const ConicalFlask = (props) => {
                     roughness={0}
                     thickness={0.1}
                     side={THREE.DoubleSide} // Important to see inside and outside
+                    depthWrite={false} // Ensure internal liquids/bubbles are visible
                 />
             </mesh>
+
+            {/* Thermal Glow Overlay (Base Heating) */}
+            {props.isHeating && (
+                <mesh position={[0, 0.1, 0]}>
+                    <cylinderGeometry args={[1.0, 1.0, 0.2, 32]} />
+                    <meshBasicMaterial
+                        color="#ff4400"
+                        transparent
+                        opacity={0.3}
+                        blending={THREE.AdditiveBlending}
+                        side={THREE.DoubleSide}
+                        depthWrite={false}
+                    />
+                </mesh>
+            )}
 
             {/* Liquid inside (optional, simplified cone) for realism? 
           User didn't ask for liquid but it helps the look. Leaving empty for now as per "apparatus" focus.

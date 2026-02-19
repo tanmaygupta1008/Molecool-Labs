@@ -18,6 +18,7 @@ const Beaker = ({ size = 1, ...props }) => {
                     metalness={0.1}
                     thickness={0.05}
                     side={THREE.DoubleSide}
+                    depthWrite={false}
                 />
             </Cylinder>
 
