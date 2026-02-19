@@ -290,6 +290,18 @@
                     0,
                     0.5,
                     0
+                ],
+                "reactants": [
+                    {
+                        "id": "1771505880048",
+                        "chemicalId": "water",
+                        "state": "l",
+                        "amount": 0,
+                        "unit": "g",
+                        "concentration": 0,
+                        "temperature": 25,
+                        "pressure": 1
+                    }
                 ]
             },
             {
@@ -440,6 +452,18 @@
                     -0.5,
                     1,
                     0
+                ],
+                "reactants": [
+                    {
+                        "id": "1771506041187",
+                        "chemicalId": "nacl",
+                        "state": "aq",
+                        "amount": 3,
+                        "unit": "mL",
+                        "concentration": 0,
+                        "temperature": 25,
+                        "pressure": 1
+                    }
                 ]
             },
             {
@@ -449,15 +473,18 @@
                     0.5,
                     1,
                     0
-                ]
-            },
-            {
-                "id": "dropper",
-                "model": "Dropper",
-                "position": [
-                    0.5,
-                    2.5,
-                    0
+                ],
+                "reactants": [
+                    {
+                        "id": "1771510466831",
+                        "chemicalId": "agno3",
+                        "state": "aq",
+                        "amount": 21,
+                        "unit": "mL",
+                        "concentration": 0,
+                        "temperature": 25,
+                        "pressure": 1
+                    }
                 ]
             }
         ],
@@ -501,6 +528,18 @@
                     1,
                     1,
                     1
+                ],
+                "reactants": [
+                    {
+                        "id": "1771510019262",
+                        "chemicalId": "hcl",
+                        "state": "aq",
+                        "amount": "24",
+                        "unit": "mL",
+                        "concentration": 0,
+                        "temperature": 25,
+                        "pressure": 1
+                    }
                 ]
             },
             {
@@ -540,6 +579,18 @@
                     1,
                     1,
                     1
+                ],
+                "reactants": [
+                    {
+                        "id": "1771510057725",
+                        "chemicalId": "naoh",
+                        "state": "aq",
+                        "amount": "30",
+                        "unit": "mL",
+                        "concentration": 0,
+                        "temperature": 25,
+                        "pressure": 1
+                    }
                 ]
             },
             {
@@ -582,47 +633,46 @@
                     0,
                     0,
                     0
-                ]
+                ],
+                "isOn": true
             },
             {
-                "id": "stand",
+                "id": "retortstand-3840",
                 "model": "RetortStand",
                 "position": [
-                    0,
-                    0,
-                    -1
-                ]
+                    -1.889,
+                    0.034,
+                    0.05
+                ],
+                "rotation": [
+                    -3.142,
+                    1.565,
+                    -3.139
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "height": 7
             },
             {
-                "id": "test-tube",
+                "id": "testtube-2238",
                 "model": "TestTube",
                 "position": [
-                    0,
-                    2,
-                    0
+                    0.145,
+                    4.368,
+                    0.347
                 ],
                 "rotation": [
                     0,
                     0,
-                    0.5
-                ]
-            },
-            {
-                "id": "delivery-tube",
-                "model": "DeliveryTube",
-                "position": [
-                    0.5,
-                    2.5,
                     0
-                ]
-            },
-            {
-                "id": "test-tube-lime",
-                "model": "TestTube",
-                "position": [
-                    1.5,
+                ],
+                "scale": [
                     1,
-                    0
+                    1,
+                    1
                 ]
             }
         ],
@@ -645,34 +695,49 @@
                 "model": "Beaker",
                 "position": [
                     0,
-                    0,
-                    0
+                    0.027,
+                    -0.001
                 ],
                 "reactants": [
                     {
                         "id": "1771488703680",
-                        "chemicalId": "water",
-                        "state": "l",
-                        "amount": 200,
-                        "unit": "g",
+                        "chemicalId": "cuso4",
+                        "state": "aq",
+                        "amount": 100,
+                        "unit": "mL",
                         "concentration": 0,
                         "temperature": 25,
                         "pressure": 1
                     }
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
             },
             {
                 "id": "iron-nail",
                 "model": "IronNail",
                 "position": [
-                    0,
-                    0.5,
-                    0
+                    0.114,
+                    0.083,
+                    0.022
                 ],
                 "rotation": [
                     0,
                     0,
-                    0.7854
+                    0.785
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
             },
             {
@@ -705,6 +770,18 @@
                     -1,
                     0,
                     0
+                ],
+                "reactants": [
+                    {
+                        "id": "1771508012517",
+                        "chemicalId": "ch4",
+                        "state": "g",
+                        "amount": 19,
+                        "unit": "mol",
+                        "concentration": 0,
+                        "temperature": 25,
+                        "pressure": 1
+                    }
                 ]
             },
             {
@@ -714,7 +791,8 @@
                     0,
                     0,
                     0
-                ]
+                ],
+                "isOn": true
             }
         ],
         "macroView": {
@@ -930,6 +1008,28 @@
                     1,
                     1,
                     1
+                ],
+                "reactants": [
+                    {
+                        "id": "1771506998752",
+                        "chemicalId": "nh4cl",
+                        "state": "s",
+                        "amount": "19.3",
+                        "unit": "g",
+                        "concentration": 0,
+                        "temperature": 25,
+                        "pressure": 1
+                    },
+                    {
+                        "id": "1771507104516",
+                        "chemicalId": "naoh",
+                        "state": "aq",
+                        "amount": "21",
+                        "unit": "mL",
+                        "concentration": 0,
+                        "temperature": 25,
+                        "pressure": 1
+                    }
                 ]
             },
             {
