@@ -15,6 +15,7 @@ const TestTube = ({ isHardGlass = false, ...props }) => {
                     roughness={0.1}
                     thickness={isHardGlass ? 0.08 : 0.05}
                     side={THREE.DoubleSide}
+                    depthWrite={false} // Allow internal liquid to be seen
                 />
             </Cylinder>
 
@@ -28,6 +29,7 @@ const TestTube = ({ isHardGlass = false, ...props }) => {
                     roughness={0.1}
                     thickness={isHardGlass ? 0.08 : 0.05}
                     side={THREE.DoubleSide}
+                    depthWrite={false}
                 />
             </Sphere>
 
