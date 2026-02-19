@@ -102,6 +102,21 @@ const NavBar = () => {
               Reaction Lab ⚗️
             </Link>
 
+            <Link
+              href="/reaction-refiner"
+              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-base font-medium transition duration-150"
+            >
+              Refiner 🎨
+            </Link>
+
+            {/* ⬅️ NEW: Fluid Simulation Link */}
+            <Link
+              href="/fluid-simulation"
+              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-base font-medium transition duration-150"
+            >
+              Fluid Sim 💧
+            </Link>
+
             {/* ⬅️ NEW: Apparatus Gallery Link */}
             <Link
               href="/apparatus"
