@@ -539,53 +539,142 @@
         "equation": "CaCO₃ → CaO + CO₂",
         "apparatus": [
             {
-                "id": "bunsen-burner",
+                "id": "bunsenburner-0409",
                 "model": "BunsenBurner",
                 "position": [
                     0,
                     0,
                     0
-                ]
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "isOn": true
             },
             {
-                "id": "stand",
-                "model": "RetortStand",
+                "id": "tripodstand-7357",
+                "model": "TripodStand",
                 "position": [
                     0,
                     0,
-                    -1
-                ]
-            },
-            {
-                "id": "test-tube",
-                "model": "TestTube",
-                "position": [
-                    0,
-                    2,
                     0
                 ],
                 "rotation": [
                     0,
                     0,
-                    0.5
-                ]
-            },
-            {
-                "id": "delivery-tube",
-                "model": "DeliveryTube",
-                "position": [
-                    0.5,
-                    2.5,
                     0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
             },
             {
-                "id": "test-tube-lime",
+                "id": "retortstand-8106",
+                "model": "RetortStand",
+                "position": [
+                    -0.013,
+                    0.022,
+                    -1.871
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "height": 7.5
+            },
+            {
+                "id": "clamp-7776",
+                "model": "Clamp",
+                "position": [
+                    -0.04731146587509692,
+                    4.5219999999999985,
+                    -0.6213567890875622
+                ],
+                "rotation": [
+                    0,
+                    -1.59159265358979,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "angle": 0.3,
+                "headAngle": 1.45840734641021,
+                "size": 1
+            },
+            {
+                "id": "testtube-3895",
                 "model": "TestTube",
                 "position": [
-                    1.5,
-                    1,
+                    -0.05978836255695029,
+                    3.1219999999999986,
+                    -0.021486530573948004
+                ],
+                "rotation": [
+                    0,
+                    0,
                     0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            {
+                "id": "rubbercork-4155",
+                "model": "RubberCork",
+                "position": [
+                    -0.05978836255695029,
+                    4.821999999999998,
+                    -0.021486530573948004
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "holes": 1
+            },
+            {
+                "id": "beaker-4600",
+                "model": "Beaker",
+                "position": [
+                    0.014,
+                    -0.077,
+                    3.721
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
             }
         ],
@@ -610,6 +699,16 @@
                     0,
                     0,
                     0
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
             },
             {
@@ -627,12 +726,60 @@
                 ]
             },
             {
-                "id": "rod",
-                "model": "StirringRod",
+                "id": "dropperbottle-7093",
+                "model": "DropperBottle",
                 "position": [
-                    0.2,
-                    1,
+                    1.363,
+                    -0.038,
+                    0.208
+                ],
+                "rotation": [
+                    0,
+                    0,
                     0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            {
+                "id": "dropper-3180",
+                "model": "Dropper",
+                "position": [
+                    -0.419,
+                    2.123,
+                    -0.076
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            {
+                "id": "glassrod-5427",
+                "model": "GlassRod",
+                "position": [
+                    0.263,
+                    1.067,
+                    0
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
                 ]
             }
         ],
@@ -704,9 +851,126 @@
                 "id": "power",
                 "model": "PowerSupply",
                 "position": [
-                    -1.079,
-                    -0.003,
+                    0.003,
+                    -0.058,
                     -3.746
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            {
+                "id": "wire-2285",
+                "model": "Wire",
+                "position": [
+                    0,
+                    0,
+                    0
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "points": [
+                    [
+                        -0.3,
+                        1.65,
+                        0.709
+                    ],
+                    [
+                        -0.42425,
+                        2.475528585640281,
+                        -0.19850000000000012
+                    ],
+                    [
+                        -0.5485,
+                        2.9085476427338013,
+                        -1.1060000000000003
+                    ],
+                    [
+                        -0.67275,
+                        1.7715285856402807,
+                        -2.0135
+                    ],
+                    [
+                        -0.797,
+                        0.242,
+                        -2.9210000000000003
+                    ]
+                ],
+                "tubeMode": "wire",
+                "isEditingPoints": false,
+                "color": "red"
+            },
+            {
+                "id": "wire-0467",
+                "model": "Wire",
+                "position": [
+                    0,
+                    0,
+                    0
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "points": [
+                    [
+                        0.3,
+                        1.65,
+                        0.709
+                    ],
+                    [
+                        0.42575,
+                        2.4757578571166485,
+                        -0.19850000000000012
+                    ],
+                    [
+                        0.5515000000000001,
+                        2.908929761861081,
+                        -1.1060000000000003
+                    ],
+                    [
+                        0.6772500000000001,
+                        1.7717578571166483,
+                        -2.0135
+                    ],
+                    [
+                        0.803,
+                        0.242,
+                        -2.9210000000000003
+                    ]
+                ],
+                "tubeMode": "wire",
+                "isEditingPoints": false,
+                "color": "black"
+            },
+            {
+                "id": "dropper-5762",
+                "model": "Dropper",
+                "position": [
+                    -0.557,
+                    1.707,
+                    0.567
                 ],
                 "rotation": [
                     0,
