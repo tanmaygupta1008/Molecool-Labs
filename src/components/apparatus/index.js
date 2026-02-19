@@ -23,6 +23,7 @@ export { default as RetortStand } from './RetortStand';
 export { default as Clamp } from './Clamp';
 export { default as ElectrolysisSetup } from './ElectrolysisSetup';
 export { default as PowerSupply } from './PowerSupply';
+export { default as Wire } from './Wire';
 
 export { default as MagnesiumRibbon } from './MagnesiumRibbon';
 export { default as ZincGranules } from './ZincGranules';

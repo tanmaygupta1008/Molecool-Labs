@@ -45,6 +45,7 @@ const APPARATUS_MAP = {
     'IronNail': Apparatus.IronNail,
     'GasTap': Apparatus.GasTap,
     'LitmusPaper': Apparatus.LitmusPaper,
+    'Wire': Apparatus.Wire,
 };
 
 // ReactionEffectManager replaced by VisualRuleEngine
