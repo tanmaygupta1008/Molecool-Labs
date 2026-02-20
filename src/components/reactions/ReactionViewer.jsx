@@ -17,9 +17,9 @@
 
 //         {/* Render the specific mode */}
 //         {viewMode === 'MACRO' && <MacroView reaction={reaction} progress={progress} />}
-        
+
 //         {viewMode === 'MICRO' && <MicroView reaction={reaction} progress={progress} />}
-        
+
 //         {viewMode === 'NANO' && <NanoView reaction={reaction} progress={progress} />}
 
 //         {/* Common Effects */}
@@ -47,20 +47,20 @@ import MacroView from './views/MacroView';
 import MicroView from './views/MicroView';
 import NanoView from './views/NanoView';
 
-const ReactionViewer = ({ reaction, viewMode, progress, environment }) => {
+const ReactionViewer = ({ reaction, viewMode, progress, isPlaying, environment }) => {
   return (
     <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black">
       {/* - dpr={[1, 2]}: Handles high-DPI screens (Retina)
          - antialias: true: Smooth edges
       */}
       <Canvas dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
-        
+
         {/* 🎥 CAMERA ADJUSTMENT:
            - position: [0, 0, 20] -> Moved back (was 12) to fit content between sidebars.
            - fov: 50 -> Slightly wider angle (was 45).
         */}
         <PerspectiveCamera makeDefault position={[0, 0, 20]} fov={50} />
-        
+
         <Environment preset="city" blur={1} />
         <ambientLight intensity={0.8} />
         <directionalLight position={[10, 10, 10]} intensity={1.5} castShadow />
@@ -68,17 +68,17 @@ const ReactionViewer = ({ reaction, viewMode, progress, environment }) => {
 
         {/* --- VIEW MODES --- */}
         <group>
-            {viewMode === 'MACRO' && <MacroView reaction={reaction} progress={progress} />}
-            
-            {viewMode === 'MICRO' && (
-                <MicroView 
-                    reaction={reaction} 
-                    progress={progress} 
-                    environment={environment} 
-                />
-            )}
-            
-            {viewMode === 'NANO' && <NanoView reaction={reaction} progress={progress} />}
+          {viewMode === 'MACRO' && <MacroView reaction={reaction} progress={progress} isPlaying={isPlaying} />}
+
+          {viewMode === 'MICRO' && (
+            <MicroView
+              reaction={reaction}
+              progress={progress}
+              environment={environment}
+            />
+          )}
+
+          {viewMode === 'NANO' && <NanoView reaction={reaction} progress={progress} />}
         </group>
 
         {/* 🎮 CONTROLS ADJUSTMENT:
@@ -88,12 +88,12 @@ const ReactionViewer = ({ reaction, viewMode, progress, environment }) => {
         <OrbitControls enablePan={true} maxDistance={35} minDistance={5} />
 
         <EffectComposer disableNormalPass>
-            <Bloom 
-                luminanceThreshold={1.2} 
-                mipmapBlur 
-                intensity={0.5} 
-                radius={0.6} 
-            />
+          <Bloom
+            luminanceThreshold={1.2}
+            mipmapBlur
+            intensity={0.5}
+            radius={0.6}
+          />
         </EffectComposer>
       </Canvas>
     </div>

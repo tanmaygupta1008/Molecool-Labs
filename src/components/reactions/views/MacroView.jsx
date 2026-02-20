@@ -263,14 +263,14 @@ const useDerivedApparatus = (reaction, progress) => {
 };
 
 // --- MAIN MACRO VIEW MANAGER ---
-const MacroView = ({ reaction, progress }) => {
+const MacroView = ({ reaction, progress, isPlaying }) => {
     if (reaction.apparatus && reaction.apparatus.length > 0) {
-        return <DynamicSetup reaction={reaction} progress={progress} />;
+        return <DynamicSetup reaction={reaction} progress={progress} isPlaying={isPlaying} />;
     }
     return null;
 };
 
-const DynamicSetup = ({ reaction, progress }) => {
+const DynamicSetup = ({ reaction, progress, isPlaying }) => {
     // 1. Get List of Apparatus & Current Step from Helper
     const { apparatus: apparatusList, currentStepIndex, stepProgress } = useDerivedApparatus(reaction, progress);
 
@@ -307,7 +307,7 @@ const DynamicSetup = ({ reaction, progress }) => {
                         visualRules={reaction.macroView?.visualRules}
                         stepIndex={currentStepIndex}
                         stepProgress={stepProgress}
-                        isPlaying={progress > 0 && progress < 1}
+                        isPlaying={isPlaying ?? (progress > 0 && progress < 1)}
                     />
 
                 </group>

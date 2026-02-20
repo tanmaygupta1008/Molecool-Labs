@@ -406,15 +406,21 @@
                         "effects": [
                             {
                                 "type": "GAS",
-                                "id": "eff_1771608735915",
+                                "id": "eff_1771612011837",
                                 "targetId": "flask",
                                 "sourceId": "flask",
                                 "gasType": "bubble",
-                                "rate": 50,
-                                "color": "#d7c6c6",
+                                "rate": 70,
+                                "color": "#e7dada",
                                 "durationSteps": 2
                             }
-                        ]
+                        ],
+                        "gas": {
+                            "enabled": false,
+                            "source": "flask",
+                            "rate": 118,
+                            "size": 1.4
+                        }
                     },
                     "1": {
                         "description": "New Step",

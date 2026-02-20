@@ -254,7 +254,8 @@ const ChemicalReactionsPage = () => {
         <ReactionViewer
           reaction={currentReaction}
           viewMode={viewMode}
-          progress={viewMode === 'MACRO' ? 0 : progress}
+          progress={progress}
+          isPlaying={isPlaying}
           environment={envConditions}
         />
       </div>
