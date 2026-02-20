@@ -14,6 +14,7 @@ import PowerSupply from '../../components/apparatus/PowerSupply';
 import Wire from '../../components/apparatus/Wire';
 import RubberCork from '../../components/apparatus/RubberCork';
 import { getApparatusAnchors } from '../../utils/apparatus-anchors';
+import { detectApparatusTypeAbove } from '../../utils/apparatus-logic';
 
 // import reactionsData from '../../data/reactions.json'; // REMOVED to avoid HMR issues
 
@@ -708,7 +709,12 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
         componentProps.headAngle = item.headAngle || 0;
         componentProps.size = item.size || 1;
     }
-    if (item.model === 'BunsenBurner') componentProps.isOn = item.isOn || false;
+    if (item.model === 'BunsenBurner') {
+        componentProps.isOn = item.isOn || false;
+        const detection = detectApparatusTypeAbove(item, allItems);
+        componentProps.apparatusType = detection.type;
+        componentProps.flameTargetY = detection.distY;
+    }
     if (item.model === 'GasJar') { componentProps.hasLid = item.hasLid !== false; componentProps.holeCount = item.holeCount || 0; }
     if (item.model === 'RubberCork') componentProps.holes = item.holes || 1;
     if (item.model === 'DeliveryTube' && item.points?.length > 0) componentProps.points = item.points;

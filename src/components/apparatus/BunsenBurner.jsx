@@ -237,7 +237,7 @@ const ShimmerMaterial = shaderMaterial(
 
 extend({ FlameMaterial, ImpactMaterial, ShimmerMaterial });
 
-const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, apparatusType = "standard" }) => {
+const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, apparatusType = "standard", intensity = 1.0, flameColor = "#0033cc" }) => {
   const materialRef = useRef();
   const spreadRef1 = useRef();
   const shimmerRef = useRef();
@@ -249,48 +249,51 @@ const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, appara
   const isFlat = apparatusType === "beaker" || isConical;
 
   // --- GEOMETRY LOGIC ---
-  const stemRadius = 0.12;
+  const stemRadius = 0.12 * Math.sqrt(intensity);
 
   // These will be determined by the type logic below
   let stemHeight, stemPosY, spreadGeometry;
+
+  // Calculate heights based on intensity
+  const heightMult = 0.5 + 0.5 * intensity;
 
   if (isFlat) {
     // --- FLAT BOTTOM MODEL (Spreading Funnel + Wall Licks) ---
     // Instead of a flat disk, we use a "Spreading Cone" that transitions 
     // from the narrow stem to the wide base of the apparatus.
 
-    const spreadHeight = 0.35; // Height of the transition from stem to base
+    const spreadHeight = 0.35 * heightMult; // Height of the transition from stem to base
 
     // Stem stops where the spread begins
     const stemTopY = flameTargetY - spreadHeight;
-    stemHeight = Math.max(0.01, stemTopY - burnerTipY);
+    stemHeight = Math.max(0.01, (stemTopY - burnerTipY) * heightMult);
     stemPosY = burnerTipY + stemHeight / 2;
 
     const spreadBottomRadius = stemRadius; // Starts narrow
-    const spreadTopRadius = isConical ? baseRadius * 0.9 : baseRadius * 0.8; // Ends slightly inside the glass base
+    const spreadTopRadius = (isConical ? baseRadius * 0.9 : baseRadius * 0.8) * heightMult; // Ends slightly inside the glass base
 
 
 
     spreadGeometry = (
       <group>
         {/* 3. High Pressure Impact Center (Glow) */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, flameTargetY - 0.02, 0]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, (flameTargetY - 0.02) * heightMult + (1 - heightMult) * burnerTipY, 0]}>
           <planeGeometry args={[spreadBottomRadius * 2.5, spreadBottomRadius * 2.5]} />
-          <impactMaterial color="#ffffff" opacity={0.6} transparent blending={THREE.AdditiveBlending} depthWrite={false} />
+          <impactMaterial color="#ffffff" opacity={0.6 * intensity} transparent blending={THREE.AdditiveBlending} depthWrite={false} />
         </mesh>
 
         {/* 1. Spreading Cone (The "Impact" zone) */}
         {/* Inverted cone: Top=Wide, Bottom=Narrow */}
         <Cylinder
           args={[spreadTopRadius, spreadBottomRadius, spreadHeight, 32, 1, true]}
-          position={[0, flameTargetY - spreadHeight / 2, 0]}
+          position={[0, (flameTargetY - spreadHeight / 2) * heightMult + (1 - heightMult) * burnerTipY, 0]}
         >
           <flameMaterial
             ref={spreadRef1}
-            color={new THREE.Color("#00aaff")}
-            opacity={0.8}
+            color={new THREE.Color(flameColor)}
+            opacity={0.8 * intensity}
             rimFalloff={0.6} // Strong falloff for diffusion
-            noiseScale={1.8}
+            noiseScale={1.8 * intensity}
             transparent
             blending={THREE.AdditiveBlending}
             depthWrite={false}
@@ -301,29 +304,29 @@ const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, appara
       </group>
     );
 
-  } else {
+  } else if (apparatusType === "round") {
     // --- ROUND BOTTOM MODEL (Stem + Cup) ---
     const cupBottomY = flameTargetY - 0.25;
-    const cupHeight = 0.6;
+    const cupHeight = 0.6 * heightMult;
     const stemTopY = Math.max(burnerTipY + 0.1, cupBottomY);
-    stemHeight = stemTopY - burnerTipY;
+    stemHeight = (stemTopY - burnerTipY) * heightMult;
     stemPosY = burnerTipY + stemHeight / 2;
 
     const cupRadiusBottom = stemRadius;
-    const cupRadiusTop = baseRadius + 0.1;
+    const cupRadiusTop = (baseRadius + 0.1) * heightMult;
 
     spreadGeometry = (
       <Cylinder
         args={[cupRadiusTop, cupRadiusBottom, cupHeight, 32, 1, true]}
-        position={[0, stemTopY + cupHeight / 2, 0]}
+        position={[0, (stemTopY + cupHeight / 2) * heightMult + (1 - heightMult) * burnerTipY, 0]}
       >
         <flameMaterial
           ref={spreadRef1}
-          color={new THREE.Color("#00aaff")}
-          opacity={0.5}
+          color={new THREE.Color(flameColor)}
+          opacity={0.5 * intensity}
           rimFalloff={0.5} // Gradual vertical fade
           edgeSoftness={1.0} // Very blurry edges
-          noiseScale={1.5}
+          noiseScale={1.5 * intensity}
           transparent
           blending={THREE.AdditiveBlending}
           depthWrite={false}
@@ -331,6 +334,11 @@ const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, appara
         />
       </Cylinder>
     );
+  } else {
+    // --- STANDARD FREE BURNING ---
+    stemHeight = 2.0 * intensity;
+    stemPosY = burnerTipY + stemHeight / 2;
+    spreadGeometry = null;
   }
 
   useFrame((state) => {
@@ -342,19 +350,19 @@ const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, appara
       // 1. Opacity flicker: High frequency, low amplitude
       // Base opacity is 0.8 (from shader prop default or passed prop)
       // We oscillate slightly around a base value
-      const flicker = Math.sin(t * 20.0) * 0.05 + Math.sin(t * 45.0) * 0.05;
-      materialRef.current.opacity = 0.8 + flicker;
+      const flicker = (Math.sin(t * 20.0) * 0.05 + Math.sin(t * 45.0) * 0.05) * intensity;
+      materialRef.current.opacity = 0.8 * intensity + flicker;
 
       // 2. Micro-scale noise jitter
       // varied noise scale for "breathing" effect
-      materialRef.current.noiseScale = 1.0 + Math.sin(t * 5.0) * 0.2;
+      materialRef.current.noiseScale = (1.0 + Math.sin(t * 5.0) * 0.2) * intensity;
 
       // Animate Spread Parts
 
       if (spreadRef1.current) {
         spreadRef1.current.time = t;
-        spreadRef1.current.opacity = 0.8 + flicker;
-        spreadRef1.current.noiseScale = 1.0 + Math.sin(t * 5.0) * 0.2;
+        spreadRef1.current.opacity = 0.8 * intensity + flicker;
+        spreadRef1.current.noiseScale = (1.0 + Math.sin(t * 5.0) * 0.2) * intensity;
       }
 
       // Animate Heat Shimmer
@@ -375,9 +383,9 @@ const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, appara
           >
             <flameMaterial
               ref={materialRef}
-              color={new THREE.Color("#0033cc")}
-              opacity={0.8}
-              noiseScale={0.5}
+              color={new THREE.Color(flameColor)}
+              opacity={0.8 * intensity}
+              noiseScale={0.5 * intensity}
               transparent
               blending={THREE.AdditiveBlending}
               depthWrite={false}
@@ -389,18 +397,18 @@ const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, appara
           {spreadGeometry}
 
           {/* Core Glow */}
-          <pointLight position={[0, flameTargetY, 0]} intensity={1.5} color="#4488ff" distance={3} decay={2} />
+          <pointLight position={[0, flameTargetY, 0]} intensity={1.5 * intensity} color="#4488ff" distance={3} decay={2} />
 
           {/* --- NEW: Distinct Inner Cone (Unburned Gas) --- */}
           {/* Sharp, pale blue cone at the base. Non-turbulent. */}
           <Cylinder
-            args={[0.02, 0.1, 0.6, 32, 1, true]} // Tapered cone
-            position={[0, burnerTipY + 0.3, 0]}
+            args={[0.02 * intensity, 0.1 * intensity, 0.6 * intensity, 32, 1, true]} // Tapered cone
+            position={[0, burnerTipY + 0.3 * intensity, 0]}
           >
             <meshBasicMaterial
               color="#aaddff"
               transparent
-              opacity={0.9}
+              opacity={0.9 * intensity}
               blending={THREE.AdditiveBlending}
               depthWrite={false}
               side={THREE.DoubleSide}
@@ -419,11 +427,11 @@ const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, appara
         // IDLE MODE: Standard tall flame
         <group>
           {/* Idle Outer */}
-          <Cone args={[0.2, 2.0, 32, 1, true]} position={[0, 3.35 + 1.0, 0]}>
+          <Cone args={[0.2 * intensity, 2.0 * intensity, 32, 1, true]} position={[0, 3.35 + 1.0 * intensity, 0]}>
             <flameMaterial
               ref={materialRef}
               color={new THREE.Color("#0044aa")} // Darker idle
-              opacity={0.5}
+              opacity={0.5 * intensity}
               noiseScale={0.5}
               transparent
               blending={THREE.AdditiveBlending}
@@ -433,13 +441,13 @@ const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, appara
           </Cone>
           {/* Idle Inner */}
           <Cylinder
-            args={[0.01, 0.08, 0.4, 32, 1, true]}
-            position={[0, 3.35 + 0.2, 0]}
+            args={[0.01 * intensity, 0.08 * intensity, 0.4 * intensity, 32, 1, true]}
+            position={[0, 3.35 + 0.2 * intensity, 0]}
           >
             <meshBasicMaterial
               color="#88ccff"
               transparent
-              opacity={0.8}
+              opacity={0.8 * intensity}
               blending={THREE.AdditiveBlending}
               depthWrite={false}
             />
@@ -450,7 +458,7 @@ const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, appara
   );
 };
 
-const BunsenBurner = ({ isOn = false, isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, apparatusType = "standard", ...props }) => {
+const BunsenBurner = ({ isOn = false, isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, apparatusType = "standard", intensity = 1.0, flameColor = "#0033cc", ...props }) => {
   return (
     <group {...props}>
       {/* 1. Base - Stepped metallic base */}
@@ -501,11 +509,11 @@ const BunsenBurner = ({ isOn = false, isHeating = false, baseRadius = 0.8, flame
       </group>
 
       {/* 5. Flame */}
-      {isOn && <Flame isHeating={isHeating} baseRadius={baseRadius} flameTargetY={flameTargetY} apparatusType={apparatusType} />}
+      {isOn && <Flame isHeating={isHeating} baseRadius={baseRadius} flameTargetY={flameTargetY} apparatusType={apparatusType} intensity={intensity} flameColor={flameColor} />}
 
       {/* Light */}
       {isOn && (
-        <pointLight position={[0, 3.5, 0]} intensity={2} color="#00aaff" distance={5} decay={2} />
+        <pointLight position={[0, 3.5, 0]} intensity={2 * intensity} color={flameColor} distance={5} decay={2} />
       )}
 
     </group>

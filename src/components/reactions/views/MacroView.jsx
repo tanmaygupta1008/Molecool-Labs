@@ -10,6 +10,7 @@ import * as Apparatus from '../../apparatus';
 import RealisticLiquid from './components/RealisticLiquid';
 import ParticleSystem from './components/ParticleSystem';
 import VisualRuleEngine from '../../macro/VisualRuleEngine';
+import { detectApparatusTypeAbove } from '../../../utils/apparatus-logic';
 
 // Map model names from JSON to components
 const APPARATUS_MAP = {
@@ -52,7 +53,7 @@ const APPARATUS_MAP = {
 // ReactionEffectManager replaced by VisualRuleEngine
 // const ReactionEffectManager = ... (Removed Stub)
 
-const ApparatusItem = ({ item, apparatusRefs, progress }) => {
+const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRules, currentStepIndex }) => {
     const Component = APPARATUS_MAP[item.model];
     const groupRef = useRef();
 
@@ -79,7 +80,25 @@ const ApparatusItem = ({ item, apparatusRefs, progress }) => {
     // Similar to original: determine specialized props
     const extraProps = {};
     if (item.model === 'BunsenBurner') {
-        extraProps.isOn = item.isOn || false;
+        // Calculate Intensity: Prioritize active step heat rule, otherwise fallback to Initial State
+        const stepRules = visualRules?.timeline?.[currentStepIndex];
+        const heatRule = stepRules?.heat;
+        const isHeatSource = heatRule?.enabled && heatRule?.source === item.id;
+
+        const initialIntensity = visualRules?.initialState?.burner?.intensity ?? 1.0;
+        const currentIntensity = isHeatSource ? (heatRule.intensity ?? initialIntensity) : initialIntensity;
+
+        extraProps.isOn = item.isOn || isHeatSource || false;
+        const detection = detectApparatusTypeAbove(item, allApparatus);
+        extraProps.apparatusType = detection.type;
+        extraProps.flameTargetY = detection.distY;
+
+        extraProps.intensity = currentIntensity;
+        // Pass flame color from initial state (or potentially timeline in future)
+        extraProps.flameColor = visualRules?.initialState?.burner?.flameColor || '#3b82f6';
+
+        // Turn on if heating
+        if (isHeatSource) extraProps.isHeating = true;
     }
     if (item.model === 'Tongs') {
         extraProps.angle = item.angle || 0;
@@ -242,6 +261,9 @@ const DynamicSetup = ({ reaction, progress }) => {
                             item={item}
                             apparatusRefs={apparatusRefs}
                             progress={progress}
+                            allApparatus={apparatusList}
+                            visualRules={reaction.macroView?.visualRules}
+                            currentStepIndex={currentStepIndex}
                         />
                     ))}
 

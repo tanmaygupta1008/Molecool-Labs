@@ -6,6 +6,7 @@ import { CHEMICALS } from '@/data/chemicals';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, ContactShadows, Center } from '@react-three/drei';
 import * as Apparatus from '@/components/apparatus';
+import { detectApparatusTypeAbove } from '@/utils/apparatus-logic';
 
 const ApparatusPreview = ({ apparatus }) => {
     const Component = Apparatus[apparatus.model] || Apparatus.Beaker; // Fallback
@@ -48,6 +49,14 @@ const FullSetupPreview = ({ reaction }) => {
                             const Component = Apparatus[app.model] || Apparatus.Beaker;
                             // Destructure transforms to avoid double application
                             const { id, position, rotation, scale, ...props } = app;
+
+                            // Inject flame logic
+                            if (app.model === 'BunsenBurner') {
+                                const detection = detectApparatusTypeAbove(app, reaction.apparatus);
+                                props.apparatusType = detection.type;
+                                props.flameTargetY = detection.distY;
+                            }
+
                             return (
                                 <group
                                     key={app.id}

@@ -5,7 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, PerspectiveCamera, Grid } from '@react-three/drei';
 import MacroView from '@/components/reactions/views/MacroView';
 import { Save, Play, Pause, RefreshCw, Code, LayoutTemplate } from 'lucide-react';
-// import InitialStateEditor from './components/InitialStateEditor'; // Removed
+import InitialStateEditor from './components/InitialStateEditor';
 import TimelineEditor from './components/TimelineEditor';
 import StepDetailEditor from './components/StepDetailEditor';
 
@@ -270,8 +270,12 @@ const ReactionRefinerPage = () => {
                         </div>
                     ) : (
                         <>
-                            {/* Section: Initial State configuration (Removed as per user request/redundancy) */}
-                            {/* Users should use Step 1 for initial setup properties */}
+                            {/* Section: Initial State configuration */}
+                            <InitialStateEditor
+                                initialState={currentReaction.macroView?.visualRules?.initialState}
+                                onChange={(newState) => handleVisualChange('initialState', newState)}
+                                apparatusList={currentReaction.apparatus || []}
+                            />
 
                             {/* Section: Step Details (Visible only when a step is selected) */}
                             {selectedStepIndex !== null ? (

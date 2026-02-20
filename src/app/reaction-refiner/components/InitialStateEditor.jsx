@@ -1,15 +1,18 @@
 import React from 'react';
 
-const InitialStateEditor = ({ initialState = {}, onChange }) => {
+const InitialStateEditor = ({ initialState = {}, onChange, apparatusList = [] }) => {
 
     const handleChange = (category, key, value) => {
         const newState = { ...initialState };
         if (!newState[category]) newState[category] = {};
-
-        // Handle array values (like scale/position) if needed
-        // For now simple values
         newState[category][key] = value;
         onChange(newState);
+    };
+
+    // Helper to get apparatus name/label
+    const getAppLabel = (id) => {
+        const app = apparatusList.find(a => a.id === id);
+        return app ? `${app.model} (${id})` : id;
     };
 
     return (
@@ -17,30 +20,38 @@ const InitialStateEditor = ({ initialState = {}, onChange }) => {
             <h3 className="text-sm font-bold text-cyan-400 mb-3 uppercase tracking-wider">Initial State</h3>
 
             <div className="space-y-4">
-                {/* Magnesium Settings */}
-                <div className="bg-black/30 p-2 rounded">
-                    <h4 className="text-xs font-semibold text-gray-400 mb-2">Magnesium</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                        <label className="text-[10px] text-gray-500">Color</label>
-                        <input
-                            type="color"
-                            value={initialState.magnesium?.color || '#c0c0c0'}
-                            onChange={(e) => handleChange('magnesium', 'color', e.target.value)}
-                            className="w-full h-6 rounded bg-transparent cursor-pointer"
-                        />
-                        <label className="text-[10px] text-gray-500">Model</label>
-                        <select
-                            value={initialState.magnesium?.model || 'MagnesiumRibbon'}
-                            onChange={(e) => handleChange('magnesium', 'model', e.target.value)}
-                            className="bg-black text-white text-[10px] p-1 rounded border border-white/10"
-                        >
-                            <option value="MagnesiumRibbon">Ribbon</option>
-                            <option value="MagnesiumOxideAsh">Ash</option>
-                        </select>
-                    </div>
-                </div>
+                {/* Dynamically List Apparatus State */}
+                {apparatusList.map(app => {
+                    // Skip if BunsenBurner (handled separately below) or generic tools
+                    if (['BunsenBurner', 'TripodStand', 'WireGauze', 'RetortStand', 'Clamp'].includes(app.model)) return null;
 
-                {/* Burner Settings */}
+                    return (
+                        <div key={app.id} className="bg-black/30 p-2 rounded">
+                            <h4 className="text-xs font-semibold text-gray-400 mb-2">{app.model} ({app.id})</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                                <label className="text-[10px] text-gray-500">Color</label>
+                                <input
+                                    type="color"
+                                    value={initialState[app.id]?.color || '#ffffff'}
+                                    onChange={(e) => handleChange(app.id, 'color', e.target.value)}
+                                    className="w-full h-6 rounded bg-transparent cursor-pointer"
+                                />
+                                <label className="text-[10px] text-gray-500">Visibility</label>
+                                <select
+                                    value={initialState[app.id]?.visible !== false ? 'true' : 'false'}
+                                    onChange={(e) => handleChange(app.id, 'visible', e.target.value === 'true')}
+                                    className="bg-black text-white text-[10px] p-1 rounded border border-white/10"
+                                >
+                                    <option value="true">Visible</option>
+                                    <option value="false">Hidden</option>
+                                </select>
+                                {/* Add more specific props here later (e.g. fillLevel for Flasks) */}
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {/* Burner Settings (Always available if present or generic) */}
                 <div className="bg-black/30 p-2 rounded">
                     <h4 className="text-xs font-semibold text-gray-400 mb-2">Bunsen Burner</h4>
                     <div className="space-y-2">
