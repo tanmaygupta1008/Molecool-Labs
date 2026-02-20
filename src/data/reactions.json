@@ -693,7 +693,7 @@
                     1,
                     1
                 ],
-                "headAngle": -1.44159265358979,
+                "headAngle": -1.54159265358979,
                 "size": 1,
                 "angle": 0.3
             }
@@ -703,7 +703,15 @@
                 "Heating solid powder",
                 "Bubbling in limewater",
                 "Limewater turning milky"
-            ]
+            ],
+            "visualRules": {
+                "initialState": {
+                    "burner": {
+                        "intensity": 1.1,
+                        "flameColor": "#14d721"
+                    }
+                }
+            }
         }
     },
     {
