@@ -167,15 +167,18 @@ const TimelineEditor = ({
             </div>
 
             {/* A. STAGE LIST */}
-            <div className="flex-1 overflow-y-auto space-y-1 p-2 custom-scrollbar">
-                <div className="flex justify-between items-center px-1 mb-2">
-                    <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Stages</h3>
+            <div className="flex-1 overflow-y-auto space-y-0 p-4 custom-scrollbar relative">
+                {/* Vertical Timeline Line */}
+                <div className="absolute left-[31px] top-4 bottom-4 w-[2px] bg-gradient-to-b from-cyan-500/20 via-cyan-500/10 to-transparent pointer-events-none" />
+
+                <div className="flex justify-between items-center px-1 mb-4">
+                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-6">Reaction Stages</h3>
                     <button
                         onClick={handleAddStep}
-                        className="p-1 text-cyan-400 hover:text-cyan-300 transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 bg-cyan-500/10 text-cyan-400 rounded hover:bg-cyan-500/20 transition-colors text-[10px] font-bold"
                         title="Add Stage"
                     >
-                        <Plus size={14} />
+                        <Plus size={12} /> ADD
                     </button>
                 </div>
 
@@ -184,100 +187,99 @@ const TimelineEditor = ({
                     const isSelected = selectedStepIndex === stepIdx;
 
                     return (
-                        <div
-                            key={stepIdx}
-                            onClick={() => onSelectStep(stepIdx)}
-                            className={`
-                                relative rounded-lg border transition-all duration-200 overflow-hidden group
-                                ${isSelected
-                                    ? 'bg-[#1f2937] border-cyan-500/50' // Selected
-                                    : 'bg-[#151515] border-white/5 hover:border-white/10' // Default
-                                }
-                                ${step.disabled ? 'opacity-50 grayscale' : ''}
-                            `}
-                        >
-                            {/* Header / Drag Handle */}
-                            <div className="flex items-center gap-2 p-2 bg-black/20 border-b border-white/5">
-                                <span className="text-[10px] font-mono text-gray-500 w-4">#{parseInt(stepIdx) + 1}</span>
-                                <input
-                                    type="text"
-                                    value={step.description || ''}
-                                    onChange={(e) => updateStep(stepIdx, 'description', e.target.value)}
-                                    className="flex-1 bg-transparent border-none text-xs text-gray-200 focus:outline-none focus:text-cyan-400 font-medium placeholder-gray-600"
-                                    placeholder="Stage Name"
-                                    onClick={(e) => e.stopPropagation()}
-                                />
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); updateStep(stepIdx, 'disabled', !step.disabled); }}
-                                        className={`p-1 rounded hover:bg-white/10 ${step.disabled ? 'text-gray-600' : 'text-gray-400'}`}
-                                        title={step.disabled ? "Enable" : "Disable"}
-                                    >
-                                        {step.disabled ? <EyeOff size={11} /> : <Eye size={11} />}
-                                    </button>
-                                    <button
-                                        onClick={(e) => handleDuplicateStep(stepIdx, e)}
-                                        className="p-1 text-gray-500 hover:text-white"
-                                        title="Duplicate"
-                                    >
-                                        <Copy size={11} />
-                                    </button>
+                        <div key={stepIdx} className="relative pl-10 pr-2 py-2 group">
+                            {/* Timeline Node */}
+                            <div className="absolute left-[11px] top-5 -translate-x-1/2 flex items-center justify-center">
+                                <div className={`w-3 h-3 rounded-full border-[2px] transition-all duration-300 z-10 flex items-center justify-center
+                                    ${isSelected ? 'border-cyan-400 bg-cyan-950 shadow-[0_0_10px_rgba(34,211,238,0.5)]' : 'border-gray-600 bg-[#1a1a1a] group-hover:border-cyan-500/50'}`}
+                                >
+                                    {isSelected && <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full" />}
                                 </div>
                             </div>
 
-                            {/* Details Row */}
-                            <div className="p-2 grid grid-cols-2 gap-2 text-[10px]">
-                                {/* Duration & Delay */}
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <Clock size={10} className="text-gray-500" />
+                            <div
+                                onClick={() => onSelectStep(stepIdx)}
+                                className={`
+                                    relative rounded-xl border transition-all duration-200 overflow-hidden cursor-pointer
+                                    ${isSelected
+                                        ? 'bg-gradient-to-br from-[#1f2937] to-[#111827] border-cyan-500/40 shadow-lg shadow-cyan-900/10' // Selected
+                                        : 'bg-[#151515] border-white/5 hover:border-white/10 hover:bg-[#1a1a1a]' // Default
+                                    }
+                                    ${step.disabled ? 'opacity-40 grayscale' : ''}
+                                `}
+                            >
+                                {/* Header */}
+                                <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/[0.02]">
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        <span className="text-[10px] font-mono text-cyan-500/70 font-bold bg-cyan-500/10 px-1.5 py-0.5 rounded">
+                                            {String(parseInt(stepIdx) + 1).padStart(2, '0')}
+                                        </span>
                                         <input
-                                            type="number"
-                                            value={step.duration || 0}
-                                            onChange={(e) => updateStep(stepIdx, 'duration', parseFloat(e.target.value))}
-                                            className="w-8 bg-black/30 border border-white/10 rounded px-1 text-right focus:border-cyan-500/50 focus:outline-none"
-                                        />
-                                        <span className="text-gray-500">sec</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-gray-600 w-3 text-right">Dly</span>
-                                        <input
-                                            type="number"
-                                            value={step.delay || 0}
-                                            onChange={(e) => updateStep(stepIdx, 'delay', parseFloat(e.target.value))}
-                                            className="w-8 bg-black/30 border border-white/10 rounded px-1 text-right focus:border-cyan-500/50 focus:outline-none"
+                                            type="text"
+                                            value={step.description || ''}
+                                            onChange={(e) => updateStep(stepIdx, 'description', e.target.value)}
+                                            className="flex-1 bg-transparent border-none text-sm text-gray-200 focus:outline-none focus:text-white font-semibold placeholder-gray-600 truncate"
+                                            placeholder="Stage Description"
+                                            onClick={(e) => e.stopPropagation()}
                                         />
                                     </div>
-                                </div>
-
-                                {/* Trigger */}
-                                <div className="flex flex-col justify-center">
-                                    <div className="flex items-center gap-1 mb-1">
-                                        {getTriggerIcon(step.trigger)}
-                                        <span className="text-gray-400 capitalize">{step.trigger || 'auto'}</span>
+                                    <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity pl-2">
+                                        <button onClick={(e) => { e.stopPropagation(); handleMoveStep(stepIdx, 'up'); }} className="p-1.5 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors" title="Move Up"><ArrowUp size={12} /></button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleMoveStep(stepIdx, 'down'); }} className="p-1.5 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors" title="Move Down"><ArrowDown size={12} /></button>
+                                        <div className="w-px h-3 bg-white/10 mx-0.5" />
+                                        <button onClick={(e) => { e.stopPropagation(); updateStep(stepIdx, 'disabled', !step.disabled); }} className={`p-1.5 rounded hover:bg-white/10 transition-colors ${step.disabled ? 'text-gray-600' : 'text-gray-400 hover:text-white'}`} title={step.disabled ? "Enable" : "Disable"}>
+                                            {step.disabled ? <EyeOff size={12} /> : <Eye size={12} />}
+                                        </button>
+                                        <button onClick={(e) => handleDuplicateStep(stepIdx, e)} className="p-1.5 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors" title="Duplicate"><Copy size={12} /></button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleRemoveStep(stepIdx); }} className="p-1.5 rounded hover:bg-red-500/20 text-red-500/70 hover:text-red-400 transition-colors" title="Delete"><Trash2 size={12} /></button>
                                     </div>
-                                    <select
-                                        value={step.trigger || 'auto'}
-                                        onChange={(e) => updateStep(stepIdx, 'trigger', e.target.value)}
-                                        className="w-full bg-black/30 border border-white/10 rounded px-1 py-0.5 text-gray-300 focus:outline-none focus:border-cyan-500/50"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <option value="auto">Auto</option>
-                                        <option value="heat">On Heat</option>
-                                        <option value="mix">On Mix</option>
-                                        <option value="electricity">On Elec</option>
-                                        <option value="manual">Manual</option>
-                                    </select>
+                                </div>
+
+                                {/* Details Row */}
+                                <div className="p-3 flex flex-col xl:flex-row gap-3 items-start xl:items-center justify-between bg-black/20">
+                                    {/* Timing Pills */}
+                                    <div className="flex flex-wrap gap-2 w-full xl:w-auto">
+                                        <div className="flex items-center gap-1.5 bg-black/40 border border-white/5 rounded-full px-2.5 py-1 min-w-[70px]">
+                                            <Clock size={10} className="text-cyan-500/70 shrink-0" />
+                                            <input
+                                                type="number"
+                                                value={step.duration || 0}
+                                                onChange={(e) => updateStep(stepIdx, 'duration', parseFloat(e.target.value))}
+                                                className="w-8 bg-transparent border-none text-[11px] text-gray-300 font-mono text-center focus:outline-none focus:text-cyan-400 -moz-appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                            />
+                                            <span className="text-[9px] text-gray-600 font-bold uppercase tracking-wider shrink-0">s</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 bg-black/40 border border-white/5 rounded-full px-2.5 py-1 min-w-[70px]">
+                                            <span className="text-[9px] text-gray-600 font-bold uppercase tracking-wider shrink-0">Dly</span>
+                                            <input
+                                                type="number"
+                                                value={step.delay || 0}
+                                                onChange={(e) => updateStep(stepIdx, 'delay', parseFloat(e.target.value))}
+                                                className="w-8 bg-transparent border-none text-[11px] text-gray-400 font-mono text-center focus:outline-none focus:text-cyan-400 -moz-appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Trigger Select */}
+                                    <div className="flex items-center gap-2 bg-black/40 border border-white/5 rounded-full px-2.5 py-0.5 shrink-0 self-start xl:self-auto">
+                                        <div className="flex items-center justify-center shrink-0">
+                                            {getTriggerIcon(step.trigger)}
+                                        </div>
+                                        <select
+                                            value={step.trigger || 'auto'}
+                                            onChange={(e) => updateStep(stepIdx, 'trigger', e.target.value)}
+                                            className="bg-transparent border-none text-[11px] text-gray-400 font-medium focus:outline-none focus:text-cyan-400 cursor-pointer hover:text-gray-200 transition-colors"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <option value="auto" className="bg-[#111]">Auto</option>
+                                            <option value="heat" className="bg-[#111]">On Heat</option>
+                                            <option value="mix" className="bg-[#111]">On Mix</option>
+                                            <option value="electricity" className="bg-[#111]">On Elec</option>
+                                            <option value="manual" className="bg-[#111]">Manual</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-
-                            {/* Reorder / Delete Hover Overlay (optional/or keep visible) */}
-                            <div className="flex justify-end gap-1 px-2 pb-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={(e) => { e.stopPropagation(); handleMoveStep(stepIdx, 'up'); }} className="p-1 hover:text-white text-gray-600"><ArrowUp size={10} /></button>
-                                <button onClick={(e) => { e.stopPropagation(); handleMoveStep(stepIdx, 'down'); }} className="p-1 hover:text-white text-gray-600"><ArrowDown size={10} /></button>
-                                <button onClick={(e) => { e.stopPropagation(); handleRemoveStep(stepIdx); }} className="p-1 hover:text-red-400 text-gray-600 ml-2"><Trash2 size={10} /></button>
-                            </div>
-
                         </div>
                     );
                 })}

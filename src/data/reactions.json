@@ -398,23 +398,34 @@
                 "timeline": {
                     "0": {
                         "description": "New Step",
-                        "duration": 2,
+                        "duration": 9,
                         "delay": 0,
                         "trigger": "auto",
                         "disabled": false,
                         "animations": [],
-                        "effects": []
+                        "effects": [
+                            {
+                                "type": "GAS",
+                                "id": "eff_1771608735915",
+                                "targetId": "flask",
+                                "sourceId": "flask",
+                                "gasType": "bubble",
+                                "rate": 50,
+                                "color": "#d7c6c6",
+                                "durationSteps": 2
+                            }
+                        ]
                     },
                     "1": {
                         "description": "New Step",
-                        "duration": 2,
+                        "duration": 11,
                         "delay": 0,
                         "trigger": "auto",
                         "disabled": false,
                         "animations": [],
                         "effects": [],
                         "gas": {
-                            "enabled": true,
+                            "enabled": false,
                             "source": "flask",
                             "rate": 50
                         }
