@@ -9,13 +9,13 @@ import * as THREE from 'three';
  * @returns {Array} List of active effects with dynamically calculated progress.
  */
 export const getActiveEffects = (timeline, currentStepIndex, stepProgress) => {
-    if (!timeline || !Array.isArray(timeline)) return [];
+    if (!timeline) return [];
 
     const activeEffects = [];
 
     // Look back through timeline up to current step
     for (let i = 0; i <= currentStepIndex; i++) {
-        const step = timeline[i];
+        const step = timeline[i.toString()] || timeline[i]; // Handle both array and object key structures
         if (!step || !step.effects) continue;
 
         step.effects.forEach(effect => {
