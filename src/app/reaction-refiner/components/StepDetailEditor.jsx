@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     Plus, X, Play, ChevronDown, ChevronRight,
-    Flame, Wind, Droplets, Snowflake, Zap, Lightbulb, Hexagon, Box
+    Flame, Wind, Droplets, Lightbulb, Box, Sparkles
 } from 'lucide-react';
 
 // --- HELPER COMPONENTS ---
@@ -85,9 +85,13 @@ const ApparatusSelect = ({ value, onChange, apparatusList, placeholder = "Select
 const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => {
     // Local state for section collapse
     const [openSections, setOpenSections] = useState({
-        heat: false, gas: false, liquid: false, precipitate: false,
-        light: false, electricity: false, residue: false, animations: false
+        heat: false, gas: false, liquid: false, light: false, animations: false, effects: false
     });
+
+    // Local state for the "Add New Effect" form
+    const [newEffectType, setNewEffectType] = useState('MORPH');
+    const [newEffectTarget, setNewEffectTarget] = useState('');
+    const [editingEffectIdx, setEditingEffectIdx] = useState(null);
 
     if (!step) return <div className="text-gray-500 text-xs italic p-4">Select a step to edit details</div>;
 
@@ -146,15 +150,12 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
                 isOpen={openSections.heat} onToggleOpen={() => toggleSection('heat')}
             >
                 <ControlRow label="Heat Source">
-                    <select
-                        value={step.heat?.source || 'bunsen_flame'}
-                        onChange={(e) => handleCategoryChange('heat', 'source', e.target.value)}
-                        className={inputClass}
-                    >
-                        <option value="bunsen_flame">Bunsen Flame</option>
-                        <option value="spark">Spark / Ignition</option>
-                        <option value="surface_heating">Surface / Hotplate</option>
-                    </select>
+                    <ApparatusSelect
+                        value={step.heat?.source}
+                        onChange={(v) => handleCategoryChange('heat', 'source', v)}
+                        apparatusList={apparatusList}
+                        placeholder="Select Burner/Hotplate"
+                    />
                 </ControlRow>
 
                 <div className="flex flex-col gap-3">
@@ -174,46 +175,14 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
                         />
                     </ControlRow>
                 </div>
-
-                <div className="flex flex-col gap-3">
-                    <ControlRow label="Glow Radius">
-                        <input
-                            type="number"
-                            value={step.heat?.glowRadius || 0}
-                            onChange={(e) => handleCategoryChange('heat', 'glowRadius', parseFloat(e.target.value))}
-                            className={inputClass}
-                        />
-                    </ControlRow>
-                    <ControlRow label="Temp Rise Speed">
-                        <input
-                            type="number"
-                            value={step.heat?.riseSpeed || 1}
-                            onChange={(e) => handleCategoryChange('heat', 'riseSpeed', parseFloat(e.target.value))}
-                            className={inputClass}
-                        />
-                    </ControlRow>
-                </div>
-
-                <div className="flex gap-4">
-                    <label className="flex items-center gap-2 text-[10px] text-gray-400 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={step.heat?.exothermic || false}
-                            onChange={(e) => handleCategoryChange('heat', 'exothermic', e.target.checked)}
-                            className="accent-orange-500"
-                        />
-                        Exothermic Pulse
-                    </label>
-                    <label className="flex items-center gap-2 text-[10px] text-gray-400 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={step.heat?.distortion || false}
-                            onChange={(e) => handleCategoryChange('heat', 'distortion', e.target.checked)}
-                            className="accent-orange-500"
-                        />
-                        Heat Distortion
-                    </label>
-                </div>
+                <ControlRow label="Glow Radius">
+                    <input
+                        type="number"
+                        value={step.heat?.glowRadius || 0}
+                        onChange={(e) => handleCategoryChange('heat', 'glowRadius', parseFloat(e.target.value))}
+                        className={inputClass}
+                    />
+                </ControlRow>
             </Section>
 
 
@@ -241,18 +210,6 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
                         >
                             <option value="bubble">Bubbles</option>
                             <option value="smoke">Smoke / Fumes</option>
-                            <option value="gas_flow">Gas Flow</option>
-                        </select>
-                    </ControlRow>
-                    <ControlRow label="Flow Direction">
-                        <select
-                            value={step.gas?.direction || 'upward'}
-                            onChange={(e) => handleCategoryChange('gas', 'direction', e.target.value)}
-                            className={inputClass}
-                        >
-                            <option value="upward">Upward (Standard)</option>
-                            <option value="tube">Through Delivery Tube</option>
-                            <option value="jar">To Collection Jar</option>
                         </select>
                     </ControlRow>
                 </div>
@@ -275,13 +232,6 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
                 </div>
 
                 <div className="flex flex-col gap-3">
-                    <ControlRow label="Opacity">
-                        <SliderWithInput
-                            min={0} max={1} step={0.1}
-                            value={step.gas?.opacity || 0.5}
-                            onChange={(v) => handleCategoryChange('gas', 'opacity', v)}
-                        />
-                    </ControlRow>
                     <ControlRow label="Color">
                         <input
                             type="color"
@@ -290,34 +240,6 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
                             className="w-full h-8 rounded bg-transparent cursor-pointer"
                         />
                     </ControlRow>
-                </div>
-                <ControlRow label="Pressure">
-                    <SliderWithInput
-                        min={0} max={100} step={1}
-                        value={step.gas?.pressure || 0}
-                        onChange={(v) => handleCategoryChange('gas', 'pressure', v)}
-                    />
-                </ControlRow>
-
-                <div className="flex gap-4">
-                    <label className="flex items-center gap-2 text-[10px] text-gray-400 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={step.gas?.sound || false}
-                            onChange={(e) => handleCategoryChange('gas', 'sound', e.target.checked)}
-                            className="accent-gray-500"
-                        />
-                        Sound FX
-                    </label>
-                    <label className="flex items-center gap-2 text-[10px] text-gray-400 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={step.gas?.accumulate || false}
-                            onChange={(e) => handleCategoryChange('gas', 'accumulate', e.target.checked)}
-                            className="accent-gray-500"
-                        />
-                        Accumulate Vol
-                    </label>
                 </div>
             </Section>
 
@@ -364,114 +286,9 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
                             onChange={(v) => handleCategoryChange('liquid', 'transparency', v)}
                         />
                     </ControlRow>
-                    <ControlRow label="Turbidity">
-                        <SliderWithInput
-                            min={0} max={1} step={0.1}
-                            value={step.liquid?.turbidity || 0}
-                            onChange={(v) => handleCategoryChange('liquid', 'turbidity', v)}
-                        />
-                    </ControlRow>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                    <ControlRow label="Ripple Intensity">
-                        <SliderWithInput
-                            min={0} max={10} step={1}
-                            value={step.liquid?.ripple || 0}
-                            onChange={(v) => handleCategoryChange('liquid', 'ripple', v)}
-                        />
-                    </ControlRow>
-                    <div className="flex flex-col gap-2 pt-2">
-                        <label className="flex items-center gap-2 text-[10px] text-gray-400 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={step.liquid?.foam || false}
-                                onChange={(e) => handleCategoryChange('liquid', 'foam', e.target.checked)}
-                                className="accent-blue-500"
-                            />
-                            Foam
-                        </label>
-                        <label className="flex items-center gap-2 text-[10px] text-gray-400 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={step.liquid?.boiling || false}
-                                onChange={(e) => handleCategoryChange('liquid', 'boiling', e.target.checked)}
-                                className="accent-blue-500"
-                            />
-                            Roiling Boil
-                        </label>
-                    </div>
                 </div>
             </Section>
 
-            {/* D. PRECIPITATE CONTROLS */}
-            <Section
-                title="Precipitate" icon={Snowflake} color="teal"
-                enabled={step.precipitate?.enabled} onToggle={() => toggleCategory('precipitate')}
-                isOpen={openSections.precipitate} onToggleOpen={() => toggleSection('precipitate')}
-            >
-                <div className="flex flex-col gap-3">
-                    <ControlRow label="Particle Size">
-                        <SliderWithInput
-                            min={0.1} max={5} step={0.1}
-                            value={step.precipitate?.size || 1}
-                            onChange={(v) => handleCategoryChange('precipitate', 'size', v)}
-                        />
-                    </ControlRow>
-                    <ControlRow label="Density">
-                        <SliderWithInput
-                            min={0} max={100} step={1}
-                            value={step.precipitate?.density || 0}
-                            onChange={(v) => handleCategoryChange('precipitate', 'density', v)}
-                        />
-                    </ControlRow>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                    <ControlRow label="Settling Speed">
-                        <SliderWithInput
-                            min={0} max={10} step={0.1}
-                            value={step.precipitate?.speed || 1}
-                            onChange={(v) => handleCategoryChange('precipitate', 'speed', v)}
-                        />
-                    </ControlRow>
-                    <ControlRow label="Color">
-                        <input
-                            type="color"
-                            value={step.precipitate?.color || '#ffffff'}
-                            onChange={(e) => handleCategoryChange('precipitate', 'color', e.target.value)}
-                            className="w-full h-8 rounded bg-transparent cursor-pointer"
-                        />
-                    </ControlRow>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                    <ControlRow label="Bottom Thickness">
-                        <input
-                            type="number" step="0.1"
-                            value={step.precipitate?.thickness || 0}
-                            onChange={(e) => handleCategoryChange('precipitate', 'thickness', parseFloat(e.target.value))}
-                            className={inputClass}
-                        />
-                    </ControlRow>
-                    <ControlRow label="Cloud Intensity">
-                        <SliderWithInput
-                            min={0} max={1} step={0.1}
-                            value={step.precipitate?.cloud || 0}
-                            onChange={(v) => handleCategoryChange('precipitate', 'cloud', v)}
-                        />
-                    </ControlRow>
-                </div>
-                <label className="flex items-center gap-2 text-[10px] text-gray-400 cursor-pointer">
-                    <input
-                        type="checkbox"
-                        checked={step.precipitate?.crystal || false}
-                        onChange={(e) => handleCategoryChange('precipitate', 'crystal', e.target.checked)}
-                        className="accent-teal-500"
-                    />
-                    Crystal Mode
-                </label>
-            </Section>
 
             {/* E. LIGHT EFFECTS */}
             <Section
@@ -503,161 +320,6 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
                         onChange={(v) => handleCategoryChange('light', 'radius', v)}
                     />
                 </ControlRow>
-
-                <div className="flex gap-4">
-                    <label className="flex items-center gap-2 text-[10px] text-gray-400 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={step.light?.flicker || false}
-                            onChange={(e) => handleCategoryChange('light', 'flicker', e.target.checked)}
-                            className="accent-yellow-500"
-                        />
-                        Flicker
-                    </label>
-                    <label className="flex items-center gap-2 text-[10px] text-gray-400 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={step.light?.flash || false}
-                            onChange={(e) => handleCategoryChange('light', 'flash', e.target.checked)}
-                            className="accent-yellow-500"
-                        />
-                        Flash Pulse
-                    </label>
-                    <label className="flex items-center gap-2 text-[10px] text-gray-400 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={step.light?.spark || false}
-                            onChange={(e) => handleCategoryChange('light', 'spark', e.target.checked)}
-                            className="accent-yellow-500"
-                        />
-                        Sparks
-                    </label>
-                </div>
-            </Section>
-
-            {/* F. ELECTRICAL EFFECTS */}
-            <Section
-                title="Electrical" icon={Zap} color="purple"
-                enabled={step.electricity?.enabled} onToggle={() => toggleCategory('electricity')}
-                isOpen={openSections.electricity} onToggleOpen={() => toggleSection('electricity')}
-            >
-                <ControlRow label="Electrode Selection">
-                    <input
-                        type="text"
-                        value={step.electricity?.electrodes || ''}
-                        onChange={(e) => handleCategoryChange('electricity', 'electrodes', e.target.value)}
-                        className={inputClass}
-                        placeholder="e.g. anode, cathode"
-                    />
-                </ControlRow>
-
-                <div className="flex flex-col gap-3">
-                    <ControlRow label="Current Intensity">
-                        <SliderWithInput
-                            min={0} max={100} step={1}
-                            value={step.electricity?.current || 0}
-                            onChange={(v) => handleCategoryChange('electricity', 'current', v)}
-                        />
-                    </ControlRow>
-                    <ControlRow label="Wire Glow">
-                        <SliderWithInput
-                            min={0} max={10} step={0.1}
-                            value={step.electricity?.wireGlow || 0}
-                            onChange={(v) => handleCategoryChange('electricity', 'wireGlow', v)}
-                        />
-                    </ControlRow>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                    <ControlRow label="Spark Freq">
-                        <SliderWithInput
-                            min={0} max={10} step={1}
-                            value={step.electricity?.sparkFreq || 0}
-                            onChange={(v) => handleCategoryChange('electricity', 'sparkFreq', v)}
-                        />
-                    </ControlRow>
-                    <ControlRow label="Electrode Bubbles">
-                        <SliderWithInput
-                            min={0} max={10} step={1}
-                            value={step.electricity?.bubbles || 0}
-                            onChange={(v) => handleCategoryChange('electricity', 'bubbles', v)}
-                        />
-                    </ControlRow>
-                </div>
-
-                <label className="flex items-center gap-2 text-[10px] text-gray-400 cursor-pointer">
-                    <input
-                        type="checkbox"
-                        checked={step.electricity?.powerAnim || false}
-                        onChange={(e) => handleCategoryChange('electricity', 'powerAnim', e.target.checked)}
-                        className="accent-purple-500"
-                    />
-                    Power ON Animation
-                </label>
-            </Section>
-
-
-            {/* G. RESIDUE / SOLID FORMATION */}
-            <Section
-                title="Residue / Solid" icon={Hexagon} color="red"
-                enabled={step.residue?.enabled} onToggle={() => toggleCategory('residue')}
-                isOpen={openSections.residue} onToggleOpen={() => toggleSection('residue')}
-            >
-                <div className="flex flex-col gap-3">
-                    <ControlRow label="Texture">
-                        <select
-                            value={step.residue?.texture || 'powder'}
-                            onChange={(e) => handleCategoryChange('residue', 'texture', e.target.value)}
-                            className={inputClass}
-                        >
-                            <option value="powder">Powder</option>
-                            <option value="metal">Metal</option>
-                            <option value="crystal">Crystal</option>
-                        </select>
-                    </ControlRow>
-                    <ControlRow label="Color">
-                        <input
-                            type="color"
-                            value={step.residue?.color || '#888888'}
-                            onChange={(e) => handleCategoryChange('residue', 'color', e.target.value)}
-                            className="w-full h-8 rounded bg-transparent cursor-pointer"
-                        />
-                    </ControlRow>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                    <ControlRow label="Coating Thickness">
-                        <SliderWithInput
-                            min={0} max={2} step={0.1}
-                            value={step.residue?.coating || 0}
-                            onChange={(v) => handleCategoryChange('residue', 'coating', v)}
-                        />
-                    </ControlRow>
-                    <ControlRow label="Deposition Speed">
-                        <SliderWithInput
-                            min={0} max={5} step={0.1}
-                            value={step.residue?.speed || 1}
-                            onChange={(v) => handleCategoryChange('residue', 'speed', v)}
-                        />
-                    </ControlRow>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                    <ControlRow label="Mass Decrease">
-                        <SliderWithInput
-                            min={0} max={100} step={1}
-                            value={step.residue?.massDec || 0}
-                            onChange={(v) => handleCategoryChange('residue', 'massDec', v)}
-                        />
-                    </ControlRow>
-                    <ControlRow label="Roughness">
-                        <SliderWithInput
-                            min={0} max={1} step={0.1}
-                            value={step.residue?.roughness || 0.5}
-                            onChange={(v) => handleCategoryChange('residue', 'roughness', v)}
-                        />
-                    </ControlRow>
-                </div>
             </Section>
 
             {/* H. TRANSFORMATIONS (Model Swap, Visibility, Scale) */}
@@ -750,6 +412,296 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
                 </div>
             </Section>
 
+            {/* I. ADVANCED VISUAL EFFECTS (Visual Engine) */}
+            <Section
+                title="Advanced Visual Effects" icon={Sparkles} color="yellow"
+                enabled={true} onToggle={() => { }}
+                isOpen={openSections.effects} onToggleOpen={() => toggleSection('effects')}
+            >
+                <div className="space-y-3">
+                    <div className="text-[10px] text-gray-500 mb-2">
+                        Dynamic animations calculated by the Visual Engine (Morph, Lerp, Fluid).
+                    </div>
+
+                    {/* List Existing Effects */}
+                    {(step.effects || []).map((eff, idx) => (
+                        <div key={idx} className="bg-black/40 p-2 rounded border border-white/10 flex justify-between items-center group">
+                            <div className="text-[10px] text-gray-300 flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-yellow-400 font-bold uppercase">{eff.type}</span>
+                                    <span className="text-gray-500">#{eff.id || idx}</span>
+                                </div>
+                                <div className="text-gray-400">
+                                    {eff.type === 'MORPH' || eff.type === 'COLOR_LERP' ? (
+                                        <>Target: <b>{eff.targetId}</b> | Prop: {eff.property} ({eff.startValue} &rarr; {eff.endValue})</>
+                                    ) : eff.type === 'GAS_DISPLACEMENT' ? (
+                                        <>Src: <b>{eff.sourceId}</b> &rarr; Tgt: <b>{eff.targetId}</b> (Aux: {eff.auxTargetId || 'none'})</>
+                                    ) : eff.type === 'GAS' ? (
+                                        <>Src: <b>{eff.sourceId || eff.target}</b> | Rate: {eff.rate}</>
+                                    ) : null}
+                                </div>
+                            </div>
+                            <div className="flex gap-2 ml-2">
+                                <button
+                                    onClick={() => {
+                                        setEditingEffectIdx(idx);
+                                        setNewEffectType(eff.type);
+                                        setTimeout(() => {
+                                            if (document.getElementById('eff-duration')) document.getElementById('eff-duration').value = eff.durationSteps || 1;
+                                            if (eff.type === 'MORPH' || eff.type === 'COLOR_LERP') setNewEffectTarget(eff.targetId);
+
+                                            if (eff.type === 'MORPH') {
+                                                if (document.getElementById('eff-prop')) document.getElementById('eff-prop').value = eff.property;
+                                                if (document.getElementById('eff-start')) document.getElementById('eff-start').value = eff.startValue;
+                                                if (document.getElementById('eff-end')) document.getElementById('eff-end').value = eff.endValue;
+                                            } else if (eff.type === 'COLOR_LERP') {
+                                                if (document.getElementById('eff-prop')) document.getElementById('eff-prop').value = eff.property;
+                                                if (document.getElementById('eff-c-start')) document.getElementById('eff-c-start').value = eff.startValue;
+                                                if (document.getElementById('eff-c-end')) document.getElementById('eff-c-end').value = eff.endValue;
+                                            } else if (eff.type === 'GAS') {
+                                                setNewEffectTarget(eff.sourceId || eff.target);
+                                                if (document.getElementById('eff-gas-type')) document.getElementById('eff-gas-type').value = eff.gasType || 'bubble';
+                                                if (document.getElementById('eff-gas-rate')) document.getElementById('eff-gas-rate').value = eff.rate;
+                                                if (document.getElementById('eff-gas-color')) document.getElementById('eff-gas-color').value = eff.color;
+                                            } else if (eff.type === 'GAS_DISPLACEMENT') {
+                                                if (document.getElementById('eff-disp-src')) document.getElementById('eff-disp-src').value = eff.sourceId;
+                                                if (document.getElementById('eff-disp-tgt')) document.getElementById('eff-disp-tgt').value = eff.targetId;
+                                                if (document.getElementById('eff-disp-aux') && eff.auxTargetId) document.getElementById('eff-disp-aux').value = eff.auxTargetId;
+                                                if (document.getElementById('eff-disp-sl1')) document.getElementById('eff-disp-sl1').value = eff.sourceLiquidStart;
+                                                if (document.getElementById('eff-disp-sl2')) document.getElementById('eff-disp-sl2').value = eff.sourceLiquidEnd;
+                                                if (document.getElementById('eff-disp-tl1')) document.getElementById('eff-disp-tl1').value = eff.targetLiquidStart;
+                                                if (document.getElementById('eff-disp-tl2')) document.getElementById('eff-disp-tl2').value = eff.targetLiquidEnd;
+                                                if (document.getElementById('eff-disp-tg1')) document.getElementById('eff-disp-tg1').value = eff.targetGasOpacityStart;
+                                                if (document.getElementById('eff-disp-tg2')) document.getElementById('eff-disp-tg2').value = eff.targetGasOpacityEnd;
+                                                if (document.getElementById('eff-disp-al1')) document.getElementById('eff-disp-al1').value = eff.auxLiquidStart || '';
+                                                if (document.getElementById('eff-disp-al2')) document.getElementById('eff-disp-al2').value = eff.auxLiquidEnd || '';
+                                            }
+                                        }, 50);
+                                    }}
+                                    className="text-gray-600 hover:text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <span style={{ fontSize: '10px' }}>EDIT</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const newEffs = [...(step.effects || [])];
+                                        newEffs.splice(idx, 1);
+                                        handleStepChange('effects', newEffs);
+                                        if (editingEffectIdx === idx) setEditingEffectIdx(null);
+                                    }}
+                                    className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <X size={12} />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* Add New Effect Form */}
+                    <div className="bg-white/5 p-2 rounded space-y-2 border border-dashed border-white/10 relative">
+                        {editingEffectIdx !== null && (
+                            <button
+                                onClick={() => {
+                                    setEditingEffectIdx(null);
+                                    setNewEffectType('MORPH');
+                                }}
+                                className="absolute top-2 right-2 text-gray-400 hover:text-white"
+                            >
+                                <X size={12} />
+                            </button>
+                        )}
+                        <div className="text-[10px] uppercase font-bold text-yellow-500/80">
+                            {editingEffectIdx !== null ? `Edit Effect #${editingEffectIdx}` : 'Add New Effect'}
+                        </div>
+
+                        <ControlRow label="Effect Type">
+                            <select
+                                value={newEffectType}
+                                onChange={(e) => setNewEffectType(e.target.value)}
+                                className={inputClass}
+                            >
+                                <option value="MORPH">Morph / Animate Value</option>
+                                <option value="COLOR_LERP">Color Transition</option>
+                                <option value="GAS">Gas / Bubbling</option>
+                                <option value="GAS_DISPLACEMENT">Gas Displacement (Physics)</option>
+                            </select>
+                        </ControlRow>
+
+                        {/* Dynamic fields based on Effect Type */}
+                        {newEffectType !== 'GAS_DISPLACEMENT' && (
+                            <ControlRow label="Target Apparatus">
+                                <select value={newEffectTarget} onChange={(e) => setNewEffectTarget(e.target.value)} className={inputClass}>
+                                    <option value="" disabled>Select Target</option>
+                                    {apparatusList.map(app => (
+                                        <option key={app.id} value={app.id}>{app.id} ({app.model})</option>
+                                    ))}
+                                </select>
+                            </ControlRow>
+                        )}
+
+                        {newEffectType === 'MORPH' && (
+                            <>
+                                <input id="eff-prop" type="text" className={inputClass} placeholder="Property (e.g. burnProgress)" />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input id="eff-start" type="number" step="0.01" className={inputClass} placeholder="Start Value" />
+                                    <input id="eff-end" type="number" step="0.01" className={inputClass} placeholder="End Value" />
+                                </div>
+                            </>
+                        )}
+
+                        {newEffectType === 'COLOR_LERP' && (
+                            <>
+                                <input id="eff-prop" type="text" className={inputClass} placeholder="Property (e.g. flameColor)" />
+                                <div className="grid grid-cols-2 gap-2 items-center">
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[10px] text-gray-400">Start:</span>
+                                        <input id="eff-c-start" type="color" className="w-full h-6 rounded bg-transparent" />
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[10px] text-gray-400">End:</span>
+                                        <input id="eff-c-end" type="color" className="w-full h-6 rounded bg-transparent" />
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {newEffectType === 'GAS' && (
+                            <>
+                                <ControlRow label="Gas Type">
+                                    <select id="eff-gas-type" className={inputClass} defaultValue="bubble">
+                                        <option value="bubble">Bubbles</option>
+                                        <option value="smoke">Smoke / Vapor</option>
+                                    </select>
+                                </ControlRow>
+                                <div className="grid grid-cols-2 gap-2 items-center">
+                                    <input id="eff-gas-rate" type="number" className={inputClass} placeholder="Rate (e.g. 50)" />
+                                    <input id="eff-gas-color" type="color" className="w-full h-6 rounded bg-transparent" />
+                                </div>
+                            </>
+                        )}
+
+                        {newEffectType === 'GAS_DISPLACEMENT' && (
+                            <>
+                                <ControlRow label="Source (Gas Generator)">
+                                    <select id="eff-disp-src" className={inputClass} defaultValue="">
+                                        <option value="" disabled>Select Source</option>
+                                        {apparatusList.map(app => <option key={app.id} value={app.id}>{app.id}</option>)}
+                                    </select>
+                                </ControlRow>
+                                <ControlRow label="Target (Gas Receiver)">
+                                    <select id="eff-disp-tgt" className={inputClass} defaultValue="">
+                                        <option value="" disabled>Select Target</option>
+                                        {apparatusList.map(app => <option key={app.id} value={app.id}>{app.id}</option>)}
+                                    </select>
+                                </ControlRow>
+                                <ControlRow label="Aux Target (Water Trough)">
+                                    <select id="eff-disp-aux" className={inputClass} defaultValue="">
+                                        <option value="">None</option>
+                                        {apparatusList.map(app => <option key={app.id} value={app.id}>{app.id}</option>)}
+                                    </select>
+                                </ControlRow>
+
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                    <div>
+                                        <div className="text-[9px] text-gray-500 mb-1">Source Liq. Extents</div>
+                                        <div className="flex gap-1">
+                                            <input id="eff-disp-sl1" type="number" className={inputClass} placeholder="Start" />
+                                            <input id="eff-disp-sl2" type="number" className={inputClass} placeholder="End" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] text-gray-500 mb-1">Target Liq. Extents</div>
+                                        <div className="flex gap-1">
+                                            <input id="eff-disp-tl1" type="number" className={inputClass} placeholder="Start" />
+                                            <input id="eff-disp-tl2" type="number" className={inputClass} placeholder="End" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] text-gray-500 mb-1">Target Gas Opacity</div>
+                                        <div className="flex gap-1">
+                                            <input id="eff-disp-tg1" type="number" step="0.1" className={inputClass} placeholder="Start" />
+                                            <input id="eff-disp-tg2" type="number" step="0.1" className={inputClass} placeholder="End" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] text-gray-500 mb-1">Aux Liq. Extents</div>
+                                        <div className="flex gap-1">
+                                            <input id="eff-disp-al1" type="number" step="0.1" className={inputClass} placeholder="Start" />
+                                            <input id="eff-disp-al2" type="number" step="0.1" className={inputClass} placeholder="End" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        <ControlRow label="Duration (Steps)">
+                            <input id="eff-duration" type="number" min="1" className={inputClass} defaultValue="1" placeholder="e.g. 3 steps" />
+                        </ControlRow>
+
+                        <button
+                            onClick={() => {
+                                const newEff = { type: newEffectType, id: `eff_${Date.now()}` };
+
+                                if (newEffectType !== 'GAS_DISPLACEMENT') {
+                                    if (!newEffectTarget) return;
+                                    newEff.targetId = newEffectTarget;
+                                    newEff.sourceId = newEffectTarget; // For GAS
+                                }
+
+                                if (newEffectType === 'MORPH') {
+                                    newEff.property = document.getElementById('eff-prop').value;
+                                    newEff.startValue = parseFloat(document.getElementById('eff-start').value);
+                                    newEff.endValue = parseFloat(document.getElementById('eff-end').value);
+                                } else if (newEffectType === 'COLOR_LERP') {
+                                    newEff.property = document.getElementById('eff-prop').value;
+                                    newEff.startValue = document.getElementById('eff-c-start').value;
+                                    newEff.endValue = document.getElementById('eff-c-end').value;
+                                } else if (newEffectType === 'GAS') {
+                                    newEff.gasType = document.getElementById('eff-gas-type').value; // 'smoke' or 'bubble'
+                                    newEff.rate = parseFloat(document.getElementById('eff-gas-rate').value) || 50;
+                                    newEff.color = document.getElementById('eff-gas-color').value;
+                                } else if (newEffectType === 'GAS_DISPLACEMENT') {
+                                    newEff.sourceId = document.getElementById('eff-disp-src').value;
+                                    newEff.targetId = document.getElementById('eff-disp-tgt').value;
+                                    newEff.auxTargetId = document.getElementById('eff-disp-aux').value || undefined;
+
+                                    if (!newEff.sourceId || !newEff.targetId) return;
+
+                                    // Parse all the extents
+                                    const parseE = (id) => {
+                                        const v = parseFloat(document.getElementById(id).value);
+                                        return isNaN(v) ? undefined : v;
+                                    };
+                                    newEff.sourceLiquidStart = parseE('eff-disp-sl1');
+                                    newEff.sourceLiquidEnd = parseE('eff-disp-sl2');
+                                    newEff.targetLiquidStart = parseE('eff-disp-tl1');
+                                    newEff.targetLiquidEnd = parseE('eff-disp-tl2');
+                                    newEff.targetGasOpacityStart = parseE('eff-disp-tg1');
+                                    newEff.targetGasOpacityEnd = parseE('eff-disp-tg2');
+                                    if (newEff.auxTargetId) {
+                                        newEff.auxLiquidStart = parseE('eff-disp-al1');
+                                        newEff.auxLiquidEnd = parseE('eff-disp-al2');
+                                    }
+                                }
+
+                                newEff.durationSteps = parseInt(document.getElementById('eff-duration').value, 10) || 1;
+
+                                const current = [...(step.effects || [])];
+                                if (editingEffectIdx !== null) {
+                                    current[editingEffectIdx] = newEff;
+                                    setEditingEffectIdx(null);
+                                } else {
+                                    current.push(newEff);
+                                }
+                                handleStepChange('effects', current);
+                            }}
+                            className={`w-full py-1 mt-2 text-xs rounded border ${editingEffectIdx !== null ? 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border-cyan-500/30' : 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 border-yellow-500/30'}`}
+                        >
+                            {editingEffectIdx !== null ? 'Save Changes' : '+ Add Effect'}
+                        </button>
+                    </div>
+                </div>
+            </Section>
         </div>
     );
 };

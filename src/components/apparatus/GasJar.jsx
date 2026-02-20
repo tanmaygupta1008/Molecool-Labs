@@ -45,7 +45,19 @@ const GasJar = ({ hasLid = true, holeCount = 0, reactants = [], ...props }) => {
     const radius = 0.48;
     const height = 1.45;
 
-    const liquidHeight = Math.min((liquidVolume / 200) * height, height); // 200mL max
+    const gasOpacityMultiplier = props.gasOpacityMultiplier !== undefined ? props.gasOpacityMultiplier : 1;
+    const liquidLevelOverride = props.liquidLevelOverride !== undefined ? props.liquidLevelOverride : null;
+    const gasColorOverride = props.gasColorOverride !== undefined ? props.gasColorOverride : null;
+
+    // Derived properties Based on overrides or default reactants
+    const effectiveLiquidVol = liquidLevelOverride !== null ? liquidLevelOverride : liquidVolume;
+    const effectiveGasOpacity = Math.min(1.0, gasOpacity * gasOpacityMultiplier);
+    const effectiveGasColor = gasColorOverride || gasColor;
+
+    // Convert liquid volume to height. 
+    // Assuming jar is a cylinder: vol = pi * r^2 * h -> h = vol / (pi * r^2)
+    // Simplify mapping for now: Max Vol roughly 200 units = Full Height
+    const liquidHeight = Math.min((effectiveLiquidVol / 200) * height, height); // 200mL max
     return (
         <group {...props}>
             {/* Tall Cylinder Body */}
@@ -94,7 +106,7 @@ const GasJar = ({ hasLid = true, holeCount = 0, reactants = [], ...props }) => {
                 </group>
             )}
             {/* Render Liquid */}
-            {liquidVolume > 0 && (
+            {effectiveLiquidVol > 0 && (
                 <group position={[0, 0.05 + liquidHeight / 2, 0]}>
                     <Cylinder args={[radius, radius, liquidHeight, 32]}>
                         <meshPhysicalMaterial color={liquidColor} transparent opacity={0.8} side={2} />
@@ -103,10 +115,10 @@ const GasJar = ({ hasLid = true, holeCount = 0, reactants = [], ...props }) => {
             )}
 
             {/* Render Gas (Fills the jar) */}
-            {gasOpacity > 0 && (
+            {effectiveGasOpacity > 0 && (
                 <group position={[0, 0.8, 0]}>
                     <Cylinder args={[radius, radius, height, 32]}>
-                        <meshBasicMaterial color={gasColor} transparent opacity={gasOpacity} side={2} depthWrite={false} />
+                        <meshBasicMaterial color={effectiveGasColor} transparent opacity={effectiveGasOpacity} side={2} depthWrite={false} />
                     </Cylinder>
                 </group>
             )}

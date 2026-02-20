@@ -62,7 +62,6 @@ const ReactionRefinerPage = () => {
         }
     }, [selectedReactionId, reactions]);
 
-    // Handle Visual Changes
     const handleVisualChange = (category, newData) => {
         setCurrentReaction(prev => {
             const newRules = { ...(prev.macroView?.visualRules || {}) };
@@ -73,16 +72,19 @@ const ReactionRefinerPage = () => {
                 newRules.timeline = newData;
             }
 
-            return {
+            const updatedReaction = {
                 ...prev,
                 macroView: {
                     ...prev.macroView,
                     visualRules: newRules
                 }
             };
+
+            // Sync JSON view using the updated state, not stale currentReaction
+            setJsonInput(JSON.stringify(updatedReaction.macroView.visualRules, null, 4));
+
+            return updatedReaction;
         });
-        // Sync JSON view
-        setJsonInput(JSON.stringify(currentReaction?.macroView?.visualRules || {}, null, 4));
     };
 
     const handleSave = async () => {

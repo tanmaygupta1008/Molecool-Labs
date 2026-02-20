@@ -11,7 +11,13 @@ const WaterTrough = ({ reactants = [], customHeight = 1, ...props }) => {
     // Top Radius = BaseRadius (1.3) + height * slope
     const topRadius = 1.3 + actualHeight * 0.25;
 
+    const liquidLevelOverride = props.liquidLevelOverride !== undefined ? props.liquidLevelOverride : null;
+
     const waterHeight = useMemo(() => {
+        if (liquidLevelOverride !== null) {
+            return Math.min(Math.max(liquidLevelOverride, 0), actualHeight - 0.05);
+        }
+
         // If no reactants configured, visual fallback
         if (!reactants || reactants.length === 0) return 0.5 * customHeight; // Scale default level
 
@@ -25,7 +31,7 @@ const WaterTrough = ({ reactants = [], customHeight = 1, ...props }) => {
             return Math.min((amt / 1000) * 0.7, actualHeight - 0.05);
         }
         return 0.1;
-    }, [reactants, customHeight, actualHeight]);
+    }, [reactants, customHeight, actualHeight, liquidLevelOverride]);
     return (
         <group {...props}>
             {/* Container */}
@@ -49,7 +55,6 @@ const WaterTrough = ({ reactants = [], customHeight = 1, ...props }) => {
                 />
             </Cylinder>
             {/* Water Surface */}
-            {/* Water Surface */}
             {waterHeight > 0.01 && (
                 <Cylinder
                     key={`${waterHeight}-${customHeight}`} // Force re-render
@@ -60,12 +65,14 @@ const WaterTrough = ({ reactants = [], customHeight = 1, ...props }) => {
                         32
                     ]}
                     position={[0, 0.05 + waterHeight / 2, 0]}
+                    renderOrder={1}
                 >
                     <meshStandardMaterial
                         color="#0077ff"
                         opacity={0.6}
                         transparent
                         roughness={0}
+                        depthWrite={false}
                     />
                 </Cylinder>
             )}

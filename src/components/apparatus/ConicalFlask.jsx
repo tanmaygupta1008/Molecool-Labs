@@ -52,10 +52,13 @@ const ConicalFlask = ({ reactants = [], ...props }) => {
         return { liquidVolume: vol, liquidColor: mixedColor, solids: solidItems };
     }, [reactants]);
 
+    const liquidLevelOverride = props.liquidLevelOverride !== undefined ? props.liquidLevelOverride : null;
+    const effectiveLiquidVol = liquidLevelOverride !== null ? liquidLevelOverride : liquidVolume;
+
     // Map volume to height (Approximation)
     // Max volume ~250mL -> Height ~1.8 (Neck start)
     const maxVol = 250;
-    const liquidHeight = Math.min((liquidVolume / maxVol) * 1.8, 2.2);
+    const liquidHeight = Math.min((effectiveLiquidVol / maxVol) * 1.8, 2.2);
 
     return (
         <group {...props}>
@@ -74,11 +77,8 @@ const ConicalFlask = ({ reactants = [], ...props }) => {
             </mesh>
 
             {/* Render Liquid */}
-            {liquidVolume > 0 && (
+            {effectiveLiquidVol > 0 && (
                 <group position={[0, liquidHeight / 2, 0]}>
-                    {/* Simplified liquid shape: Cylinder with tapered top if needed, 
-                       but standard cylinder is often "good enough" for small amounts.
-                       For Conical Flask, a cone is better. */}
                     <mesh rotation={[0, 0, 0]}>
                         <cylinderGeometry args={[
                             0.35 + (1.0 - 0.35) * (1 - (liquidHeight / 1.8)), // Top radius interpolation

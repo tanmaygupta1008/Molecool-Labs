@@ -10,7 +10,9 @@ import * as Apparatus from '../../apparatus';
 import RealisticLiquid from './components/RealisticLiquid';
 import ParticleSystem from './components/ParticleSystem';
 import VisualRuleEngine from '../../macro/VisualRuleEngine';
+
 import { detectApparatusTypeAbove } from '../../../utils/apparatus-logic';
+import { calculateFrameState } from '../../../utils/visual-engine';
 
 // Map model names from JSON to components
 const APPARATUS_MAP = {
@@ -53,7 +55,7 @@ const APPARATUS_MAP = {
 // ReactionEffectManager replaced by VisualRuleEngine
 // const ReactionEffectManager = ... (Removed Stub)
 
-const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRules, currentStepIndex }) => {
+const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRules, currentStepIndex, stepProgress }) => {
     const Component = APPARATUS_MAP[item.model];
     const groupRef = useRef();
 
@@ -80,7 +82,6 @@ const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRule
     // Similar to original: determine specialized props
     const extraProps = {};
     if (item.model === 'BunsenBurner') {
-        // Calculate Intensity: Prioritize active step heat rule, otherwise fallback to Initial State
         const stepRules = visualRules?.timeline?.[currentStepIndex];
         const heatRule = stepRules?.heat;
         const isHeatSource = heatRule?.enabled && heatRule?.source === item.id;
@@ -94,11 +95,32 @@ const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRule
         extraProps.flameTargetY = detection.distY;
 
         extraProps.intensity = currentIntensity;
-        // Pass flame color from initial state (or potentially timeline in future)
-        extraProps.flameColor = visualRules?.initialState?.burner?.flameColor || '#3b82f6';
+        // Pass flame color from initial state OR advanced effect
+        extraProps.flameColor = item.renderProps?.flameColor || (isHeatSource && heatRule?.color ? heatRule.color : null) || visualRules?.initialState?.burner?.flameColor || '#3b82f6';
 
-        // Turn on if heating
         if (isHeatSource) extraProps.isHeating = true;
+    }
+
+    // Liquid Property parsing mapping
+    if (['Beaker', 'ConicalFlask', 'TestTube', 'BoilingTube', 'MeasuringCylinder', 'WaterTrough', 'GasJar'].includes(item.model)) {
+        const stepRules = visualRules?.timeline?.[currentStepIndex];
+        const liquidRule = stepRules?.liquid;
+
+        if (liquidRule && liquidRule.enabled) {
+            const t = Math.min(1, Math.max(0, stepProgress || 0));
+            if (liquidRule.initialColor && liquidRule.finalColor) {
+                const c1 = new THREE.Color(liquidRule.initialColor);
+                const c2 = new THREE.Color(liquidRule.finalColor);
+                // Simple color lerp
+                const res = c1.lerp(c2, t);
+                extraProps.liquidColor = '#' + res.getHexString();
+            } else if (liquidRule.initialColor) {
+                extraProps.liquidColor = liquidRule.initialColor;
+            }
+            if (liquidRule.transparency !== undefined) {
+                extraProps.liquidOpacity = liquidRule.transparency;
+            }
+        }
     }
     if (item.model === 'Tongs') {
         extraProps.angle = item.angle || 0;
@@ -111,7 +133,9 @@ const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRule
     // Extract transform props to avoid double-application if child also uses them,
     // though most components use them on a root group anyway.
     // We pass everything else to the component (points, holeCount, specific props).
-    const { position, rotation, scale, id, ...restProps } = item;
+    // MERGE renderProps (dynamic effects) into the component props
+    const { position, rotation, scale, id, renderProps, ...restProps } = item;
+    const finalProps = { ...restProps, ...extraProps, ...renderProps };
 
     return (
         <group
@@ -122,7 +146,7 @@ const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRule
             scale={item.scale || [1, 1, 1]}
             visible={item.visible !== false}
         >
-            <Component {...restProps} {...extraProps} />
+            <Component {...finalProps} />
         </group>
     );
 };
@@ -226,7 +250,16 @@ const useDerivedApparatus = (reaction, progress) => {
         });
     }
 
-    return { apparatus: currentApparatus, currentStepIndex };
+    // 5. Advanced Engine: Calculate Render State per apparatus
+    const timelineData = reaction.macroView?.visualRules?.timeline || {};
+    const renderState = calculateFrameState(timelineData, currentStepIndex, stepProgress, currentApparatus);
+
+    // Merge renderState into the currentApparatus objects so ApparatusItem receives it
+    currentApparatus.forEach(app => {
+        app.renderProps = renderState[app.id] || {};
+    });
+
+    return { apparatus: currentApparatus, currentStepIndex, stepProgress };
 };
 
 // --- MAIN MACRO VIEW MANAGER ---
@@ -239,7 +272,7 @@ const MacroView = ({ reaction, progress }) => {
 
 const DynamicSetup = ({ reaction, progress }) => {
     // 1. Get List of Apparatus & Current Step from Helper
-    const { apparatus: apparatusList, currentStepIndex } = useDerivedApparatus(reaction, progress);
+    const { apparatus: apparatusList, currentStepIndex, stepProgress } = useDerivedApparatus(reaction, progress);
 
     // Stub to hold object refs for World Position lookups
     const apparatusRefs = useRef({});
@@ -264,6 +297,7 @@ const DynamicSetup = ({ reaction, progress }) => {
                             allApparatus={apparatusList}
                             visualRules={reaction.macroView?.visualRules}
                             currentStepIndex={currentStepIndex}
+                            stepProgress={stepProgress}
                         />
                     ))}
 
@@ -272,6 +306,7 @@ const DynamicSetup = ({ reaction, progress }) => {
                         apparatusList={apparatusList}
                         visualRules={reaction.macroView?.visualRules}
                         stepIndex={currentStepIndex}
+                        stepProgress={stepProgress}
                         isPlaying={progress > 0 && progress < 1}
                     />
 

@@ -1,22 +1,18 @@
-import React, { useMemo, useEffect } from 'react';
-import { useThree, useFrame } from '@react-three/fiber';
+import React, { useMemo } from 'react';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import ParticleSystem from '../apparatus/ParticleSystem'; // Assuming this exists or will be created
-import BoilingWater from '../apparatus/BoilingWater';
+import ParticleSystem from '../apparatus/ParticleSystem';
+import { getActiveEffects } from '../../utils/visual-engine';
 
-const VisualRuleEngine = ({ apparatusList, visualRules, stepIndex, isPlaying }) => {
-    const { scene } = useThree();
-
+const VisualRuleEngine = ({ stepIndex, visualRules, apparatusList, stepProgress = 0, isPlaying }) => {
     // 1. Physics & Connectivity Analysis
-    // Analyze the scene graph to determine connectivity (e.g., Flask -> Cork -> Tube)
     const physicsState = useMemo(() => {
         const state = {
-            containers: {}, // Map of container ID -> { isSealed: bool, ventPath: points[] }
+            containers: {},
         };
 
         apparatusList.forEach(item => {
-            // Identify Containers
-            if (['ConicalFlask', 'RoundBottomFlask', 'TestTube', 'Beaker'].includes(item.model)) {
+            if (['ConicalFlask', 'RoundBottomFlask', 'TestTube', 'BoilingTube', 'Beaker'].includes(item.model)) {
                 state.containers[item.id] = {
                     type: item.model,
                     position: item.position,
@@ -26,45 +22,29 @@ const VisualRuleEngine = ({ apparatusList, visualRules, stepIndex, isPlaying }) 
             }
         });
 
-        // Check for Corks (Seals)
         apparatusList.forEach(item => {
             if (item.model === 'RubberCork') {
-                // Find nearest container to seal
-                // Simple distance check for now (ideal: check parent/child or specific slot)
                 let nearestContainerId = null;
-                let minDist = 0.5; // Threshold
-
                 Object.entries(state.containers).forEach(([id, container]) => {
                     const dx = item.position[0] - container.position[0];
-                    const dy = item.position[1] - container.position[1]; // Cork should be above
+                    const dy = item.position[1] - container.position[1];
                     const dz = item.position[2] - container.position[2];
                     const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-                    // Cork is usually ~2-3 units above container origin
-                    if (dist < 3.0 && dy > 1.0) { // Rough heuristic
+                    if (dist < 3.0 && dy > 1.0) {
                         nearestContainerId = id;
                     }
                 });
-
                 if (nearestContainerId) {
                     state.containers[nearestContainerId].isSealed = true;
-                    // Store cork ID to find connected tubes
                     state.containers[nearestContainerId].corkId = item.id;
                 }
             }
         });
 
-        // Check for Delivery Tubes (Vents)
         apparatusList.forEach(item => {
             if (item.model === 'DeliveryTube') {
-                // Determine if this tube connects to a cork
-                // For now, assume if there's a tube and a sealed container, they match
-                // In a real graph, we'd check Item connections
-
                 Object.values(state.containers).forEach((container) => {
                     if (container.isSealed) {
-                        // If tube start point is near cork...
-                        // Simplify: Just assign the tube path if exists
                         container.ventPath = item.points || [];
                     }
                 });
@@ -74,72 +54,79 @@ const VisualRuleEngine = ({ apparatusList, visualRules, stepIndex, isPlaying }) 
         return state;
     }, [apparatusList]);
 
-    // 2. Render Visuals based on Rules + Physics
     const stepRules = visualRules?.timeline?.[stepIndex] || {};
-
-    // Helper to find apparatus by ID
     const findApparatus = (id) => apparatusList.find(a => a.id === id);
+
+    // 2. Gather All Gas Effects (Advanced + Basic UI)
+    const advancedEffects = getActiveEffects(visualRules?.timeline, stepIndex, stepProgress);
+    const gasEffects = advancedEffects.filter(e => e.type === 'GAS').map(e => ({
+        sourceId: e.sourceId,
+        gasType: e.gasType || 'bubble',
+        color: e.color || '#ffffff',
+        rate: e.rate || 50,
+        size: e.size || 0.5
+    }));
+
+    // Check basic UI gas
+    if (stepRules.gas?.enabled && stepRules.gas?.source) {
+        gasEffects.push({
+            sourceId: stepRules.gas.source,
+            gasType: stepRules.gas.type || 'bubble',
+            color: stepRules.gas.color || '#ffffff',
+            rate: stepRules.gas.rate !== undefined ? stepRules.gas.rate : 50,
+            size: stepRules.gas.size || 0.5
+        });
+    }
 
     return (
         <group name="visual-rule-engine">
             {/* A. GAS EFFECTS (Bubbles / Smoke) */}
-            {stepRules.gas?.enabled && (() => {
-                const sourceId = stepRules.gas.source;
+            {gasEffects.map((gasEffect, idx) => {
+                const sourceId = gasEffect.sourceId;
                 const sourceItem = findApparatus(sourceId);
-                const container = physicsState.containers[sourceId]; // Is source a container?
-
-                // Position: Default to source item pos, or fallback to center
+                const container = physicsState.containers[sourceId];
                 const pos = sourceItem ? sourceItem.position : [0, 0, 0];
+                const keySuffix = `${gasEffect.gasType}-${sourceId || 'default'}-${idx}`;
 
                 if (container && container.isSealed && container.ventPath && container.ventPath.length > 0) {
-                    // Gas traveling through tube
                     return (
                         <ParticleSystem
-                            key={`gas-tube-${sourceId}`}
-                            config={{
-                                type: 'smoke', // or gas_flow
-                                color: stepRules.gas.color || '#fff',
-                                speed: (stepRules.gas.rate || 50) * 0.002,
-                                scale: stepRules.gas.size || 0.5
-                            }}
-                            count={stepRules.gas.rate || 20}
+                            key={`gas-tube-${keySuffix}`}
+                            type={gasEffect.gasType}
+                            color={gasEffect.color}
+                            speed={gasEffect.rate * 0.002}
+                            scale={gasEffect.size}
+                            count={gasEffect.rate}
                             path={container.ventPath}
+                            isPlaying={isPlaying}
                         />
                     );
                 } else {
-                    // Rising Gas (Bubbles or Smoke)
-
                     return (
-                        <group position={pos}>
+                        <group key={`gas-rise-${keySuffix}`} position={pos}>
                             <ParticleSystem
-                                key={`gas-rise-${stepRules.gas.type}-${sourceId || 'default'}`}
-                                config={{
-                                    type: stepRules.gas.type || (stepRules.gas.color === '#ffffff' ? 'smoke' : 'bubble'),
-                                    color: stepRules.gas.color || '#fff',
-                                    speed: (stepRules.gas.rate || 50) * 0.001,
-                                    scale: stepRules.gas.size || 0.5,
-                                    spread: 0.5
-                                }}
-                                count={stepRules.gas.rate || 20}
+                                type={gasEffect.gasType}
+                                color={gasEffect.color}
+                                speed={gasEffect.rate * 0.001}
+                                scale={gasEffect.size}
+                                spread={0.5}
+                                count={gasEffect.rate}
+                                isPlaying={isPlaying}
                             />
                         </group>
                     );
                 }
-            })()}
+            })}
 
-            {/* B. LIGHT EFFECTS (Flash / Glow) */}
+            {/* B. LIGHT EFFECTS */}
             {stepRules.light?.enabled && (() => {
-                // Simple Point Light for now
                 const intensity = stepRules.light.intensity || 1;
                 const color = stepRules.light.color || '#fff';
                 const radius = stepRules.light.radius || 5;
 
-                // Flicker logic could be here or in a shader. 
-                // For now, we rely on React Three Fiber reactivity if we passed a ref, 
-                // but here we just render the light.
                 return (
                     <pointLight
-                        position={[0, 2, 0]} // Center of scene approx
+                        position={[0, 2, 0]}
                         intensity={intensity}
                         color={color}
                         distance={radius * 5}
@@ -148,10 +135,9 @@ const VisualRuleEngine = ({ apparatusList, visualRules, stepIndex, isPlaying }) 
                 );
             })()}
 
-            {/* C. HEAT EFFECTS (Glow) */}
-            {stepRules.heat?.enabled && (() => {
-                const sourceId = stepRules.heat.source;
-                const sourceItem = findApparatus(sourceId);
+            {/* C. HEAT EFFECTS (Ambient Glow) */}
+            {stepRules.heat?.enabled && stepRules.heat?.source && (() => {
+                const sourceItem = findApparatus(stepRules.heat.source);
                 const pos = sourceItem ? sourceItem.position : [0, 0, 0];
 
                 return (
@@ -163,8 +149,6 @@ const VisualRuleEngine = ({ apparatusList, visualRules, stepIndex, isPlaying }) 
                     />
                 );
             })()}
-
-            {/* D. PRECIPITATE / LIQUID (Handled via props to specific Apparatus usually, but could add overlays here) */}
         </group>
     );
 };
