@@ -239,19 +239,11 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/chemical-reactions"
+                href={user ? "/chemical-reactions" : "/login"}
                 className="px-8 py-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-base transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-cyan-900/50"
               >
-                Launch Reaction Lab ⚗️
+                {user ? "Launch Reaction Lab ⚗️" : "Get Started 🚀"}
               </Link>
-              {!user && (
-                <Link
-                  href="/login"
-                  className="px-8 py-4 rounded-xl border border-white/20 hover:border-white/50 text-white font-bold text-base transition-all duration-200 hover:scale-105 active:scale-95 backdrop-blur"
-                >
-                  Create Free Account
-                </Link>
-              )}
             </div>
           </div>
         </div>
