@@ -1,7 +1,6 @@
-// app/layout.js
 import './globals.css';
-import NavBar from '../components/navbar';
 import { AuthProvider } from '../context/AuthContext';
+import NavbarWrapper from '../components/NavbarWrapper';
 
 export const metadata = {
   title: 'Molecool Labs',
@@ -13,7 +12,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="bg-black">
         <AuthProvider>
-          <NavBar />
+          <NavbarWrapper />
           {children}
         </AuthProvider>
       </body>
