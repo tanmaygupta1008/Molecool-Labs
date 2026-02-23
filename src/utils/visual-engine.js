@@ -100,7 +100,7 @@ export const calculateFrameState = (timeline, stepIndex, stepProgress, apparatus
 
         // 2. Physics / Simulation Effects (Gas Displacement, Transfer)
         if (effect.type === 'GAS_DISPLACEMENT') {
-            const t = Math.min(1, Math.max(0, stepProgress));
+            const t = Math.min(1, Math.max(0, effect._globalProgress !== undefined ? effect._globalProgress : stepProgress));
 
             if (state[effect.sourceId] && state[effect.targetId]) {
                 if (effect.sourceLiquidStart !== undefined && effect.sourceLiquidEnd !== undefined) {

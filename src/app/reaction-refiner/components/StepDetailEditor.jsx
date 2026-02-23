@@ -91,6 +91,8 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
     // Local state for the "Add New Effect" form
     const [newEffectType, setNewEffectType] = useState('MORPH');
     const [newEffectTarget, setNewEffectTarget] = useState('');
+    const [newEffectAmount, setNewEffectAmount] = useState(50); // State for Gas Displacement slider
+    const [newEffectShowGas, setNewEffectShowGas] = useState(true); // State for Show Gas toggle
     const [editingEffectIdx, setEditingEffectIdx] = useState(null);
 
     if (!step) return <div className="text-gray-500 text-xs italic p-4">Select a step to edit details</div>;
@@ -467,14 +469,10 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
                                                 if (document.getElementById('eff-disp-src')) document.getElementById('eff-disp-src').value = eff.sourceId;
                                                 if (document.getElementById('eff-disp-tgt')) document.getElementById('eff-disp-tgt').value = eff.targetId;
                                                 if (document.getElementById('eff-disp-aux') && eff.auxTargetId) document.getElementById('eff-disp-aux').value = eff.auxTargetId;
-                                                if (document.getElementById('eff-disp-sl1')) document.getElementById('eff-disp-sl1').value = eff.sourceLiquidStart;
-                                                if (document.getElementById('eff-disp-sl2')) document.getElementById('eff-disp-sl2').value = eff.sourceLiquidEnd;
-                                                if (document.getElementById('eff-disp-tl1')) document.getElementById('eff-disp-tl1').value = eff.targetLiquidStart;
-                                                if (document.getElementById('eff-disp-tl2')) document.getElementById('eff-disp-tl2').value = eff.targetLiquidEnd;
-                                                if (document.getElementById('eff-disp-tg1')) document.getElementById('eff-disp-tg1').value = eff.targetGasOpacityStart;
-                                                if (document.getElementById('eff-disp-tg2')) document.getElementById('eff-disp-tg2').value = eff.targetGasOpacityEnd;
-                                                if (document.getElementById('eff-disp-al1')) document.getElementById('eff-disp-al1').value = eff.auxLiquidStart || '';
-                                                if (document.getElementById('eff-disp-al2')) document.getElementById('eff-disp-al2').value = eff.auxLiquidEnd || '';
+                                                // Calculate reverse amount from targetGasOpacityEnd
+                                                const extractedAmount = (eff.targetGasOpacityEnd !== undefined) ? (eff.targetGasOpacityEnd * 100) : 50;
+                                                setNewEffectAmount(extractedAmount);
+                                                setNewEffectShowGas(eff.showGas !== false); // Default to true if undefined
                                             }
                                         }, 50);
                                     }}
@@ -601,36 +599,29 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
                                     </select>
                                 </ControlRow>
 
-                                <div className="grid grid-cols-2 gap-2 mt-2">
-                                    <div>
-                                        <div className="text-[9px] text-gray-500 mb-1">Source Liq. Extents</div>
-                                        <div className="flex gap-1">
-                                            <input id="eff-disp-sl1" type="number" className={inputClass} placeholder="Start" />
-                                            <input id="eff-disp-sl2" type="number" className={inputClass} placeholder="End" />
-                                        </div>
+                                <ControlRow label="Displacement Amount (%)">
+                                    <div className="mt-2">
+                                        <SliderWithInput
+                                            min={0} max={100} step={1}
+                                            value={newEffectAmount}
+                                            onChange={(val) => setNewEffectAmount(val)}
+                                        />
                                     </div>
-                                    <div>
-                                        <div className="text-[9px] text-gray-500 mb-1">Target Liq. Extents</div>
-                                        <div className="flex gap-1">
-                                            <input id="eff-disp-tl1" type="number" className={inputClass} placeholder="Start" />
-                                            <input id="eff-disp-tl2" type="number" className={inputClass} placeholder="End" />
-                                        </div>
+                                    <div className="text-[9px] text-gray-500 mt-1 italic">
+                                        How much gas to transfer from Source to Target. Auto-calculates liquid levels.
                                     </div>
-                                    <div>
-                                        <div className="text-[9px] text-gray-500 mb-1">Target Gas Opacity</div>
-                                        <div className="flex gap-1">
-                                            <input id="eff-disp-tg1" type="number" step="0.1" className={inputClass} placeholder="Start" />
-                                            <input id="eff-disp-tg2" type="number" step="0.1" className={inputClass} placeholder="End" />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="text-[9px] text-gray-500 mb-1">Aux Liq. Extents</div>
-                                        <div className="flex gap-1">
-                                            <input id="eff-disp-al1" type="number" step="0.1" className={inputClass} placeholder="Start" />
-                                            <input id="eff-disp-al2" type="number" step="0.1" className={inputClass} placeholder="End" />
-                                        </div>
-                                    </div>
-                                </div>
+                                </ControlRow>
+                                <ControlRow label="Visuals">
+                                    <label className="flex items-center gap-2 text-[11px] text-gray-300 mt-1 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={newEffectShowGas}
+                                            onChange={(e) => setNewEffectShowGas(e.target.checked)}
+                                            className="w-3 h-3 accent-cyan-500"
+                                        />
+                                        Show Gas Bubbles traversing through Delivery Tube
+                                    </label>
+                                </ControlRow>
                             </>
                         )}
 
@@ -662,25 +653,35 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
                                     newEff.color = document.getElementById('eff-gas-color').value;
                                 } else if (newEffectType === 'GAS_DISPLACEMENT') {
                                     newEff.sourceId = document.getElementById('eff-disp-src').value;
-                                    newEff.targetId = document.getElementById('eff-disp-tgt').value;
-                                    newEff.auxTargetId = document.getElementById('eff-disp-aux').value || undefined;
+                                    const src = document.getElementById('eff-disp-src').value;
+                                    const tgt = document.getElementById('eff-disp-tgt').value;
+                                    const aux = document.getElementById('eff-disp-aux').value;
+                                    const amount = newEffectAmount / 100.0; // 0 to 1
 
-                                    if (!newEff.sourceId || !newEff.targetId) return;
+                                    if (!src || !tgt) return;
 
-                                    // Parse all the extents
-                                    const parseE = (id) => {
-                                        const v = parseFloat(document.getElementById(id).value);
-                                        return isNaN(v) ? undefined : v;
-                                    };
-                                    newEff.sourceLiquidStart = parseE('eff-disp-sl1');
-                                    newEff.sourceLiquidEnd = parseE('eff-disp-sl2');
-                                    newEff.targetLiquidStart = parseE('eff-disp-tl1');
-                                    newEff.targetLiquidEnd = parseE('eff-disp-tl2');
-                                    newEff.targetGasOpacityStart = parseE('eff-disp-tg1');
-                                    newEff.targetGasOpacityEnd = parseE('eff-disp-tg2');
-                                    if (newEff.auxTargetId) {
-                                        newEff.auxLiquidStart = parseE('eff-disp-al1');
-                                        newEff.auxLiquidEnd = parseE('eff-disp-al2');
+                                    newEff.sourceId = src;
+                                    newEff.targetId = tgt;
+                                    newEff.showGas = newEffectShowGas;
+                                    if (aux) newEff.auxTargetId = aux;
+
+                                    // AUTO CALCULATE EXTENTS BASED ON AMOUNT
+                                    // 1. Source liquid drops from 100% to (1-amount)
+                                    newEff.sourceLiquidStart = 1;
+                                    newEff.sourceLiquidEnd = 1 - amount;
+
+                                    // 2. Target liquid drops from 100% to (1-amount) (pushed out by gas)
+                                    newEff.targetLiquidStart = 1;
+                                    newEff.targetLiquidEnd = 1 - amount;
+
+                                    // 3. Target gas opacity increases from 0 to amount
+                                    newEff.targetGasOpacityStart = 0;
+                                    newEff.targetGasOpacityEnd = amount;
+
+                                    // 4. Aux target (trough) liquid increases slightly from 1 to (1 + amount*0.2)
+                                    if (aux) {
+                                        newEff.auxLiquidStart = 1;
+                                        newEff.auxLiquidEnd = 1 + (amount * 0.2); // Just a generic slight increase
                                     }
                                 }
 

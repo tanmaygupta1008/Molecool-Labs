@@ -59,6 +59,8 @@ const VisualRuleEngine = ({ stepIndex, visualRules, apparatusList, stepProgress 
 
     // 2. Gather All Gas Effects (Advanced + Basic UI)
     const advancedEffects = getActiveEffects(visualRules?.timeline, stepIndex, stepProgress);
+
+    // Process standard GAS effects
     const gasEffects = advancedEffects.filter(e => e.type === 'GAS').map(e => ({
         sourceId: e.sourceId,
         gasType: e.gasType || 'bubble',
@@ -66,6 +68,17 @@ const VisualRuleEngine = ({ stepIndex, visualRules, apparatusList, stepProgress 
         rate: e.rate || 50,
         size: e.size || 0.5
     }));
+
+    // Process GAS_DISPLACEMENT effects that have "showGas" enabled
+    advancedEffects.filter(e => e.type === 'GAS_DISPLACEMENT' && e.showGas).forEach(e => {
+        gasEffects.push({
+            sourceId: e.sourceId,
+            gasType: 'bubble', // Default to bubble for liquid displacement
+            color: '#ffffff', // Default white
+            rate: 50, // Default steady rate
+            size: 0.6 // Slightly larger bubbles for displacement
+        });
+    });
 
     // Check basic UI gas
     if (stepRules.gas?.enabled && stepRules.gas?.source) {
