@@ -122,13 +122,7 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
     };
 
     return (
-        <div className="bg-[#1a1a1a] p-4 h-full overflow-y-auto custom-scrollbar border-l border-white/10">
-            <h3 className="text-sm font-bold text-cyan-400 mb-4 uppercase tracking-wider flex justify-between items-center">
-                <span>Step Details</span>
-                <button onClick={onPreview} className="text-xs flex items-center gap-1 text-green-400 hover:text-green-300 bg-green-900/20 px-2 py-1 rounded border border-green-500/30">
-                    <Play size={12} fill="currentColor" /> Preview
-                </button>
-            </h3>
+        <div className="flex flex-col gap-6">
 
             {/* Description */}
             <div className="mb-6">

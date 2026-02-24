@@ -1,5 +1,4 @@
-// src/components/reactions/views/MacroView.jsx
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, MeshTransmissionMaterial, Html, Float, Center } from '@react-three/drei';
 import * as THREE from 'three';
@@ -10,9 +9,12 @@ import * as Apparatus from '../../apparatus';
 import RealisticLiquid from './components/RealisticLiquid';
 import ParticleSystem from './components/ParticleSystem';
 import VisualRuleEngine from '../../macro/VisualRuleEngine';
+import DynamicGasEffects from './DynamicGasEffects';
+import DynamicLiquidEffects from './DynamicLiquidEffects';
+import DynamicForceEffects from './DynamicForceEffects';
 
 import { detectApparatusTypeAbove } from '../../../utils/apparatus-logic';
-import { calculateFrameState } from '../../../utils/visual-engine';
+import { ReactionEngine } from '../../../engine/ReactionEngine';
 
 // Map model names from JSON to components
 const APPARATUS_MAP = {
@@ -141,9 +143,6 @@ const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRule
         <group
             ref={groupRef}
             key={item.id}
-            position={item.position || [0, 0, 0]}
-            rotation={item.rotation || [0, 0, 0]}
-            scale={item.scale || [1, 1, 1]}
             visible={item.visible !== false}
         >
             <Component {...finalProps} />
@@ -152,115 +151,6 @@ const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRule
 };
 
 
-
-// --- ANIMATION & TRANSFORMATION LOGIC ---
-// Helper to derive current apparatus state from timeline
-const useDerivedApparatus = (reaction, progress) => {
-    // 1. Initial State
-    // Deep clone to avoid mutating original
-    let currentApparatus = JSON.parse(JSON.stringify(reaction.apparatus || []));
-    const timeline = reaction.macroView?.visualRules?.timeline || {};
-    const totalSteps = Object.keys(timeline).length;
-
-    if (totalSteps === 0) return { apparatus: currentApparatus, currentStepIndex: 0 };
-
-    // 2. Determine Current Step & Step Progress
-    // Calculate Total Duration & Find Current Step based on real durations
-    let totalDuration = 0;
-    const stepDurations = [];
-    for (let i = 0; i < totalSteps; i++) {
-        const s = timeline[i.toString()];
-        const dur = (parseFloat(s?.duration) || 0) + (parseFloat(s?.delay) || 0);
-        stepDurations.push(dur);
-        totalDuration += dur;
-    }
-    if (totalDuration === 0) totalDuration = 10; // Fallback
-
-    const currentTime = progress * totalDuration;
-    let currentStepIndex = 0;
-    let accumulatedTime = 0;
-    let stepProgress = 0;
-
-    for (let i = 0; i < totalSteps; i++) {
-        const dur = stepDurations[i];
-        if (currentTime <= accumulatedTime + dur) {
-            currentStepIndex = i;
-            // Calculate 0-1 progress within this specific step
-            stepProgress = dur > 0 ? (currentTime - accumulatedTime) / dur : 1;
-            break;
-        }
-        accumulatedTime += dur;
-        // If we dictate the last step, ensure we clamp
-        if (i === totalSteps - 1) {
-            currentStepIndex = i;
-            stepProgress = 1;
-        }
-    }
-
-    // 3. Apply Transformations (Permanent changes from previous steps)
-    for (let i = 0; i <= currentStepIndex; i++) {
-        const step = timeline[i.toString()];
-        if (step && step.transformations) {
-            step.transformations.forEach(trans => {
-                const target = currentApparatus.find(a => a.id === trans.target);
-                if (target) {
-                    if (trans.newModel) target.model = trans.newModel;
-                    if (trans.visible !== undefined) target.visible = trans.visible;
-                    if (trans.scale) target.scale = trans.scale;
-                    if (trans.color) target.color = trans.color;
-                }
-            });
-        }
-    }
-
-    // 4. Calculate Animations (Interpolated changes for CURRENT step)
-    const currentStepConfig = timeline[currentStepIndex.toString()];
-    if (currentStepConfig && currentStepConfig.animations) {
-        currentStepConfig.animations.forEach(anim => {
-            const target = currentApparatus.find(a => a.id === anim.target);
-            if (target) {
-                if (anim.type === 'move') {
-                    if (anim.position) {
-                        const start = target.position || [0, 0, 0];
-                        const end = anim.position;
-                        target.position = [
-                            start[0] + (end[0] - start[0]) * stepProgress,
-                            start[1] + (end[1] - start[1]) * stepProgress,
-                            start[2] + (end[2] - start[2]) * stepProgress
-                        ];
-                    }
-                } else if (anim.type === 'scale') {
-                    if (anim.scale) {
-                        const start = target.scale || [1, 1, 1];
-                        const end = anim.scale;
-                        target.scale = [
-                            start[0] + (end[0] - start[0]) * stepProgress,
-                            start[1] + (end[1] - start[1]) * stepProgress,
-                            start[2] + (end[2] - start[2]) * stepProgress
-                        ];
-                    }
-                } else if (anim.type === 'rotate') {
-                    target.rotation = [
-                        (target.rotation?.[0] || 0) + stepProgress * Math.PI * (anim.speed || 1),
-                        target.rotation?.[1] || 0,
-                        target.rotation?.[2] || 0
-                    ];
-                }
-            }
-        });
-    }
-
-    // 5. Advanced Engine: Calculate Render State per apparatus
-    const timelineData = reaction.macroView?.visualRules?.timeline || {};
-    const renderState = calculateFrameState(timelineData, currentStepIndex, stepProgress, currentApparatus);
-
-    // Merge renderState into the currentApparatus objects so ApparatusItem receives it
-    currentApparatus.forEach(app => {
-        app.renderProps = renderState[app.id] || {};
-    });
-
-    return { apparatus: currentApparatus, currentStepIndex, stepProgress };
-};
 
 // --- MAIN MACRO VIEW MANAGER ---
 const MacroView = ({ reaction, progress, isPlaying }) => {
@@ -271,8 +161,31 @@ const MacroView = ({ reaction, progress, isPlaying }) => {
 };
 
 const DynamicSetup = ({ reaction, progress, isPlaying }) => {
-    // 1. Get List of Apparatus & Current Step from Helper
-    const { apparatus: apparatusList, currentStepIndex, stepProgress } = useDerivedApparatus(reaction, progress);
+    // 1. Initialize ReactionEngine (Once per reaction)
+    const engine = useMemo(() => {
+        const e = new ReactionEngine(reaction);
+        e.reset(); // Establish baseline
+        return e;
+    }, [reaction]);
+
+    // 2. Local State tied to Engine
+    const [engineState, setEngineState] = useState(engine.getState());
+
+    // 3. Keep State Synced to Parent Progress
+    // When the top-level scrub slider moves `progress` (0 to 1), 
+    // we seek the engine and grab the calculated state.
+    useEffect(() => {
+        engine.seekProgress(progress);
+        setEngineState({ ...engine.getState() });
+    }, [progress, engine]);
+
+    // We convert the state object map into the array format expected by the rendering tree below
+    const apparatusList = useMemo(() => {
+        return Object.values(engineState);
+    }, [engineState]);
+
+    const currentStepIndex = 0; // Legacy step index. We may want the engine to expose this later if visual effects strictly need it.
+    const stepProgress = progress;
 
     // Stub to hold object refs for World Position lookups
     const apparatusRefs = useRef({});
@@ -285,12 +198,24 @@ const DynamicSetup = ({ reaction, progress, isPlaying }) => {
                 <rectAreaLight width={5} height={20} color="white" intensity={2} position={[5, 5, 5]} lookAt={[0, 0, 0]} />
             </group>
 
-            <Center top>
-                <group>
-                    {/* Render List Flat */}
-                    {apparatusList.map(item => (
+            <group>
+                {/* Render List Flat */}
+                {apparatusList.map(item => (
+                    <group
+                        key={item.id}
+                        position={
+                            item.shakeOffset
+                                ? [
+                                    (item.position?.[0] || 0) + item.shakeOffset[0],
+                                    (item.position?.[1] || 0) + item.shakeOffset[1],
+                                    (item.position?.[2] || 0) + item.shakeOffset[2]
+                                ]
+                                : item.position || [0, 0, 0]
+                        }
+                        rotation={item.rotation || [0, 0, 0]}
+                        scale={item.scale || [1, 1, 1]}
+                    >
                         <ApparatusItem
-                            key={item.id}
                             item={item}
                             apparatusRefs={apparatusRefs}
                             progress={progress}
@@ -299,25 +224,41 @@ const DynamicSetup = ({ reaction, progress, isPlaying }) => {
                             currentStepIndex={currentStepIndex}
                             stepProgress={stepProgress}
                         />
-                    ))}
+                    </group>
+                ))}
 
-                    {/* Visual Effects Overlay (New Engine) */}
-                    <VisualRuleEngine
-                        apparatusList={apparatusList}
-                        visualRules={reaction.macroView?.visualRules}
-                        stepIndex={currentStepIndex}
-                        stepProgress={stepProgress}
-                        isPlaying={isPlaying ?? (progress > 0 && progress < 1)}
-                    />
+                {/* Visual Effects Overlay (New Engine) */}
+                <VisualRuleEngine
+                    apparatusList={apparatusList}
+                    visualRules={reaction.macroView?.visualRules}
+                    stepIndex={currentStepIndex}
+                    stepProgress={stepProgress}
+                    isPlaying={isPlaying ?? (progress > 0 && progress < 1)}
+                />
 
-                </group>
-            </Center>
+                {/* Native Gas System Overlay */}
+                <DynamicGasEffects
+                    apparatusList={apparatusList}
+                    apparatusRefs={apparatusRefs}
+                />
 
-            <mesh position={[0, -5, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+                {/* Native Liquid System Overlay */}
+                <DynamicLiquidEffects
+                    apparatusList={apparatusList}
+                />
+
+                {/* Native Force System Overlay (Splashes/Explosions) */}
+                <DynamicForceEffects
+                    apparatusList={apparatusList}
+                />
+
+            </group>
+
+            <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
                 <planeGeometry args={[50, 50]} />
                 <meshStandardMaterial color="#1a1a1a" roughness={0.8} metalness={0.2} />
             </mesh>
-            <gridHelper args={[50, 50, '#333', '#111']} position={[0, -4.99, 0]} />
+            <gridHelper args={[50, 50, '#333', '#111']} position={[0, -0.01, 0]} />
         </group >
     );
 };

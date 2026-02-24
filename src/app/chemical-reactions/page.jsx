@@ -151,12 +151,13 @@
 // src/app/chemical-reactions/page.jsx
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import ReactionViewer from '@/components/reactions/ReactionViewer';
 import ReactionControls from '@/components/reactions/ReactionControls';
 import EnergyProfile from '@/components/reactions/EnergyProfile';
 import ReactionLibrary from '@/components/reactions/ReactionLibrary';
 import ReactorConditions from '@/components/reactions/ReactorConditions';
+import { compileTimelineEvents } from '../../engine/ReactionEngineAdapter';
 
 // Import JSON Configuration
 // import REACTIONS_LIST from '@/data/reactions.json'; // REMOVED to avoid HMR
@@ -195,6 +196,13 @@ const ChemicalReactionsPage = () => {
 
   const playingRef = useRef(false);
 
+  const totalDurationSeconds = useMemo(() => {
+    if (!currentReaction) return 10;
+    const timelineObj = currentReaction.macroView?.visualRules?.timeline || currentReaction.timeline || {};
+    const { totalDuration: msDur } = compileTimelineEvents(timelineObj);
+    return msDur > 0 ? (msDur / 1000) : 10;
+  }, [currentReaction]);
+
   // Animation Loop
   useEffect(() => {
     let animationFrameId;
@@ -214,17 +222,17 @@ const ChemicalReactionsPage = () => {
           const tempRatio = Math.max(0.1, envConditions.temp / optimalTemp);
           const physicsMultiplier = Math.min(1.5, tempRatio);
 
-          // SPEED CALCULATION:
-          const step = 0.002 * physicsMultiplier * simulationSpeed;
+          const timeDeltaSeconds = 1 / 60; // Assuming 60fps for step approximation or use actual delta time
+          let increment = (timeDeltaSeconds * physicsMultiplier * simulationSpeed) / totalDurationSeconds;
 
-          return prev + step;
+          return prev + increment;
         });
       }
       animationFrameId = requestAnimationFrame(loop);
     };
     loop();
     return () => cancelAnimationFrame(animationFrameId);
-  }, [envConditions.temp, currentReaction, simulationSpeed]);
+  }, [envConditions.temp, currentReaction, simulationSpeed, totalDurationSeconds]);
 
   const togglePlay = () => {
     const newState = !isPlaying;

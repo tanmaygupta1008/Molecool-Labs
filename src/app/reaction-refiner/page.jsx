@@ -6,8 +6,11 @@ import { OrbitControls, Environment, PerspectiveCamera, Grid } from '@react-thre
 import MacroView from '@/components/reactions/views/MacroView';
 import { Save, Play, Pause, RefreshCw, Code, LayoutTemplate } from 'lucide-react';
 import InitialStateEditor from './components/InitialStateEditor';
+import AdvancedEngineEditor from './components/AdvancedEngineEditor';
 import TimelineEditor from './components/TimelineEditor';
 import StepDetailEditor from './components/StepDetailEditor';
+import RefinerSection from './components/RefinerSection';
+import { compileTimelineEvents } from '../../engine/ReactionEngineAdapter';
 
 
 const ReactionRefinerPage = () => {
@@ -20,6 +23,13 @@ const ReactionRefinerPage = () => {
     const [jsonInput, setJsonInput] = useState('');
     const [selectedStepIndex, setSelectedStepIndex] = useState(null);
     const [saveStatus, setSaveStatus] = useState(null); // 'saving', 'success', 'error'
+
+    // Accordion State for Right Panel
+    const [openSections, setOpenSections] = useState({
+        initial: false,
+        advanced: false,
+        step: true
+    });
     // Playback State
     const [progress, setProgress] = useState(0); // 0 to 1
     const [isPlaying, setIsPlaying] = useState(false);
@@ -28,11 +38,10 @@ const ReactionRefinerPage = () => {
 
     // Calculate Total Duration
     const totalDuration = useMemo(() => {
-        if (!currentReaction?.macroView?.visualRules?.timeline) return 10; // Default 10s
-        return Object.values(currentReaction.macroView.visualRules.timeline).reduce((acc, step) => {
-            if (step.disabled) return acc;
-            return acc + (parseFloat(step.duration) || 0) + (parseFloat(step.delay) || 0);
-        }, 0) || 10; // Fallback to 10s if empty
+        if (!currentReaction) return 10;
+        const timelineObj = currentReaction.macroView?.visualRules?.timeline || {};
+        const { totalDuration: msDur } = compileTimelineEvents(timelineObj);
+        return msDur > 0 ? (msDur / 1000) : 10; // Convert to seconds for the UI loop
     }, [currentReaction?.macroView?.visualRules?.timeline]);
 
     // Fetch Reactions on Mount
@@ -234,7 +243,7 @@ const ReactionRefinerPage = () => {
                         <ambientLight intensity={0.5} />
                         <directionalLight position={[5, 10, 5]} intensity={1} />
                         <Grid infiniteGrid sectionColor="#333" cellColor="#222" fadeDistance={30} />
-                        <group position={[0, -2, 0]}>
+                        <group position={[0, 0, 0]}>
                             <MacroView
                                 reaction={currentReaction}
                                 progress={progress}
@@ -273,19 +282,81 @@ const ReactionRefinerPage = () => {
                     ) : (
                         <>
                             {/* Section: Initial State configuration */}
-                            <InitialStateEditor
-                                initialState={currentReaction.macroView?.visualRules?.initialState}
-                                onChange={(newState) => handleVisualChange('initialState', newState)}
-                                apparatusList={currentReaction.apparatus || []}
-                            />
+                            <RefinerSection
+                                title="Initial State"
+                                isOpen={openSections.initial}
+                                onToggle={() => setOpenSections(prev => ({ ...prev, initial: !prev.initial }))}
+                            >
+                                <InitialStateEditor
+                                    initialState={currentReaction.macroView?.visualRules?.initialState}
+                                    onChange={(newState) => handleVisualChange('initialState', newState)}
+                                    apparatusList={currentReaction.apparatus || []}
+                                />
+                            </RefinerSection>
+
+                            {/* Section: Advanced Engine Modifiers (Gas, Liquid, Solid, Force) */}
+                            <RefinerSection
+                                title="Global Engine Events"
+                                isOpen={openSections.advanced}
+                                onToggle={() => setOpenSections(prev => ({ ...prev, advanced: !prev.advanced }))}
+                            >
+                                <AdvancedEngineEditor
+                                    visualRules={currentReaction.macroView?.visualRules}
+                                    onChange={(newRules) => {
+                                        // Manually construct the full macroView payload mimicking handleVisualChange
+                                        setCurrentReaction(prev => {
+                                            const updatedReaction = {
+                                                ...prev,
+                                                macroView: {
+                                                    ...prev.macroView,
+                                                    visualRules: newRules
+                                                }
+                                            };
+                                            // Sync JSON view
+                                            setJsonInput(JSON.stringify(updatedReaction.macroView.visualRules, null, 4));
+                                            return updatedReaction;
+                                        });
+                                    }}
+                                    apparatusList={currentReaction.apparatus || []}
+                                />
+                            </RefinerSection>
 
                             {/* Section: Step Details (Visible only when a step is selected) */}
-                            {selectedStepIndex !== null ? (
-                                <div className="bg-[#111] rounded-lg border border-white/5 overflow-hidden flex flex-col min-h-[400px]">
-                                    <div className="bg-[#1f1f1f] px-3 py-2 border-b border-white/5 font-semibold text-xs text-cyan-300 flex justify-between">
-                                        <span>Step {parseInt(selectedStepIndex) + 1} Details</span>
-                                        <span className="text-white/30 font-mono">#{selectedStepIndex}</span>
-                                    </div>
+                            <RefinerSection
+                                title={`Step ${selectedStepIndex !== null ? parseInt(selectedStepIndex) + 1 : ''} Details`}
+                                isOpen={openSections.step}
+                                onToggle={() => setOpenSections(prev => ({ ...prev, step: !prev.step }))}
+                                headerRight={
+                                    selectedStepIndex !== null && (
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const timeline = currentReaction.macroView?.visualRules?.timeline || {};
+                                                    let startTime = 0;
+                                                    // Sum duration+delay of all previous steps
+                                                    for (let i = 0; i < selectedStepIndex; i++) {
+                                                        const s = timeline[i];
+                                                        if (s && !s.disabled) {
+                                                            startTime += (parseFloat(s.duration) || 0) + (parseFloat(s.delay) || 0);
+                                                        }
+                                                    }
+
+                                                    if (totalDuration > 0) {
+                                                        setProgress(startTime / totalDuration);
+                                                        setIsPlaying(true);
+                                                    }
+                                                }}
+                                                className="text-xs flex items-center gap-1 text-green-400 hover:text-green-300 bg-green-900/40 px-2 py-0.5 rounded border border-green-500/50 transition-colors"
+                                            >
+                                                <Play size={10} fill="currentColor" /> Preview
+                                            </button>
+                                            <span className="text-white/30 font-mono text-[10px]">#{selectedStepIndex}</span>
+                                        </div>
+                                    )
+                                }
+                            >
+                                {selectedStepIndex !== null ? (
                                     <div className="flex-1">
                                         <StepDetailEditor
                                             step={currentReaction.macroView?.visualRules?.timeline?.[selectedStepIndex]}
@@ -295,30 +366,15 @@ const ReactionRefinerPage = () => {
                                                 newTimeline[selectedStepIndex] = updatedStep;
                                                 handleVisualChange('timeline', newTimeline);
                                             }}
-                                            onPreview={() => {
-                                                const timeline = currentReaction.macroView?.visualRules?.timeline || {};
-                                                let startTime = 0;
-                                                // Sum duration+delay of all previous steps
-                                                for (let i = 0; i < selectedStepIndex; i++) {
-                                                    const s = timeline[i];
-                                                    if (s && !s.disabled) {
-                                                        startTime += (parseFloat(s.duration) || 0) + (parseFloat(s.delay) || 0);
-                                                    }
-                                                }
-
-                                                if (totalDuration > 0) {
-                                                    setProgress(startTime / totalDuration);
-                                                    setIsPlaying(true);
-                                                }
-                                            }}
+                                        // onPreview is now lifted to the header above
                                         />
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="border border-dashed border-white/10 rounded-lg p-6 text-center text-gray-600 text-xs bg-white/5">
-                                    Select a step from the Timeline on the left to edit its properties.
-                                </div>
-                            )}
+                                ) : (
+                                    <div className="border border-dashed border-white/10 rounded-lg p-6 text-center text-gray-500 text-xs bg-black/20 italic">
+                                        Select a step from the Timeline on the left to edit its properties.
+                                    </div>
+                                )}
+                            </RefinerSection>
                         </>
                     )}
                 </div>

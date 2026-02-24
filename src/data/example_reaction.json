@@ -1,0 +1,235 @@
+{
+  "id": "sodium-water",
+  "name": "Sodium and Water Reaction",
+  "description": "Exothermic reaction of sodium metal with water, producing sodium hydroxide and hydrogen gas.",
+  "initialState": {
+    "beaker": {
+      "type": "Beaker",
+      "fillLevel": 0.5,
+      "color": "#4da6ff",
+      "opacity": 0.6,
+      "temperature": 25,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "sodium_piece": {
+      "type": "Solid",
+      "color": "#c0c0c0",
+      "position": [
+        0,
+        5,
+        0
+      ],
+      "scale": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "opacity": 1.0,
+      "visible": false
+    },
+    "gas_bubbles": {
+      "type": "Particles",
+      "intensity": 0.0,
+      "color": "#ffffff"
+    },
+    "flame": {
+      "type": "Light",
+      "intensity": 0.0,
+      "color": "#ffaa00"
+    }
+  },
+  "propertyChanges": [
+    {
+      "target": "beaker",
+      "property": "fillLevel",
+      "from": 0.5,
+      "to": 0.2,
+      "startTime": 1000,
+      "duration": 4000,
+      "easing": "easeInOut"
+    },
+    {
+      "target": "beaker",
+      "property": "emissiveIntensity",
+      "from": 0.0,
+      "to": 2.5,
+      "startTime": 2000,
+      "duration": 1500,
+      "easing": "easeOut"
+    }
+  ],
+  "gasEvents": [
+    {
+      "source": "sodium_piece",
+      "destination": "beaker",
+      "gasType": "H2",
+      "rate": 15,
+      "duration": 4000,
+      "startTime": 1000,
+      "displacement": true
+    }
+  ],
+  "liquidEvents": [
+    {
+      "target": "beaker",
+      "type": "precipitateFormation",
+      "color": "#ffff00",
+      "density": 0.8,
+      "settleSpeed": 0.4,
+      "duration": 3000,
+      "startTime": 2000
+    }
+  ],
+  "solidEvents": [
+    {
+      "target": "sodium_piece",
+      "type": "dissolve",
+      "growthRate": 1.0,
+      "duration": 5000,
+      "startTime": 0
+    },
+    {
+      "target": "beaker",
+      "type": "deposition",
+      "color": "#8b4513",
+      "growthRate": 0.05,
+      "duration": 4000,
+      "startTime": 1000
+    }
+  ],
+  "forceEvents": [
+    {
+      "type": "explosion",
+      "origin": "sodium_piece",
+      "radius": 5,
+      "strength": 20,
+      "duration": 500,
+      "startTime": 4000
+    }
+  ],
+  "timeline": [
+    {
+      "id": "step1-drop-sodium",
+      "type": "mutateProperty",
+      "target": "sodium_piece",
+      "property": "position",
+      "from": [
+        0,
+        5,
+        0
+      ],
+      "to": [
+        0,
+        0.5,
+        0
+      ],
+      "startTime": 0,
+      "duration": 1000,
+      "easing": "easeInQuad"
+    },
+    {
+      "id": "step1-reveal-sodium",
+      "type": "mutateProperty",
+      "target": "sodium_piece",
+      "property": "visible",
+      "from": true,
+      "to": true,
+      "startTime": 0,
+      "duration": 0
+    },
+    {
+      "id": "step2-react-heat",
+      "type": "mutateProperty",
+      "target": "beaker",
+      "property": "temperature",
+      "from": 25,
+      "to": 80,
+      "startTime": 1000,
+      "duration": 4000,
+      "easing": "easeInOutQuad"
+    },
+    {
+      "id": "step2-react-color",
+      "type": "mutateProperty",
+      "target": "beaker",
+      "property": "color",
+      "from": "#4da6ff",
+      "to": "#ff99cc",
+      "startTime": 1000,
+      "duration": 4000,
+      "easing": "easeInOutQuad"
+    },
+    {
+      "id": "step2-gas-emission",
+      "type": "mutateProperty",
+      "target": "gas_bubbles",
+      "property": "intensity",
+      "from": 0.0,
+      "to": 1.0,
+      "startTime": 1200,
+      "duration": 2000,
+      "easing": "easeInQuad"
+    },
+    {
+      "id": "step3-flame-ignition",
+      "type": "mutateProperty",
+      "target": "flame",
+      "property": "intensity",
+      "from": 0.0,
+      "to": 5.0,
+      "startTime": 2000,
+      "duration": 500,
+      "easing": "easeInQuad"
+    },
+    {
+      "id": "step4-sodium-consumes",
+      "type": "mutateProperty",
+      "target": "sodium_piece",
+      "property": "scale",
+      "from": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "to": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "startTime": 1000,
+      "duration": 4000,
+      "easing": "linear"
+    },
+    {
+      "id": "step5-reaction-ends-flame",
+      "type": "mutateProperty",
+      "target": "flame",
+      "property": "intensity",
+      "from": 5.0,
+      "to": 0.0,
+      "startTime": 5000,
+      "duration": 1000,
+      "easing": "easeOutQuad"
+    },
+    {
+      "id": "step5-reaction-ends-gas",
+      "type": "mutateProperty",
+      "target": "gas_bubbles",
+      "property": "intensity",
+      "from": 1.0,
+      "to": 0.0,
+      "startTime": 5000,
+      "duration": 2000,
+      "easing": "easeOutQuad"
+    }
+  ]
+}
