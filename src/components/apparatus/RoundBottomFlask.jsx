@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { Sphere, Cylinder, Torus } from '@react-three/drei';
+import Precipitate from '../effects/Precipitate';
 
 const RoundBottomFlask = (props) => {
     return (
@@ -61,6 +62,17 @@ const RoundBottomFlask = (props) => {
                     roughness={0.1}
                 />
             </Torus>
+
+            {/* Render Precipitate */}
+            {props.precipitateActive && (
+                <Precipitate
+                    type="sphere"
+                    radius={1.0}
+                    amount={props.precipitateAmount}
+                    color={props.precipitateColor}
+                    position={[0, 1.0, 0]}
+                />
+            )}
         </group>
     );
 };

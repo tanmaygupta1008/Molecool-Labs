@@ -10,7 +10,8 @@ const ParticleSystem = ({
     density = 1.0,
     count = 50,
     scale = 1.0,
-    isPlaying = true
+    isPlaying = true,
+    forceClampY = null // e.g. { max: 0.05 } for hard popping at surface
 }) => {
     const meshRef = useRef();
 
@@ -106,7 +107,10 @@ const ParticleSystem = ({
                 age += safeDelta * 0.5;
 
                 // Reset if too old or high
-                if (age > 1 || y > safePos[1] + 2) {
+                let isPopped = (age > 1 || y > safePos[1] + 2);
+                if (forceClampY && y > forceClampY.max) isPopped = true;
+
+                if (isPopped) {
                     y = safePos[1];
                     x = safePos[0] + (Math.random() - 0.5) * 0.2;
                     z = safePos[2] + (Math.random() - 0.5) * 0.2;

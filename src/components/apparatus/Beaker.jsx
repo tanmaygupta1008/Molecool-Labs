@@ -1,30 +1,58 @@
 import React, { useMemo } from 'react';
 import { Cylinder, Torus } from '@react-three/drei';
 import * as THREE from 'three';
+import Ripples from '../effects/Ripples';
 import { CHEMICALS } from '../../data/chemicals';
+import Precipitate from '../effects/Precipitate';
 
-const Beaker = ({ size = 1, reactants = [], ...props }) => {
-    const scale = size;
+const Beaker = ({ reactants = [], solids = [], ...props }) => {
+    const scale = props.size || 1; // 'size' is no longer destructured, access via props
 
     // Calculate contents
-    const { liquidVolume, liquidColor, solids } = useMemo(() => {
+    const { liquidVolume, liquidColor, calculatedSolids } = useMemo(() => { // Renamed solids to calculatedSolids to avoid conflict with prop
         let vol = 0;
         let rSum = 0, gSum = 0, bSum = 0, count = 0;
         const solidItems = [];
 
         reactants.forEach(r => {
             const chemical = CHEMICALS.find(c => c.id === r.chemicalId);
-            const color = chemical?.color || '#ffffff'; // Default to white if not found
+            const overrideColor = props.reactantColorOverrides?.[r.id];
+            const color = overrideColor || chemical?.color || '#ffffff'; // Default to white if not found
 
             if (r.state === 'l' || r.state === 'aq') {
-                vol += (parseFloat(r.amount) || 0);
+                const overrideAmt = props.reactantOverrides?.[r.id];
+                const amt = overrideAmt !== undefined ? overrideAmt : (parseFloat(r.amount) || 0);
+                vol += amt;
+
+                // Simple color mixing weighted by volume
                 const c = new THREE.Color(color);
-                rSum += c.r;
-                gSum += c.g;
-                bSum += c.b;
-                count++;
+                rSum += c.r * amt;
+                gSum += c.g * amt;
+                bSum += c.b * amt;
+                count += amt;
             } else if (r.state === 's') {
-                solidItems.push({ ...r, color });
+                const initialAmt = parseFloat(r.amount) || 0;
+                const override = props.reactantOverrides?.[r.id];
+                const maxOverride = props.reactantMaxOverrides?.[r.id];
+
+                const currentAmt = Math.max(0, override !== undefined ? override : initialAmt);
+                const maxAmt = Math.max(initialAmt, maxOverride !== undefined ? maxOverride : initialAmt);
+
+                if (maxAmt > 0 && currentAmt > 0) {
+                    const scaleMultiplier = currentAmt / maxAmt;
+                    let remaining = maxAmt;
+                    while (remaining > 0) {
+                        const pieceWeight = Math.min(remaining, 50);
+                        const baseScale = Math.max(0.05, pieceWeight / 50);
+                        solidItems.push({
+                            ...r,
+                            color,
+                            weight: pieceWeight,
+                            scale: baseScale * scaleMultiplier
+                        });
+                        remaining -= pieceWeight;
+                    }
+                }
             }
         });
 
@@ -33,7 +61,7 @@ const Beaker = ({ size = 1, reactants = [], ...props }) => {
             : '#aaddff';
 
         return { liquidVolume: vol, liquidColor: mixedColor, solids: solidItems };
-    }, [reactants]);
+    }, [reactants, props.reactantOverrides, props.reactantMaxOverrides]);
 
     // Map volume to height
     // Max volume ~250mL -> Height ~1.5
@@ -105,16 +133,42 @@ const Beaker = ({ size = 1, reactants = [], ...props }) => {
                             side={THREE.DoubleSide}
                         />
                     </Cylinder>
+                    <Ripples
+                        position={[0, liquidHeight / 2 + 0.01, 0]}
+                        active={props.isReceivingDrips}
+                        color={props.rippleColor || '#ffffff'}
+                        baseScale={0.7}
+                    />
                 </group>
+            )}
+            {/* Render Precipitate */}
+            {props.precipitateActive && (
+                <Precipitate
+                    type="cylinder"
+                    radius={0.78}
+                    amount={props.precipitateAmount}
+                    color={props.precipitateColor}
+                    position={[0, 0.05, 0]}
+                />
             )}
 
             {/* Render Solids */}
-            {solids.map((s, i) => (
-                <mesh key={i} position={[(Math.random() - 0.5) * 0.5, 0.1 + (i * 0.1), (Math.random() - 0.5) * 0.5]} rotation={[Math.random(), Math.random(), Math.random()]}>
-                    <dodecahedronGeometry args={[0.15, 0]} />
-                    <meshStandardMaterial color={s.color} roughness={0.9} />
-                </mesh>
-            ))}
+            {solids.map((s, i) => {
+                const px = (Math.sin(i * 12.9898) * 0.5) * 0.5;
+                const pz = (Math.cos(i * 78.233) * 0.5) * 0.5;
+                const py = 0.1 + (i * 0.12);
+                const rx = Math.sin(i * 3.14);
+                const ry = Math.cos(i * 2.71);
+                const rz = Math.sin(i * 1.61);
+                const scale = s.scale || 1;
+
+                return (
+                    <mesh key={i} position={[px, py, pz]} rotation={[rx, ry, rz]} scale={[scale, scale, scale]}>
+                        <dodecahedronGeometry args={[0.15, 0]} />
+                        <meshStandardMaterial color={s.color} roughness={0.9} />
+                    </mesh>
+                );
+            })}
 
         </group>
     );

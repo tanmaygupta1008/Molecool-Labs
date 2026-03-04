@@ -27,7 +27,28 @@ const GasJar = ({ hasLid = true, holeCount = 0, reactants = [], ...props }) => {
                 lr += c.r; lg += c.g; lb += c.b;
                 lCount++;
             } else if (r.state === 's') {
-                solidItems.push({ ...r, color });
+                const initialAmt = parseFloat(r.amount) || 0;
+                const override = props.reactantOverrides?.[r.id];
+                const maxOverride = props.reactantMaxOverrides?.[r.id];
+
+                const currentAmt = Math.max(0, override !== undefined ? override : initialAmt);
+                const maxAmt = Math.max(initialAmt, maxOverride !== undefined ? maxOverride : initialAmt);
+
+                if (maxAmt > 0 && currentAmt > 0) {
+                    const scaleMultiplier = currentAmt / maxAmt;
+                    let remaining = maxAmt;
+                    while (remaining > 0) {
+                        const pieceWeight = Math.min(remaining, 50);
+                        const baseScale = Math.max(0.05, pieceWeight / 50);
+                        solidItems.push({
+                            ...r,
+                            color,
+                            weight: pieceWeight,
+                            scale: baseScale * scaleMultiplier
+                        });
+                        remaining -= pieceWeight;
+                    }
+                }
             } else if (r.state === 'g') {
                 gr += c.r; gg += c.g; gb += c.b;
                 gCount++;
@@ -39,7 +60,7 @@ const GasJar = ({ hasLid = true, holeCount = 0, reactants = [], ...props }) => {
         const gOp = gCount > 0 ? 0.2 : 0; // faint gas
 
         return { liquidVolume: lVol, liquidColor: lColor, solids: solidItems, gasColor: gColor, gasOpacity: gOp };
-    }, [reactants]);
+    }, [reactants, props.reactantOverrides, props.reactantMaxOverrides]);
 
     // Dimensions
     const radius = 0.48;
@@ -124,12 +145,22 @@ const GasJar = ({ hasLid = true, holeCount = 0, reactants = [], ...props }) => {
             )}
 
             {/* Render Solids */}
-            {solids.map((s, i) => (
-                <mesh key={i} position={[(Math.random() - 0.5) * 0.8, 0.1 + (i * 0.1), (Math.random() - 0.5) * 0.8]} rotation={[Math.random(), Math.random(), Math.random()]}>
-                    <dodecahedronGeometry args={[0.12, 0]} />
-                    <meshStandardMaterial color={s.color} roughness={0.9} />
-                </mesh>
-            ))}
+            {solids.map((s, i) => {
+                const px = (Math.sin(i * 12.9898) * 0.4) * 0.8;
+                const pz = (Math.cos(i * 78.233) * 0.4) * 0.8;
+                const py = 0.1 + (i * 0.1);
+                const rx = Math.sin(i * 3.14);
+                const ry = Math.cos(i * 2.71);
+                const rz = Math.sin(i * 1.61);
+                const scale = s.scale || 1;
+
+                return (
+                    <mesh key={i} position={[px, py, pz]} rotation={[rx, ry, rz]} scale={[scale, scale, scale]}>
+                        <dodecahedronGeometry args={[0.12, 0]} />
+                        <meshStandardMaterial color={s.color} roughness={0.9} />
+                    </mesh>
+                );
+            })}
         </group>
     );
 };

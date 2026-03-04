@@ -12,7 +12,7 @@ import ParticleSystem from './components/ParticleSystem';
 import VisualRuleEngine from '../../macro/VisualRuleEngine';
 
 import { detectApparatusTypeAbove } from '../../../utils/apparatus-logic';
-import { calculateFrameState } from '../../../utils/visual-engine';
+import { calculateFrameState, calculateReactantState } from '../../../utils/visual-engine';
 
 // Map model names from JSON to components
 const APPARATUS_MAP = {
@@ -98,7 +98,9 @@ const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRule
         // Pass flame color from initial state OR advanced effect
         extraProps.flameColor = item.renderProps?.flameColor || (isHeatSource && heatRule?.color ? heatRule.color : null) || visualRules?.initialState?.burner?.flameColor || '#3b82f6';
 
-        if (isHeatSource) extraProps.isHeating = true;
+        if (isHeatSource || (extraProps.isOn && extraProps.apparatusType !== 'standard')) {
+            extraProps.isHeating = true;
+        }
     }
 
     // Liquid Property parsing mapping
@@ -125,10 +127,6 @@ const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRule
     if (item.model === 'Tongs') {
         extraProps.angle = item.angle || 0;
     }
-
-    if (item.model === 'MagnesiumRibbon' && progress > 0.5) {
-        extraProps.visible = false; // "Consumed" (Though standard burning usually leaves ash, we hide the ribbon)
-    };
 
     // Extract transform props to avoid double-application if child also uses them,
     // though most components use them on a root group anyway.
@@ -162,18 +160,27 @@ const useDerivedApparatus = (reaction, progress) => {
     const timeline = reaction.macroView?.visualRules?.timeline || {};
     const totalSteps = Object.keys(timeline).length;
 
-    if (totalSteps === 0) return { apparatus: currentApparatus, currentStepIndex: 0 };
-
     // 2. Determine Current Step & Step Progress
-    // Calculate Total Duration & Find Current Step based on real durations
-    let totalDuration = 0;
+    // Calculate Total Duration
+    let totalStepDuration = 0;
     const stepDurations = [];
     for (let i = 0; i < totalSteps; i++) {
         const s = timeline[i.toString()];
         const dur = (parseFloat(s?.duration) || 0) + (parseFloat(s?.delay) || 0);
         stepDurations.push(dur);
-        totalDuration += dur;
+        totalStepDuration += dur;
     }
+
+    let maxReactantDuration = 0;
+    const reactantTimeline = reaction.macroView?.visualRules?.reactantTimeline || [];
+    if (reactantTimeline.length > 0) {
+        maxReactantDuration = reactantTimeline.reduce((acc, block) => {
+            const end = (parseFloat(block.startTime) || 0) + (parseFloat(block.duration) || 0);
+            return Math.max(acc, end);
+        }, 0);
+    }
+
+    let totalDuration = Math.max(totalStepDuration, maxReactantDuration);
     if (totalDuration === 0) totalDuration = 10; // Fallback
 
     const currentTime = progress * totalDuration;
@@ -198,68 +205,86 @@ const useDerivedApparatus = (reaction, progress) => {
     }
 
     // 3. Apply Transformations (Permanent changes from previous steps)
-    for (let i = 0; i <= currentStepIndex; i++) {
-        const step = timeline[i.toString()];
-        if (step && step.transformations) {
-            step.transformations.forEach(trans => {
-                const target = currentApparatus.find(a => a.id === trans.target);
-                if (target) {
-                    if (trans.newModel) target.model = trans.newModel;
-                    if (trans.visible !== undefined) target.visible = trans.visible;
-                    if (trans.scale) target.scale = trans.scale;
-                    if (trans.color) target.color = trans.color;
-                }
-            });
+    if (totalSteps > 0) {
+        for (let i = 0; i <= currentStepIndex; i++) {
+            const step = timeline[i.toString()];
+            if (step && step.transformations) {
+                step.transformations.forEach(trans => {
+                    const target = currentApparatus.find(a => a.id === trans.target);
+                    if (target) {
+                        if (trans.newModel) target.model = trans.newModel;
+                        if (trans.visible !== undefined) target.visible = trans.visible;
+                        if (trans.scale) target.scale = trans.scale;
+                        if (trans.color) target.color = trans.color;
+                    }
+                });
+            }
         }
     }
 
     // 4. Calculate Animations (Interpolated changes for CURRENT step)
-    const currentStepConfig = timeline[currentStepIndex.toString()];
-    if (currentStepConfig && currentStepConfig.animations) {
-        currentStepConfig.animations.forEach(anim => {
-            const target = currentApparatus.find(a => a.id === anim.target);
-            if (target) {
-                if (anim.type === 'move') {
-                    if (anim.position) {
-                        const start = target.position || [0, 0, 0];
-                        const end = anim.position;
-                        target.position = [
-                            start[0] + (end[0] - start[0]) * stepProgress,
-                            start[1] + (end[1] - start[1]) * stepProgress,
-                            start[2] + (end[2] - start[2]) * stepProgress
+    if (totalSteps > 0) {
+        const currentStepConfig = timeline[currentStepIndex.toString()];
+        if (currentStepConfig && currentStepConfig.animations) {
+            currentStepConfig.animations.forEach(anim => {
+                const target = currentApparatus.find(a => a.id === anim.target);
+                if (target) {
+                    if (anim.type === 'move') {
+                        if (anim.position) {
+                            const start = target.position || [0, 0, 0];
+                            const end = anim.position;
+                            target.position = [
+                                start[0] + (end[0] - start[0]) * stepProgress,
+                                start[1] + (end[1] - start[1]) * stepProgress,
+                                start[2] + (end[2] - start[2]) * stepProgress
+                            ];
+                        }
+                    } else if (anim.type === 'scale') {
+                        if (anim.scale) {
+                            const start = target.scale || [1, 1, 1];
+                            const end = anim.scale;
+                            target.scale = [
+                                start[0] + (end[0] - start[0]) * stepProgress,
+                                start[1] + (end[1] - start[1]) * stepProgress,
+                                start[2] + (end[2] - start[2]) * stepProgress
+                            ];
+                        }
+                    } else if (anim.type === 'rotate') {
+                        target.rotation = [
+                            (target.rotation?.[0] || 0) + stepProgress * Math.PI * (anim.speed || 1),
+                            target.rotation?.[1] || 0,
+                            target.rotation?.[2] || 0
                         ];
                     }
-                } else if (anim.type === 'scale') {
-                    if (anim.scale) {
-                        const start = target.scale || [1, 1, 1];
-                        const end = anim.scale;
-                        target.scale = [
-                            start[0] + (end[0] - start[0]) * stepProgress,
-                            start[1] + (end[1] - start[1]) * stepProgress,
-                            start[2] + (end[2] - start[2]) * stepProgress
-                        ];
-                    }
-                } else if (anim.type === 'rotate') {
-                    target.rotation = [
-                        (target.rotation?.[0] || 0) + stepProgress * Math.PI * (anim.speed || 1),
-                        target.rotation?.[1] || 0,
-                        target.rotation?.[2] || 0
-                    ];
                 }
-            }
-        });
+            });
+        }
     }
 
     // 5. Advanced Engine: Calculate Render State per apparatus
     const timelineData = reaction.macroView?.visualRules?.timeline || {};
     const renderState = calculateFrameState(timelineData, currentStepIndex, stepProgress, currentApparatus);
 
+    // Calculate Reactant State
+    let reactantState = {};
+    if (reaction.macroView?.visualRules?.reactantTimeline) {
+        reactantState = calculateReactantState(reaction.macroView.visualRules.reactantTimeline, currentTime, currentApparatus);
+    }
+
     // Merge renderState into the currentApparatus objects so ApparatusItem receives it
     currentApparatus.forEach(app => {
-        app.renderProps = renderState[app.id] || {};
+        const stepState = renderState[app.id] || {};
+        const rState = reactantState[app.id] || {};
+
+        // If State Change timeline effect specifies a new model, overwrite it
+        if (rState.newModel) {
+            app.model = rState.newModel;
+        }
+
+        app.renderProps = { ...stepState, ...rState };
     });
 
-    return { apparatus: currentApparatus, currentStepIndex, stepProgress };
+    return { apparatus: currentApparatus, currentStepIndex, stepProgress, reactantState, currentTime };
 };
 
 // --- MAIN MACRO VIEW MANAGER ---
@@ -272,7 +297,7 @@ const MacroView = ({ reaction, progress, isPlaying }) => {
 
 const DynamicSetup = ({ reaction, progress, isPlaying }) => {
     // 1. Get List of Apparatus & Current Step from Helper
-    const { apparatus: apparatusList, currentStepIndex, stepProgress } = useDerivedApparatus(reaction, progress);
+    const { apparatus: apparatusList, currentStepIndex, stepProgress, currentTime, reactantState } = useDerivedApparatus(reaction, progress);
 
     // Stub to hold object refs for World Position lookups
     const apparatusRefs = useRef({});
@@ -308,6 +333,8 @@ const DynamicSetup = ({ reaction, progress, isPlaying }) => {
                         stepIndex={currentStepIndex}
                         stepProgress={stepProgress}
                         isPlaying={isPlaying ?? (progress > 0 && progress < 1)}
+                        reactantState={reactantState}
+                        currentTime={currentTime}
                     />
 
                 </group>

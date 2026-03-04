@@ -8,6 +8,8 @@ import { Save, Play, Pause, RefreshCw, Code, LayoutTemplate } from 'lucide-react
 import InitialStateEditor from './components/InitialStateEditor';
 import TimelineEditor from './components/TimelineEditor';
 import StepDetailEditor from './components/StepDetailEditor';
+import ReactantTimelineEditor from './components/ReactantTimelineEditor';
+import ReactantBlockEditor from './components/ReactantBlockEditor';
 
 
 const ReactionRefinerPage = () => {
@@ -19,6 +21,7 @@ const ReactionRefinerPage = () => {
     const [viewMode, setViewMode] = useState('VISUAL'); // 'VISUAL' or 'JSON'
     const [jsonInput, setJsonInput] = useState('');
     const [selectedStepIndex, setSelectedStepIndex] = useState(null);
+    const [selectedReactantBlockId, setSelectedReactantBlockId] = useState(null);
     const [saveStatus, setSaveStatus] = useState(null); // 'saving', 'success', 'error'
     // Playback State
     const [progress, setProgress] = useState(0); // 0 to 1
@@ -28,12 +31,24 @@ const ReactionRefinerPage = () => {
 
     // Calculate Total Duration
     const totalDuration = useMemo(() => {
-        if (!currentReaction?.macroView?.visualRules?.timeline) return 10; // Default 10s
-        return Object.values(currentReaction.macroView.visualRules.timeline).reduce((acc, step) => {
-            if (step.disabled) return acc;
-            return acc + (parseFloat(step.duration) || 0) + (parseFloat(step.delay) || 0);
-        }, 0) || 10; // Fallback to 10s if empty
-    }, [currentReaction?.macroView?.visualRules?.timeline]);
+        let maxStepDuration = 0; // Default to 0, not 10
+        if (currentReaction?.macroView?.visualRules?.timeline) {
+            maxStepDuration = Object.values(currentReaction.macroView.visualRules.timeline).reduce((acc, step) => {
+                if (step.disabled) return acc;
+                return acc + (parseFloat(step.duration) || 0) + (parseFloat(step.delay) || 0);
+            }, 0);
+        }
+        let maxReactantDuration = 0;
+        if (currentReaction?.macroView?.visualRules?.reactantTimeline) {
+            maxReactantDuration = currentReaction.macroView.visualRules.reactantTimeline.reduce((acc, block) => {
+                const end = (parseFloat(block.startTime) || 0) + (parseFloat(block.duration) || 0);
+                return Math.max(acc, end);
+            }, 0);
+        }
+
+        // Return whichever is longest, defaulting to 5s only if both timelines are completely empty
+        return Math.max(maxStepDuration, maxReactantDuration) || 5;
+    }, [currentReaction?.macroView?.visualRules?.timeline, currentReaction?.macroView?.visualRules?.reactantTimeline]);
 
     // Fetch Reactions on Mount
     useEffect(() => {
@@ -70,6 +85,8 @@ const ReactionRefinerPage = () => {
                 newRules.initialState = newData;
             } else if (category === 'timeline') {
                 newRules.timeline = newData;
+            } else if (category === 'reactantTimeline') {
+                newRules.reactantTimeline = newData;
             }
 
             const updatedReaction = {
@@ -180,7 +197,10 @@ const ReactionRefinerPage = () => {
                         <TimelineEditor
                             timeline={currentReaction.macroView?.visualRules?.timeline}
                             selectedStepIndex={selectedStepIndex}
-                            onSelectStep={setSelectedStepIndex}
+                            onSelectStep={(idx) => {
+                                setSelectedStepIndex(idx);
+                                if (idx !== null) setSelectedReactantBlockId(null);
+                            }}
                             onChange={(data) => handleVisualChange('timeline', data)}
                             // Playback Props
                             isPlaying={isPlaying}
@@ -200,47 +220,72 @@ const ReactionRefinerPage = () => {
 
             {/* --- CENTER PANEL: 3D PREVIEW (Flex - Fill) --- */}
             <div className="flex-1 flex flex-col relative bg-black min-w-0">
-                <div className="absolute top-4 left-4 z-10 flex gap-2">
-                    <button
-                        onClick={() => setViewMode(viewMode === 'VISUAL' ? 'JSON' : 'VISUAL')}
-                        className="bg-black/60 backdrop-blur border border-white/10 text-white/70 hover:text-white px-3 py-1.5 rounded-md text-xs flex items-center gap-2 transition-all"
-                    >
-                        {viewMode === 'VISUAL' ? <Code size={14} /> : <LayoutTemplate size={14} />}
-                        {viewMode === 'VISUAL' ? 'View JSON' : 'Visual Editor'}
-                    </button>
+                <div className="flex-1 relative min-h-0">
+                    <div className="absolute top-4 left-4 z-10 flex gap-2">
+                        <button
+                            onClick={() => setViewMode(viewMode === 'VISUAL' ? 'JSON' : 'VISUAL')}
+                            className="bg-black/60 backdrop-blur border border-white/10 text-white/70 hover:text-white px-3 py-1.5 rounded-md text-xs flex items-center gap-2 transition-all"
+                        >
+                            {viewMode === 'VISUAL' ? <Code size={14} /> : <LayoutTemplate size={14} />}
+                            {viewMode === 'VISUAL' ? 'View JSON' : 'Visual Editor'}
+                        </button>
+                    </div>
+
+                    {viewMode === 'JSON' ? (
+                        <textarea
+                            className="w-full h-full bg-[#0d0d0d] text-green-400 font-mono text-xs p-6 resize-none focus:outline-none"
+                            value={jsonInput}
+                            onChange={(e) => {
+                                setJsonInput(e.target.value);
+                                try {
+                                    const parsed = JSON.parse(e.target.value);
+                                    setCurrentReaction(prev => ({
+                                        ...prev,
+                                        macroView: { ...prev.macroView, visualRules: parsed }
+                                    }));
+                                } catch (e) { }
+                            }}
+                            spellCheck={false}
+                        />
+                    ) : (
+                        <Canvas dpr={[1, 2]} gl={{ antialias: true }}>
+                            <PerspectiveCamera makeDefault position={[0, 2, 8]} fov={50} />
+                            <OrbitControls makeDefault />
+                            <Environment preset="city" />
+                            <ambientLight intensity={0.5} />
+                            <directionalLight position={[5, 10, 5]} intensity={1} />
+                            <Grid infiniteGrid sectionColor="#333" cellColor="#222" fadeDistance={30} />
+                            <group position={[0, -2, 0]}>
+                                <MacroView
+                                    reaction={currentReaction}
+                                    progress={progress}
+                                />
+                            </group>
+                        </Canvas>
+                    )}
                 </div>
 
-                {viewMode === 'JSON' ? (
-                    <textarea
-                        className="w-full h-full bg-[#0d0d0d] text-green-400 font-mono text-xs p-6 resize-none focus:outline-none"
-                        value={jsonInput}
-                        onChange={(e) => {
-                            setJsonInput(e.target.value);
-                            try {
-                                const parsed = JSON.parse(e.target.value);
-                                setCurrentReaction(prev => ({
-                                    ...prev,
-                                    macroView: { ...prev.macroView, visualRules: parsed }
-                                }));
-                            } catch (e) { }
-                        }}
-                        spellCheck={false}
-                    />
-                ) : (
-                    <Canvas dpr={[1, 2]} gl={{ antialias: true }}>
-                        <PerspectiveCamera makeDefault position={[0, 2, 8]} fov={50} />
-                        <OrbitControls makeDefault />
-                        <Environment preset="city" />
-                        <ambientLight intensity={0.5} />
-                        <directionalLight position={[5, 10, 5]} intensity={1} />
-                        <Grid infiniteGrid sectionColor="#333" cellColor="#222" fadeDistance={30} />
-                        <group position={[0, -2, 0]}>
-                            <MacroView
-                                reaction={currentReaction}
-                                progress={progress}
-                            />
-                        </group>
-                    </Canvas>
+                {viewMode === 'VISUAL' && (
+                    <div className="h-48 flex-shrink-0 border-t border-white/10">
+                        <ReactantTimelineEditor
+                            reactantTimeline={currentReaction.macroView?.visualRules?.reactantTimeline}
+                            onChange={(data) => handleVisualChange('reactantTimeline', data)}
+                            selectedBlockId={selectedReactantBlockId}
+                            onSelectBlock={(id) => {
+                                setSelectedReactantBlockId(id);
+                                if (id !== null) setSelectedStepIndex(null);
+                            }}
+                            progress={progress}
+                            totalDuration={totalDuration}
+                            isPlaying={isPlaying}
+                            onPlayPause={() => setIsPlaying(!isPlaying)}
+                            isLooping={isLooping}
+                            setIsLooping={setIsLooping}
+                            playbackSpeed={playbackSpeed}
+                            setPlaybackSpeed={setPlaybackSpeed}
+                            onSeek={setProgress}
+                        />
+                    </div>
                 )}
             </div>
 
@@ -314,9 +359,29 @@ const ReactionRefinerPage = () => {
                                         />
                                     </div>
                                 </div>
+                            ) : selectedReactantBlockId !== null ? (
+                                <div className="bg-[#111] rounded-lg border border-white/5 overflow-hidden flex flex-col min-h-[400px]">
+                                    <div className="bg-[#1f1f1f] px-3 py-2 border-b border-white/5 font-semibold text-xs text-pink-400 flex justify-between">
+                                        <span>Reactant Track Details</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <ReactantBlockEditor
+                                            block={currentReaction.macroView?.visualRules?.reactantTimeline?.find(b => b.id === selectedReactantBlockId)}
+                                            apparatusList={currentReaction.apparatus || []}
+                                            onChange={(updatedBlock) => {
+                                                const newTimeline = [...(currentReaction.macroView?.visualRules?.reactantTimeline || [])];
+                                                const idx = newTimeline.findIndex(b => b.id === selectedReactantBlockId);
+                                                if (idx >= 0) {
+                                                    newTimeline[idx] = updatedBlock;
+                                                    handleVisualChange('reactantTimeline', newTimeline);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
                             ) : (
                                 <div className="border border-dashed border-white/10 rounded-lg p-6 text-center text-gray-600 text-xs bg-white/5">
-                                    Select a step from the Timeline on the left to edit its properties.
+                                    Select a step or reactant track to edit its properties.
                                 </div>
                             )}
                         </>

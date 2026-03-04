@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Cylinder, Sphere, Torus } from '@react-three/drei';
 import * as THREE from 'three';
 import { CHEMICALS } from '../../data/chemicals';
+import Precipitate from '../effects/Precipitate';
 
 const TestTube = ({ isHardGlass = false, reactants = [], ...props }) => {
     // Calculate contents
@@ -12,17 +13,43 @@ const TestTube = ({ isHardGlass = false, reactants = [], ...props }) => {
 
         reactants.forEach(r => {
             const chemical = CHEMICALS.find(c => c.id === r.chemicalId);
-            const color = chemical?.color || '#ffffff';
+            const overrideColor = props.reactantColorOverrides?.[r.id];
+            const color = overrideColor || chemical?.color || '#ffffff'; // Default to white if not found
 
             if (r.state === 'l' || r.state === 'aq') {
-                vol += (parseFloat(r.amount) || 0);
+                const overrideAmt = props.reactantOverrides?.[r.id];
+                const amt = overrideAmt !== undefined ? overrideAmt : (parseFloat(r.amount) || 0);
+                vol += amt;
+
+                // Simple color mixing weighted by volume
                 const c = new THREE.Color(color);
-                rSum += c.r;
-                gSum += c.g;
-                bSum += c.b;
-                count++;
+                rSum += c.r * amt;
+                gSum += c.g * amt;
+                bSum += c.b * amt;
+                count += amt;
             } else if (r.state === 's') {
-                solidItems.push({ ...r, color });
+                const initialAmt = parseFloat(r.amount) || 0;
+                const override = props.reactantOverrides?.[r.id];
+                const maxOverride = props.reactantMaxOverrides?.[r.id];
+
+                const currentAmt = Math.max(0, override !== undefined ? override : initialAmt);
+                const maxAmt = Math.max(initialAmt, maxOverride !== undefined ? maxOverride : initialAmt);
+
+                if (maxAmt > 0 && currentAmt > 0) {
+                    const scaleMultiplier = currentAmt / maxAmt;
+                    let remaining = maxAmt;
+                    while (remaining > 0) {
+                        const pieceWeight = Math.min(remaining, 50);
+                        const baseScale = Math.max(0.05, pieceWeight / 50);
+                        solidItems.push({
+                            ...r,
+                            color,
+                            weight: pieceWeight,
+                            scale: baseScale * scaleMultiplier
+                        });
+                        remaining -= pieceWeight;
+                    }
+                }
             }
         });
 
@@ -31,7 +58,7 @@ const TestTube = ({ isHardGlass = false, reactants = [], ...props }) => {
             : '#aaddff';
 
         return { liquidVolume: vol, liquidColor: mixedColor, solids: solidItems };
-    }, [reactants]);
+    }, [reactants, props.reactantOverrides, props.reactantMaxOverrides]);
 
     // Max volume ~20-30mL -> Height ~1.2
     const maxVol = 30;
@@ -90,20 +117,45 @@ const TestTube = ({ isHardGlass = false, reactants = [], ...props }) => {
                         />
                     </Cylinder>
                     {/* Bottom Hemisphere for liquid */}
-                    <mesh position={[0, -liquidHeight / 2, 0]}>
+                    <mesh position={[0, -liquidHeight / 2, 0]} scale={[1, -1, 1]}>
                         <sphereGeometry args={[0.18, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
                         <meshPhysicalMaterial color={liquidColor} transparent opacity={0.8} side={THREE.DoubleSide} />
                     </mesh>
                 </group>
             )}
 
+            {/* Render Precipitate */}
+            {props.precipitateActive && (
+                <Precipitate
+                    type="sphere"
+                    radius={0.18}
+                    amount={props.precipitateAmount}
+                    color={props.precipitateColor}
+                    position={[0, 0.2, 0]}
+                />
+            )}
+
             {/* Render Solids */}
-            {solids.map((s, i) => (
-                <mesh key={i} position={[(Math.random() - 0.5) * 0.1, 0.3 + (i * 0.05), (Math.random() - 0.5) * 0.1]} rotation={[Math.random(), Math.random(), Math.random()]}>
-                    <dodecahedronGeometry args={[0.08, 0]} />
-                    <meshStandardMaterial color={s.color} roughness={0.9} />
-                </mesh>
-            ))}
+            {solids.map((s, i) => {
+                const py = 0.05 + (i * 0.05); // Start closer to the bottom of the semi-sphere
+                // Reduce horizontal spread for chunks lower in the semi-sphere
+                const spreadRadius = py < 0.2 ? Math.sqrt(Math.max(0, 0.2 * 0.2 - (0.2 - py) * (0.2 - py))) - 0.04 : 0.1;
+
+                const px = (Math.sin(i * 12.9898) * spreadRadius) * 0.5;
+                const pz = (Math.cos(i * 78.233) * spreadRadius) * 0.5;
+
+                const rx = Math.sin(i * 3.14);
+                const ry = Math.cos(i * 2.71);
+                const rz = Math.sin(i * 1.61);
+                const scale = s.scale || 1;
+
+                return (
+                    <mesh key={i} position={[px, py, pz]} rotation={[rx, ry, rz]} scale={[scale, scale, scale]}>
+                        <dodecahedronGeometry args={[0.08, 0]} />
+                        <meshStandardMaterial color={s.color} roughness={0.9} />
+                    </mesh>
+                );
+            })}
         </group>
     );
 };

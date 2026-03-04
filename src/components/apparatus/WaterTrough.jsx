@@ -14,23 +14,25 @@ const WaterTrough = ({ reactants = [], customHeight = 1, ...props }) => {
     const liquidLevelOverride = props.liquidLevelOverride !== undefined ? props.liquidLevelOverride : null;
 
     const waterHeight = useMemo(() => {
+        let amt = 0;
+
         if (liquidLevelOverride !== null) {
-            return Math.min(Math.max(liquidLevelOverride, 0), actualHeight - 0.05);
+            amt = Math.max(liquidLevelOverride, 0);
+        } else {
+            // If no reactants configured, visual fallback
+            if (!reactants || reactants.length === 0) return 0.5 * customHeight;
+
+            // Find water (or interpret sum of aqueous)
+            const water = reactants.find(r => r.chemicalId === 'water' || r.state === 'l' || r.state === 'aq');
+            if (water) {
+                amt = parseFloat(water.amount) || 0;
+            } else {
+                return 0.1;
+            }
         }
 
-        // If no reactants configured, visual fallback
-        if (!reactants || reactants.length === 0) return 0.5 * customHeight; // Scale default level
-
-        // Find water
-        const water = reactants.find(r => r.chemicalId === 'water');
-        if (water) {
-            const amt = parseFloat(water.amount) || 0;
-            // Map 1000mL -> 0.7 height * factor
-            // Let's assume max capacity scales with volume approx cylinder V = pi*r^2*h
-            // For now, simpler linear scaling relative to height
-            return Math.min((amt / 1000) * 0.7, actualHeight - 0.05);
-        }
-        return 0.1;
+        // Map 1000mL -> 0.7 height * customHeight
+        return Math.min((amt / 1000) * (0.7 * customHeight), actualHeight - 0.05);
     }, [reactants, customHeight, actualHeight, liquidLevelOverride]);
     return (
         <group {...props}>

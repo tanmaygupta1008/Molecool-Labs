@@ -205,6 +205,16 @@
                         "concentration": 10,
                         "temperature": 25,
                         "pressure": 1
+                    },
+                    {
+                        "id": "1772260759031",
+                        "chemicalId": "zinc",
+                        "state": "s",
+                        "amount": 150,
+                        "unit": "g",
+                        "concentration": 0,
+                        "temperature": 25,
+                        "pressure": 1
                     }
                 ]
             },
@@ -231,7 +241,7 @@
                         "id": "1771489813961",
                         "chemicalId": "water",
                         "state": "l",
-                        "amount": "1000",
+                        "amount": 500,
                         "unit": "g",
                         "concentration": 0,
                         "temperature": 25,
@@ -277,27 +287,6 @@
                         "state": "l",
                         "amount": 104,
                         "unit": "mL",
-                        "concentration": 0,
-                        "temperature": 25,
-                        "pressure": 1
-                    }
-                ]
-            },
-            {
-                "id": "zinc",
-                "model": "ZincGranules",
-                "position": [
-                    0,
-                    0.5,
-                    0
-                ],
-                "reactants": [
-                    {
-                        "id": "1771505880048",
-                        "chemicalId": "water",
-                        "state": "l",
-                        "amount": 0,
-                        "unit": "g",
                         "concentration": 0,
                         "temperature": 25,
                         "pressure": 1
@@ -403,18 +392,7 @@
                         "trigger": "auto",
                         "disabled": false,
                         "animations": [],
-                        "effects": [
-                            {
-                                "type": "GAS",
-                                "id": "eff_1771612011837",
-                                "targetId": "flask",
-                                "sourceId": "flask",
-                                "gasType": "bubble",
-                                "rate": 70,
-                                "color": "#e7dada",
-                                "durationSteps": 2
-                            }
-                        ],
+                        "effects": [],
                         "gas": {
                             "enabled": false,
                             "source": "flask",
@@ -436,7 +414,58 @@
                             "rate": 50
                         }
                     }
-                }
+                },
+                "reactantTimeline": [
+                    {
+                        "id": "r_step_1772262542512",
+                        "name": "Reactant Stage 1",
+                        "startTime": 0,
+                        "duration": 20,
+                        "effects": [
+                            {
+                                "id": "eff_1772262554398",
+                                "type": "VOLUME_CHANGE",
+                                "disabled": false,
+                                "targetId": "1771486704863",
+                                "initialVolume": 150,
+                                "finalVolume": 100
+                            },
+                            {
+                                "id": "eff_1772262575790",
+                                "type": "VOLUME_CHANGE",
+                                "disabled": false,
+                                "targetId": "1771489813961",
+                                "initialVolume": 500,
+                                "finalVolume": 600
+                            },
+                            {
+                                "id": "eff_1772262613479",
+                                "type": "VOLUME_CHANGE",
+                                "disabled": false,
+                                "targetId": "1772260759031",
+                                "initialVolume": 150,
+                                "finalVolume": 20
+                            },
+                            {
+                                "id": "eff_1772272336205",
+                                "type": "GAS_EVOLUTION",
+                                "disabled": false,
+                                "targetId": "1771486704863",
+                                "bubbleRate": 1,
+                                "color": "#ffffff",
+                                "particleSize": 1.1
+                            },
+                            {
+                                "id": "eff_1772283372786",
+                                "type": "VOLUME_CHANGE",
+                                "disabled": false,
+                                "targetId": "1771488520696",
+                                "initialVolume": 104,
+                                "finalVolume": 0
+                            }
+                        ]
+                    }
+                ]
             }
         }
     },
@@ -661,7 +690,28 @@
             "visuals": [
                 "Slow drip from burette",
                 "Color change in flask (e.g., Pink to Colorless if using Phenolphthalein)"
-            ]
+            ],
+            "visualRules": {
+                "reactantTimeline": [
+                    {
+                        "id": "r_step_1772382940195",
+                        "name": "Reactant Stage 1",
+                        "startTime": 0,
+                        "duration": 5,
+                        "effects": [
+                            {
+                                "id": "eff_1772382945196",
+                                "type": "LIQUID_DRIPPING",
+                                "disabled": false,
+                                "targetId": "burette",
+                                "dripRate": 0.45,
+                                "rippleIntensity": 1.6,
+                                "rippleSpeed": 2
+                            }
+                        ]
+                    }
+                ]
+            }
         }
     },
     {
@@ -752,7 +802,7 @@
                 "initialState": {
                     "burner": {
                         "intensity": 1.1,
-                        "flameColor": "#14d721"
+                        "flameColor": "#144ed7"
                     }
                 }
             }
@@ -1036,7 +1086,41 @@
                 "Bubbles forming at electrodes",
                 "Volume difference (2x Hydrogen vs Oxygen)",
                 "Power supply indicator on"
-            ]
+            ],
+            "visualRules": {
+                "reactantTimeline": [
+                    {
+                        "id": "r_step_1772273659469",
+                        "name": "Reactant Stage 1",
+                        "startTime": 0,
+                        "duration": 20,
+                        "effects": [
+                            {
+                                "id": "eff_1772273669005",
+                                "type": "VOLUME_CHANGE",
+                                "disabled": false,
+                                "targetId": "1771500459471",
+                                "initialVolume": 250,
+                                "finalVolume": 200
+                            },
+                            {
+                                "id": "eff_1772273715484",
+                                "type": "GAS_EVOLUTION",
+                                "disabled": false,
+                                "targetId": "setup",
+                                "bubbleRate": 0.4,
+                                "particleSize": 0.9,
+                                "color": "#d5c8c8",
+                                "electrode": "both",
+                                "emissionRate": 0.6,
+                                "emissionSize": 1.9,
+                                "bubbleType": "bubble",
+                                "emissionType": "bubble"
+                            }
+                        ]
+                    }
+                ]
+            }
         }
     },
     {

@@ -4,6 +4,8 @@ import path from 'path';
 
 const filePath = path.join(process.cwd(), 'src', 'data', 'reactions.json');
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         const fileContent = await fs.promises.readFile(filePath, 'utf8');

@@ -16,16 +16,19 @@ const Particle = ({ config, progress }) => {
     } = config;
 
     // Initial random state
-    const initialState = useMemo(() => ({
-        position: [
-            (Math.random() - 0.5) * spread,
-            (Math.random() - 0.5) * spread,
-            (Math.random() - 0.5) * spread
-        ],
-        velocity: [0, 0, 0],
-        scale: Math.random() * scale * 0.5 + scale * 0.5,
-        offset: Math.random() * 100
-    }), [spread, scale]);
+    const initialState = useMemo(() => {
+        const safeScale = Number(scale) || 1;
+        return {
+            position: [
+                (Math.random() - 0.5) * spread,
+                (Math.random() - 0.5) * spread,
+                (Math.random() - 0.5) * spread
+            ],
+            velocity: [0, 0, 0],
+            scale: Math.random() * safeScale * 0.5 + safeScale * 0.5,
+            offset: Math.random() * 100
+        };
+    }, [spread, scale]);
 
     useFrame((state) => {
         if (!ref.current) return;

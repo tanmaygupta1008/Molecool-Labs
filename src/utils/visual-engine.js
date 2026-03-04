@@ -126,3 +126,169 @@ export const calculateFrameState = (timeline, stepIndex, stepProgress, apparatus
 
     return state;
 };
+
+/**
+ * Calculates current visual state for all apparatus based on absolute time reactant blocks.
+ * @param {Array} reactantTimeline - Multi-track timeline blocks with absolute start/duration.
+ * @param {Number} currentTime - The current absolute playback time in seconds.
+ * @param {Array} apparatusList - List of apparatus.
+ * @returns {Object} renderState - Map of { apparatusId: { prop: value } }
+ */
+export const calculateReactantState = (reactantTimeline, currentTime, apparatusList) => {
+    const state = {};
+    if (!apparatusList) return state;
+    apparatusList.forEach(app => state[app.id] = {});
+
+    if (!reactantTimeline || !Array.isArray(reactantTimeline)) return state;
+
+    reactantTimeline.forEach(block => {
+        const start = block.startTime || 0;
+        const duration = block.duration || 1;
+        const end = start + duration;
+
+        // Is this block currently active or has it completed?
+        if (currentTime >= start) {
+            // Progress 0 to 1 for this specific block
+            const progress = Math.min(1, Math.max(0, (currentTime - start) / duration));
+
+            if (block.effects) {
+                block.effects.forEach(eff => {
+                    if (eff.disabled || !eff.targetId) return;
+
+                    let targetApparatusId = eff.targetId;
+
+                    if (eff.targetId.endsWith('_flame')) {
+                        targetApparatusId = eff.targetId.replace('_flame', '');
+                    } else if (apparatusList.some(a => a.id === eff.targetId)) {
+                        // The target is directly an apparatus ID (e.g., for LIQUID_DRIPPING, METAL_DEPOSITION)
+                        targetApparatusId = eff.targetId;
+                    } else {
+                        // Assume the target is a reactant ID within some apparatus
+                        const app = apparatusList.find(a => a.reactants && a.reactants.some(r => r.id === eff.targetId));
+                        if (app) targetApparatusId = app.id;
+                        else targetApparatusId = null;
+                    }
+                    if (!targetApparatusId || !state[targetApparatusId]) return;
+
+                    const target = state[targetApparatusId];
+
+                    if (eff.type === 'COLOR_CHANGE') {
+                        const c1 = new THREE.Color(eff.initialColor || '#ffffff');
+                        const c2 = new THREE.Color(eff.finalColor || '#ffffff');
+                        const res = c1.lerp(c2, progress);
+
+                        if (eff.targetId.endsWith('_flame')) {
+                            target.flameColor = '#' + res.getHexString();
+                        } else {
+                            // Broadcast to the apparatus's reactant color override list rather than a single 'liquidColor'
+                            target.reactantColorOverrides = target.reactantColorOverrides || {};
+                            target.reactantColorOverrides[eff.targetId] = '#' + res.getHexString();
+                        }
+
+                    } else if (eff.type === 'VOLUME_CHANGE') {
+                        const startVol = eff.initialVolume || 0;
+                        const endVol = eff.finalVolume || 0;
+                        const val = startVol + (endVol - startVol) * progress;
+
+                        target.liquidLevelOverride = val;
+
+                        // Set specific reactant override
+                        target.reactantOverrides = target.reactantOverrides || {};
+                        target.reactantOverrides[eff.targetId] = val;
+
+                        target.reactantMaxOverrides = target.reactantMaxOverrides || {};
+                        target.reactantMaxOverrides[eff.targetId] = Math.max(startVol, endVol);
+                    } else if (eff.type === 'TEMPERATURE_CHANGE') {
+                        const startTemp = eff.initialTemp || 25;
+                        const endTemp = eff.finalTemp || 25;
+                        target.temperature = startTemp + (endTemp - startTemp) * progress;
+                    } else if (eff.type === 'GAS_EVOLUTION') {
+                        // For gas evolution, we just send standard props to the VisualRuleEngine or apparatus
+                        // It's active if progress >= 0 and progress <= 1
+                        if (progress >= 0 && progress <= 1) {
+                            target.gasRate = eff.bubbleRate !== undefined ? eff.bubbleRate * 100 : 50;
+                            target.gasColor = eff.color || '#ffffff';
+                            target.gasSize = eff.particleSize !== undefined ? eff.particleSize : 1.0;
+                            target.bubbleType = eff.bubbleType || 'bubble';
+                            // newly added surface emission controls
+                            target.emissionRate = eff.emissionRate !== undefined ? eff.emissionRate * 100 : target.gasRate;
+                            target.emissionSize = eff.emissionSize !== undefined ? eff.emissionSize : target.gasSize;
+                            target.emissionType = eff.emissionType || 'gas_rise';
+
+                            target.isBubbling = true;
+                            if (eff.electrode) target.gasElectrode = eff.electrode;
+                        }
+                    } else if (eff.type === 'STATE_CHANGE') {
+                        if (eff.newModel) {
+                            target.newModel = eff.newModel;
+                        }
+                    } else if (eff.type === 'ELECTRODE_DISSOLVING') {
+                        target.electrodeDissolving = target.electrodeDissolving || {};
+                        target.electrodeDissolving[eff.electrode || 'anode'] = progress;
+                    } else if (eff.type === 'METAL_DEPOSITION') {
+                        target.metalDeposition = target.metalDeposition || {};
+                        target.metalDeposition[eff.electrode || 'cathode'] = {
+                            progress: progress,
+                            color: eff.color || '#cccccc'
+                        };
+                    } else if (eff.type === 'PRECIPITATE_FORMATION') {
+                        target.precipitateActive = true;
+                        const amount = eff.amount !== undefined ? eff.amount : 0.5;
+                        target.precipitateAmount = Math.max(target.precipitateAmount || 0, amount * progress);
+                        if (eff.color) target.precipitateColor = eff.color;
+                    } else if (eff.type === 'LIQUID_DRIPPING') {
+                        const clampedProgress = Math.min(1, Math.max(0, (currentTime - start) / duration));
+                        const rate = eff.dripRate !== undefined ? eff.dripRate : 0.5;
+                        target.drainedVolume = (target.drainedVolume || 0) + (clampedProgress * rate * 40);
+
+                        if (progress >= 0 && progress <= 1) {
+                            target.isDripping = true;
+                            target.dripProgress = progress;
+                            target.dripRate = rate;
+                            // Optionally extract the color of the reactant being dispensed
+                            target.dripReactantId = eff.targetId;
+
+                            // Find receiver apparatus
+                            const buretteApp = apparatusList.find(a => a.id === targetApparatusId);
+                            if (buretteApp) {
+                                // Find highest apparatus below burette
+                                const x = buretteApp.position?.[0] || 0;
+                                const z = buretteApp.position?.[2] || 0;
+                                const y = buretteApp.position?.[1] || 2;
+
+                                let receiver = null;
+                                let highestY = -999;
+
+                                apparatusList.forEach(app => {
+                                    if (app.id !== buretteApp.id) {
+                                        const ax = app.position?.[0] || 0;
+                                        const az = app.position?.[2] || 0;
+                                        const ay = app.position?.[1] || 0;
+
+                                        // Check horizontal proximity and vertical position
+                                        // Standard grid snapping is 0.5 spacing, so 0.3 radius is safe
+                                        if (Math.abs(ax - x) < 0.3 && Math.abs(az - z) < 0.3 && ay < y) {
+                                            if (ay > highestY) {
+                                                highestY = ay;
+                                                receiver = app;
+                                            }
+                                        }
+                                    }
+                                });
+
+                                if (receiver) {
+                                    state[receiver.id] = state[receiver.id] || {};
+                                    state[receiver.id].isReceivingDrips = true;
+                                    // In a full implementation we'd grab the burette's liquid color, using a slight blue/white tint for ripples
+                                    state[receiver.id].rippleColor = '#ffffff';
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    });
+
+    return state;
+};

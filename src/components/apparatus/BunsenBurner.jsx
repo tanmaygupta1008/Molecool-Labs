@@ -401,9 +401,18 @@ const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, appara
 
           {/* --- NEW: Distinct Inner Cone (Unburned Gas) --- */}
           {/* Sharp, pale blue cone at the base. Non-turbulent. */}
+          {/* --- NEW: Distinct Inner Cone (Unburned Gas) --- */}
+          {/* Sharp, pale blue cone at the base. Non-turbulent. Size is restricted by the outer stem height so it flattens and follows the outer flame contour */}
           <Cylinder
-            args={[0.02 * intensity, 0.1 * intensity, 0.6 * intensity, 32, 1, true]} // Tapered cone
-            position={[0, burnerTipY + 0.3 * intensity, 0]}
+            args={[
+              0.02 * intensity,
+              0.1 * intensity,
+              Math.min(0.6 * intensity, stemHeight * 0.6),
+              32,
+              1,
+              true
+            ]}
+            position={[0, burnerTipY + Math.min(0.6 * intensity, stemHeight * 0.6) / 2, 0]}
           >
             <meshBasicMaterial
               color="#aaddff"
@@ -430,7 +439,7 @@ const Flame = ({ isHeating = false, baseRadius = 0.8, flameTargetY = 3.9, appara
           <Cone args={[0.2 * intensity, 2.0 * intensity, 32, 1, true]} position={[0, 3.35 + 1.0 * intensity, 0]}>
             <flameMaterial
               ref={materialRef}
-              color={new THREE.Color("#0044aa")} // Darker idle
+              color={new THREE.Color(flameColor)} // Inherit dynamic color
               opacity={0.5 * intensity}
               noiseScale={0.5}
               transparent

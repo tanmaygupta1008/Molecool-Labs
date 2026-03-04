@@ -3,6 +3,7 @@ import { Box, Cylinder, Sphere } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CHEMICALS } from '../../data/chemicals';
+import ParticleSystem from './ParticleSystem';
 
 const ElectrolysisSetup = ({ reactants = [], reactionState = {}, ...props }) => {
     // Unpack Reaction State
@@ -12,6 +13,46 @@ const ElectrolysisSetup = ({ reactants = [], reactionState = {}, ...props }) => 
         gas = {},
         heat = {}
     } = reactionState;
+
+    // Timeline props from visual-engine
+    // The visual-engine applies these directly to the apparatus for some effects,
+    // but Reactant State Transitions apply them to the specific child reactant.
+    // We need to check both the apparatus props and its child reactants.
+    let isTimelineBubbling = props.isBubbling || false;
+    let gasElectrode = props.gasElectrode || 'both';
+    let gasRate = props.gasRate;
+    let gasColor = props.gasColor;
+    let gasSize = props.gasSize;
+    let gasBubbleType = props.bubbleType || 'bubble';
+    let gasEmissionRate = props.emissionRate;
+    let gasEmissionSize = props.emissionSize;
+    let gasEmissionType = props.emissionType || 'gas_rise';
+    let dissolving = props.electrodeDissolving || {};
+    let deposition = props.metalDeposition || {};
+
+    // Check if any reactant inside has these timeline effects active
+    if (!isTimelineBubbling || Object.keys(dissolving).length === 0) {
+        reactants.forEach(r => {
+            const reactantStateVars = reactionState[r.id] || {};
+            if (reactantStateVars.isBubbling) {
+                isTimelineBubbling = true;
+                if (reactantStateVars.gasElectrode) gasElectrode = reactantStateVars.gasElectrode;
+                if (reactantStateVars.gasRate !== undefined) gasRate = reactantStateVars.gasRate;
+                if (reactantStateVars.gasColor) gasColor = reactantStateVars.gasColor;
+                if (reactantStateVars.gasSize !== undefined) gasSize = reactantStateVars.gasSize;
+                if (reactantStateVars.bubbleType) gasBubbleType = reactantStateVars.bubbleType;
+                if (reactantStateVars.emissionRate !== undefined) gasEmissionRate = reactantStateVars.emissionRate;
+                if (reactantStateVars.emissionSize !== undefined) gasEmissionSize = reactantStateVars.emissionSize;
+                if (reactantStateVars.emissionType) gasEmissionType = reactantStateVars.emissionType;
+            }
+            if (reactantStateVars.electrodeDissolving) {
+                dissolving = { ...dissolving, ...reactantStateVars.electrodeDissolving };
+            }
+            if (reactantStateVars.metalDeposition) {
+                deposition = { ...deposition, ...reactantStateVars.metalDeposition };
+            }
+        });
+    }
 
     // --- 1. LIQUID CALCULATIONS ---
     const { liquidVolume, liquidColor } = useMemo(() => {
@@ -23,7 +64,10 @@ const ElectrolysisSetup = ({ reactants = [], reactionState = {}, ...props }) => 
             const color = chemical?.color || '#ffffff';
 
             if (r.state === 'l' || r.state === 'aq') {
-                vol += (parseFloat(r.amount) || 0);
+                const override = props.reactantOverrides?.[r.id];
+                const amt = override !== undefined ? override : (parseFloat(r.amount) || 0);
+
+                vol += amt;
                 const c = new THREE.Color(color);
                 rSum += c.r;
                 gSum += c.g;
@@ -46,7 +90,7 @@ const ElectrolysisSetup = ({ reactants = [], reactionState = {}, ...props }) => 
         }
 
         return { liquidVolume: vol, liquidColor: baseColor.getStyle() };
-    }, [reactants, liquid]);
+    }, [reactants, liquid, props.reactantOverrides]);
 
     const hasReactants = reactants && reactants.length > 0;
     const computedHeight = hasReactants ? Math.min((liquidVolume / 500) * 1.5, 1.3) : 0;
@@ -64,14 +108,68 @@ const ElectrolysisSetup = ({ reactants = [], reactionState = {}, ...props }) => 
 
     // --- 3. BUBBLES ANIMATION (Simple Implementation) ---
     const bubblesRef = useRef();
+    const shouldShowBubbles = (isPowerOn || isTimelineBubbling) && finalHeight > 0.2;
+    const showCathodeBubbles = shouldShowBubbles && (gasElectrode === 'both' || gasElectrode === 'cathode');
+    const showAnodeBubbles = shouldShowBubbles && (gasElectrode === 'both' || gasElectrode === 'anode');
+
+    // Default rate is 50. Scale between 10 (min) and 100 (max) bubbles per electrode based on the slider.
+    const activeGasRate = isTimelineBubbling ? (gasRate || 50) : 50;
+    const bubbleCount = Math.floor(Math.max(10, Math.min(100, activeGasRate)));
+    const bubbleSpeedScalar = isTimelineBubbling ? (activeGasRate / 50) : (electricity.current / 50 || 1);
+
+    // Scale Surface Emission
+    const activeEmissionRate = isTimelineBubbling ? (gasEmissionRate !== undefined ? gasEmissionRate : activeGasRate) : 50;
+    const activeEmissionSize = isTimelineBubbling ? (gasEmissionSize !== undefined ? gasEmissionSize : (gasSize || 1)) : 1;
+
     useFrame((state) => {
-        if (bubblesRef.current && isPowerOn) {
-            bubblesRef.current.children.forEach((child, i) => {
-                child.position.y += 0.01 + Math.random() * 0.02 * (electricity.current / 50 || 1);
-                if (child.position.y > 1.2) child.position.y = 0.2;
-            });
-        }
+        // Obsolete sphere loop removed. Physics hand-off to ParticleSystem inner logic.
     });
+
+    // Helper to dynamically slice electrodes at the liquid level to shrink/grow only the submerged part
+    const renderElectrode = (isCathode, posX, baseColor, metalness) => {
+        const liquidLine = Math.min(Math.max(0.05 + finalHeight, 0.1), 1.3);
+        const bottom = 0.1;
+        const top = 1.3;
+        const sideKey = isCathode ? 'cathode' : 'anode';
+
+        // Shrink width 
+        const shrinkProgress = dissolving[sideKey] || 0;
+        const depProps = deposition[sideKey] || { progress: 0, color: '#cccccc' };
+
+        const subHeight = liquidLine - bottom;
+        const subCenterY = bottom + subHeight / 2;
+        const subWidth = 0.2 * (1 - shrinkProgress * 0.95);
+
+        const aboveHeight = top - liquidLine;
+        const aboveCenterY = liquidLine + aboveHeight / 2;
+
+        const isDepositing = depProps.progress > 0;
+        const depWidth = 0.2 + (0.1 * depProps.progress);
+
+        return (
+            <group position={[posX, 0, 0]}>
+                {/* Above Liquid (static) */}
+                {aboveHeight > 0 && (
+                    <Box args={[0.2, aboveHeight, 0.05]} position={[0, aboveCenterY, 0]}>
+                        <meshStandardMaterial color={baseColor} metalness={metalness} />
+                    </Box>
+                )}
+                {/* Submerged (dynamic) */}
+                {subHeight > 0 && (
+                    <group position={[0, subCenterY, 0]}>
+                        <Box args={[subWidth, subHeight, 0.05]}>
+                            <meshStandardMaterial color={baseColor} metalness={metalness} />
+                        </Box>
+                        {isDepositing && (
+                            <Box args={[depWidth, subHeight * 0.95, 0.06]}>
+                                <meshStandardMaterial color={depProps.color} metalness={metalness} transparent opacity={depProps.progress} />
+                            </Box>
+                        )}
+                    </group>
+                )}
+            </group>
+        );
+    };
 
     return (
         <group {...props}>
@@ -93,13 +191,9 @@ const ElectrolysisSetup = ({ reactants = [], reactionState = {}, ...props }) => 
                 <meshPhysicalMaterial color="#ccddff" transmission={0.9} opacity={0.6} transparent />
             </Cylinder>
 
-            {/* Electrodes */}
-            <Box args={[0.2, 1.2, 0.05]} position={[-0.3, 0.7, 0]}>
-                <meshStandardMaterial color="#222" metalness={0.8} />
-            </Box>
-            <Box args={[0.2, 1.2, 0.05]} position={[0.3, 0.7, 0]}>
-                <meshStandardMaterial color="#b87333" metalness={0.9} />
-            </Box>
+            {/* Electrodes (Dynamic Slicing for Dissolving/Deposition) */}
+            {renderElectrode(true, -0.3, "#222", 0.8)} {/* Cathode */}
+            {renderElectrode(false, 0.3, "#b87333", 0.9)} {/* Anode */}
 
             {/* Wires - React to Electricity */}
             <Cylinder args={[0.02, 0.02, 0.5]} position={[-0.3, 1.4, 0]}>
@@ -125,26 +219,65 @@ const ElectrolysisSetup = ({ reactants = [], reactionState = {}, ...props }) => 
                         transmission={0.8}
                         opacity={liquid.transparency || 0.7}
                         transparent
+                        depthWrite={false}
                         side={2}
                         roughness={0.1}
                     />
                 </Cylinder>
             )}
 
-            {/* Bubbles - Only visible if Power On and Liquid Present */}
-            {isPowerOn && finalHeight > 0.2 && (
-                <group ref={bubblesRef}>
-                    {/* Generate some static bubble objects that we animate in useFrame */}
-                    {Array.from({ length: 10 }).map((_, i) => (
-                        <Sphere key={i} args={[0.03, 8, 8]} position={[-0.3 + (Math.random() * 0.1), 0.2 + Math.random(), 0]}>
-                            <meshBasicMaterial color="white" transparent opacity={0.6} />
-                        </Sphere>
-                    ))}
-                    {Array.from({ length: 10 }).map((_, i) => (
-                        <Sphere key={i + 10} args={[0.03, 8, 8]} position={[0.3 + (Math.random() * 0.1), 0.2 + Math.random(), 0]}>
-                            <meshBasicMaterial color="white" transparent opacity={0.6} />
-                        </Sphere>
-                    ))}
+            {/* Bubbles - Underwater phase */}
+            {shouldShowBubbles && (
+                <group renderOrder={3}>
+                    {/* Cathode Bubbles */}
+                    {showCathodeBubbles && (
+                        <ParticleSystem
+                            position={[-0.3, 0.1 + (finalHeight * 0.5), 0]}
+                            type={gasBubbleType}
+                            color={gasColor || "#ffffff"}
+                            scale={(gasSize || 1) * 0.5}
+                            count={activeGasRate}
+                            isPlaying={true}
+                            forceClampY={{ max: 0.05 + finalHeight }}
+                        />
+                    )}
+                    {showAnodeBubbles && (
+                        <ParticleSystem
+                            position={[0.3, 0.1 + (finalHeight * 0.5), 0]}
+                            type={gasBubbleType}
+                            color={gasColor || "#ffffff"}
+                            scale={(gasSize || 1) * 0.5}
+                            count={activeGasRate}
+                            isPlaying={true}
+                            forceClampY={{ max: 0.05 + finalHeight }}
+                        />
+                    )}
+                </group>
+            )}
+
+            {/* Surface Gas - Airborne phase */}
+            {shouldShowBubbles && (
+                <group position={[0, 0.05 + finalHeight, 0]}>
+                    {showCathodeBubbles && (
+                        <ParticleSystem
+                            position={[-0.3, 0, 0]}
+                            type={gasEmissionType}
+                            color={gasColor || "#ffffff"}
+                            scale={activeEmissionSize * 0.5}
+                            count={activeEmissionRate}
+                            isPlaying={true}
+                        />
+                    )}
+                    {showAnodeBubbles && (
+                        <ParticleSystem
+                            position={[0.3, 0, 0]}
+                            type={gasEmissionType}
+                            color={gasColor || "#ffffff"}
+                            scale={activeEmissionSize * 0.5}
+                            count={activeEmissionRate}
+                            isPlaying={true}
+                        />
+                    )}
                 </group>
             )}
 

@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import ParticleSystem from '../apparatus/ParticleSystem';
 import { getActiveEffects } from '../../utils/visual-engine';
 
-const VisualRuleEngine = ({ stepIndex, visualRules, apparatusList, stepProgress = 0, isPlaying }) => {
+const VisualRuleEngine = ({ stepIndex, visualRules, apparatusList, stepProgress = 0, isPlaying, reactantState }) => {
     // 1. Physics & Connectivity Analysis
     const physicsState = useMemo(() => {
         const state = {
@@ -91,12 +91,31 @@ const VisualRuleEngine = ({ stepIndex, visualRules, apparatusList, stepProgress 
         });
     }
 
+    // Reactant Timeline Gas Effects
+    if (reactantState) {
+        Object.entries(reactantState).forEach(([id, state]) => {
+            if (state.isBubbling) {
+                gasEffects.push({
+                    sourceId: id,
+                    gasType: 'bubble',
+                    color: state.gasColor || '#ffffff',
+                    rate: state.gasRate || 50,
+                    size: state.gasSize !== undefined ? state.gasSize : 0.5
+                });
+            }
+        });
+    }
+
     return (
         <group name="visual-rule-engine">
             {/* A. GAS EFFECTS (Bubbles / Smoke) */}
             {gasEffects.map((gasEffect, idx) => {
                 const sourceId = gasEffect.sourceId;
                 const sourceItem = findApparatus(sourceId);
+
+                // Electrolysis Setup handles its own localized electrode bubbling internally.
+                if (sourceItem && sourceItem.model === 'ElectrolysisSetup') return null;
+
                 const container = physicsState.containers[sourceId];
                 const pos = sourceItem ? sourceItem.position : [0, 0, 0];
                 const keySuffix = `${gasEffect.gasType}-${sourceId || 'default'}-${idx}`;
@@ -162,6 +181,29 @@ const VisualRuleEngine = ({ stepIndex, visualRules, apparatusList, stepProgress 
                     />
                 );
             })()}
+
+            {/* D. EXPLOSION EFFECTS */}
+            {stepRules.explosion?.enabled && stepRules.explosion?.source && (() => {
+                const sourceItem = findApparatus(stepRules.explosion.source);
+                const pos = sourceItem ? sourceItem.position : [0, 0, 0];
+                const intensity = stepRules.explosion.intensity || 5;
+
+                return (
+                    <group position={pos}>
+                        <pointLight
+                            intensity={intensity * 5}
+                            color={stepRules.explosion.color || '#ff8800'}
+                            distance={20}
+                            decay={1.5}
+                        />
+                        <mesh>
+                            <sphereGeometry args={[intensity * 0.2, 16, 16]} />
+                            <meshBasicMaterial color={stepRules.explosion.color || '#ffffff'} transparent opacity={0.6} blending={THREE.AdditiveBlending} />
+                        </mesh>
+                    </group>
+                );
+            })()}
+
         </group>
     );
 };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     Plus, X, Play, ChevronDown, ChevronRight,
-    Flame, Wind, Droplets, Lightbulb, Box, Sparkles
+    Flame, Lightbulb, Box, Sparkles, Bomb
 } from 'lucide-react';
 
 // --- HELPER COMPONENTS ---
@@ -85,7 +85,7 @@ const ApparatusSelect = ({ value, onChange, apparatusList, placeholder = "Select
 const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => {
     // Local state for section collapse
     const [openSections, setOpenSections] = useState({
-        heat: false, gas: false, liquid: false, light: false, animations: false, effects: false
+        heat: false, light: false, animations: false, effects: false, explosion: false
     });
 
     // Local state for the "Add New Effect" form
@@ -188,104 +188,35 @@ const StepDetailEditor = ({ step, apparatusList = [], onChange, onPreview }) => 
             </Section>
 
 
-            {/* B. GAS CONTROLS */}
+            {/* EXPLOSION CONTROLS */}
             <Section
-                title="Gas Controls" icon={Wind} color="gray"
-                enabled={step.gas?.enabled} onToggle={() => toggleCategory('gas')}
-                isOpen={openSections.gas} onToggleOpen={() => toggleSection('gas')}
+                title="Explosion" icon={Bomb} color="red"
+                enabled={step.explosion?.enabled} onToggle={() => toggleCategory('explosion')}
+                isOpen={openSections.explosion} onToggleOpen={() => toggleSection('explosion')}
             >
-                <ControlRow label="Gas Source">
+                <ControlRow label="Source">
                     <ApparatusSelect
-                        value={step.gas?.source}
-                        onChange={(v) => handleCategoryChange('gas', 'source', v)}
+                        value={step.explosion?.source}
+                        onChange={(v) => handleCategoryChange('explosion', 'source', v)}
                         apparatusList={apparatusList}
                         placeholder="Select Source Apparatus"
                     />
                 </ControlRow>
 
                 <div className="flex flex-col gap-3">
-                    <ControlRow label="Gas Type">
-                        <select
-                            value={step.gas?.type || 'bubble'}
-                            onChange={(e) => handleCategoryChange('gas', 'type', e.target.value)}
-                            className={inputClass}
-                        >
-                            <option value="bubble">Bubbles</option>
-                            <option value="smoke">Smoke / Fumes</option>
-                        </select>
-                    </ControlRow>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                    <ControlRow label="Rate (Intensity)">
+                    <ControlRow label="Intensity (0-10)">
                         <SliderWithInput
-                            min={0} max={200} step={1}
-                            value={step.gas?.rate || 0}
-                            onChange={(v) => handleCategoryChange('gas', 'rate', v)}
+                            min={0} max={10} step={0.1}
+                            value={step.explosion?.intensity || 0}
+                            onChange={(v) => handleCategoryChange('explosion', 'intensity', v)}
                         />
                     </ControlRow>
-                    <ControlRow label="Particle Size">
-                        <SliderWithInput
-                            min={0.1} max={3} step={0.1}
-                            value={step.gas?.size || 0.5}
-                            onChange={(v) => handleCategoryChange('gas', 'size', v)}
-                        />
-                    </ControlRow>
-                </div>
-
-                <div className="flex flex-col gap-3">
                     <ControlRow label="Color">
                         <input
                             type="color"
-                            value={step.gas?.color || '#ffffff'}
-                            onChange={(e) => handleCategoryChange('gas', 'color', e.target.value)}
+                            value={step.explosion?.color || '#ff8800'}
+                            onChange={(e) => handleCategoryChange('explosion', 'color', e.target.value)}
                             className="w-full h-8 rounded bg-transparent cursor-pointer"
-                        />
-                    </ControlRow>
-                </div>
-            </Section>
-
-
-            {/* C. LIQUID BEHAVIOR */}
-            <Section
-                title="Liquid Behavior" icon={Droplets} color="blue"
-                enabled={step.liquid?.enabled} onToggle={() => toggleCategory('liquid')}
-                isOpen={openSections.liquid} onToggleOpen={() => toggleSection('liquid')}
-            >
-                <div className="flex flex-col gap-3">
-                    <ControlRow label="Initial Color">
-                        <input
-                            type="color"
-                            value={step.liquid?.initialColor || '#ffffff'}
-                            onChange={(e) => handleCategoryChange('liquid', 'initialColor', e.target.value)}
-                            className="w-full h-8 rounded bg-transparent cursor-pointer"
-                        />
-                    </ControlRow>
-                    <ControlRow label="Final Color">
-                        <input
-                            type="color"
-                            value={step.liquid?.finalColor || '#ffffff'}
-                            onChange={(e) => handleCategoryChange('liquid', 'finalColor', e.target.value)}
-                            className="w-full h-8 rounded bg-transparent cursor-pointer"
-                        />
-                    </ControlRow>
-                </div>
-
-                <ControlRow label="Transition Duration (s)">
-                    <input
-                        type="number" step="0.1"
-                        value={step.liquid?.duration || 1}
-                        onChange={(e) => handleCategoryChange('liquid', 'duration', parseFloat(e.target.value))}
-                        className={inputClass}
-                    />
-                </ControlRow>
-
-                <div className="flex flex-col gap-3">
-                    <ControlRow label="Transparency">
-                        <SliderWithInput
-                            min={0} max={1} step={0.1}
-                            value={step.liquid?.transparency !== undefined ? step.liquid.transparency : 0.8}
-                            onChange={(v) => handleCategoryChange('liquid', 'transparency', v)}
                         />
                     </ControlRow>
                 </div>
