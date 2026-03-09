@@ -1,6 +1,7 @@
 import './globals.css';
 import { AuthProvider } from '../context/AuthContext';
 import NavbarWrapper from '../components/NavbarWrapper';
+import { ReactionEditorProvider } from '../context/ReactionEditorContext';
 
 export const metadata = {
   title: 'Molecool Labs',
@@ -12,8 +13,10 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="bg-black">
         <AuthProvider>
-          <NavbarWrapper />
-          {children}
+          <ReactionEditorProvider>
+            <NavbarWrapper />
+            {children}
+          </ReactionEditorProvider>
         </AuthProvider>
       </body>
     </html>

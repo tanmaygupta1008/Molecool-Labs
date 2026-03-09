@@ -15,6 +15,7 @@
     "firebase": "^12.3.0",
     "lucide-react": "^0.562.0",
     "next": "15.5.4",
+    "periodic-table": "^0.0.8",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "three": "^0.180.0"
