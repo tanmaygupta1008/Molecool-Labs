@@ -198,7 +198,12 @@ const ChemicalReactionsPage = () => {
   // Animation Loop
   useEffect(() => {
     let animationFrameId;
-    const loop = () => {
+    let lastTime = performance.now();
+
+    const loop = (time) => {
+      const dt = (time - lastTime) / 1000;
+      lastTime = time;
+
       if (playingRef.current) {
         setProgress(prev => {
           if (prev >= 1) {
@@ -209,22 +214,39 @@ const ChemicalReactionsPage = () => {
 
           if (!currentReaction) return prev;
 
+          // Extract real duration dynamically from the active view mode
+          let duration = 10;
+          if (viewMode === 'MICRO' && currentReaction.microView?.script?.tracks?.length > 0) {
+            let maxEnd = 0;
+            currentReaction.microView.script.tracks.forEach(track => {
+              const end = (parseFloat(track.startTime) || 0) + (parseFloat(track.duration) || 0);
+              if (end > maxEnd) maxEnd = end;
+            });
+            duration = Math.max(2, maxEnd);
+          } else {
+            duration = 10;
+          }
+
           // Physics Calculation (Arrhenius-like effect)
           const optimalTemp = currentReaction.optimalTemp || 300; // Use JSON val or default
           const tempRatio = Math.max(0.1, envConditions.temp / optimalTemp);
           const physicsMultiplier = Math.min(1.5, tempRatio);
 
-          // SPEED CALCULATION:
-          const step = 0.002 * physicsMultiplier * simulationSpeed;
+          // Micro view is naturally slow when mapped 1:1, so we add a presentation speed multiplier
+          const microSpeedBoost = viewMode === 'MICRO' ? 2.0 : 1.0;
 
-          return prev + step;
+          // SPEED CALCULATION:
+          // Progress increment based on exact time elapsed (dt), scaling by duration and physics speed
+          const increment = (dt * physicsMultiplier * simulationSpeed * microSpeedBoost) / duration;
+
+          return prev + increment;
         });
       }
       animationFrameId = requestAnimationFrame(loop);
     };
-    loop();
+    animationFrameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [envConditions.temp, currentReaction, simulationSpeed]);
+  }, [envConditions.temp, currentReaction, simulationSpeed, viewMode]);
 
   const togglePlay = () => {
     const newState = !isPlaying;
@@ -278,7 +300,7 @@ const ChemicalReactionsPage = () => {
 
         {/* Mode Switcher */}
         <div className="bg-black/60 backdrop-blur-md p-1 rounded-xl border border-white/10 flex gap-1 shadow-lg pointer-events-auto self-end shrink-0">
-          {['MACRO', 'MICRO', 'NANO'].map(mode => (
+          {['MACRO', 'MICRO'].map(mode => (
             <button
               key={mode}
               onClick={() => setViewMode(mode)}

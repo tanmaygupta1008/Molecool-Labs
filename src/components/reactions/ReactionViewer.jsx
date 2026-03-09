@@ -45,7 +45,6 @@ import { OrbitControls, Environment, PerspectiveCamera } from '@react-three/drei
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import MacroView from './views/MacroView';
 import MicroView from './views/MicroView';
-import NanoView from './views/NanoView';
 
 const ReactionViewer = ({ reaction, viewMode, progress, isPlaying, environment }) => {
   return (
@@ -77,8 +76,6 @@ const ReactionViewer = ({ reaction, viewMode, progress, isPlaying, environment }
               environment={environment}
             />
           )}
-
-          {viewMode === 'NANO' && <NanoView reaction={reaction} progress={progress} />}
         </group>
 
         {/* 🎮 CONTROLS ADJUSTMENT:

@@ -5,17 +5,45 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useState, useRef, useEffect } from 'react';
 
+const NavDropdown = ({ title, name, activeDropdown, toggleDropdown, children, rightAlign = false }) => (
+  <div className="relative ml-1">
+    <button
+      onClick={() => toggleDropdown(name)}
+      className={`text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium transition duration-150 flex items-center gap-1 focus:outline-none hover:bg-gray-800 ${activeDropdown === name ? 'text-white bg-gray-800' : ''}`}
+    >
+      {title}
+      <svg
+        className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${activeDropdown === name ? 'rotate-180' : ''}`}
+        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+    {activeDropdown === name && (
+      <div className={`absolute ${rightAlign ? 'right-0' : 'left-0'} mt-2 w-48 bg-gray-900 border border-cyan-800 rounded-xl shadow-2xl shadow-cyan-900/40 overflow-hidden z-50 py-1`}>
+        {children}
+      </div>
+    )}
+  </div>
+);
+
+const NavLinkItem = ({ href, onClick, children, className }) => (
+  <Link href={href} onClick={onClick} className={`block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors duration-100 ${className || ''}`}>
+    {children}
+  </Link>
+);
+
 const NavBar = () => {
   const { user, loading, signInWithGoogle, logout } = useAuth();
   const router = useRouter();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [activeDropdown, setActiveDropdown] = useState(null); // 'discover', 'labs', 'tools', 'engine', 'user'
+  const navRef = useRef(null);
 
   // Close dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
+      if (navRef.current && !navRef.current.contains(e.target)) {
+        setActiveDropdown(null);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -23,105 +51,74 @@ const NavBar = () => {
   }, []);
 
   const handleLogout = async () => {
-    setDropdownOpen(false);
+    setActiveDropdown(null);
     await logout();
     router.push('/login');
   };
 
+  const toggleDropdown = (name) => {
+    setActiveDropdown(activeDropdown === name ? null : name);
+  };
+
+  const closeDropdown = () => setActiveDropdown(null);
+
   return (
-    <nav className="bg-gray-900 border-b border-cyan-800 text-white shadow-lg sticky top-0 z-40">
+    <nav className="bg-gray-900 border-b border-cyan-800 text-white shadow-lg sticky top-0 z-40" ref={navRef}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
 
           {/* Logo/Project Name */}
           <div className="flex-shrink-0 flex items-center">
-            <Link href="/" className="text-2xl font-extrabold text-cyan-400 hover:text-cyan-300 transition duration-150">
+            <Link href="/" onClick={closeDropdown} className="text-2xl font-extrabold text-cyan-400 hover:text-cyan-300 transition duration-150">
               MOLECOOL LABS 🧪
             </Link>
           </div>
 
           {/* Navigation Links */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
 
-            <Link
-              href="/periodic-table"
-              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-base font-medium transition duration-150"
-            >
-              Periodic Table
-            </Link>
+            {/* Discover */}
+            <NavDropdown title="Discover 🔍" name="discover" activeDropdown={activeDropdown} toggleDropdown={toggleDropdown}>
+              <NavLinkItem href="/periodic-table" onClick={closeDropdown}>Periodic Table</NavLinkItem>
+              <NavLinkItem href="/compounds" onClick={closeDropdown}>Compounds 🧬</NavLinkItem>
+            </NavDropdown>
 
-            <Link
-              href="/compounds"
-              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-base font-medium transition duration-150"
-            >
-              Compounds 🧬
-            </Link>
+            {/* Labs */}
+            <NavDropdown title="Labs ⚗️" name="labs" activeDropdown={activeDropdown} toggleDropdown={toggleDropdown}>
+              <NavLinkItem href="/chemical-reactions" onClick={closeDropdown}>Reaction Lab ⚗️</NavLinkItem>
+              <NavLinkItem href="/fluid-simulation" onClick={closeDropdown}>Fluid Sim 💧</NavLinkItem>
+              <NavLinkItem href="/ar-vr" onClick={closeDropdown}>AR/VR 👓</NavLinkItem>
+            </NavDropdown>
 
-            <Link
-              href="/compound-editor"
-              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-base font-medium transition duration-150"
-            >
-              Edit Angles 📐
-            </Link>
+            {/* Tools */}
+            <NavDropdown title="Tools 🛠️" name="tools" activeDropdown={activeDropdown} toggleDropdown={toggleDropdown}>
+              <NavLinkItem href="/apparatus" onClick={closeDropdown}>Apparatus 🧪</NavLinkItem>
+              <NavLinkItem href="/apparatus-editor" onClick={closeDropdown}>Apparatus Editor 🛠️</NavLinkItem>
+              <NavLinkItem href="/compound-editor" onClick={closeDropdown}>Edit Angles 📐</NavLinkItem>
+              <NavLinkItem href="/reactant-config" onClick={closeDropdown}>Reactant Config 🧪</NavLinkItem>
+              <NavLinkItem href="/reaction-refiner" onClick={closeDropdown}>Reaction Refiner 🎨</NavLinkItem>
+            </NavDropdown>
 
-            <Link
-              href="/chemical-reactions"
-              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-base font-medium transition duration-150"
-            >
-              Reaction Lab ⚗️
-            </Link>
+            {/* Engine Phases */}
+            <NavDropdown title="Engine ⚙️" name="engine" activeDropdown={activeDropdown} toggleDropdown={toggleDropdown}>
+              <NavLinkItem href="/engine/atoms" onClick={closeDropdown}>Phase 1: Reactants</NavLinkItem>
+              <NavLinkItem href="/engine/actions" className="font-bold text-cyan-300" onClick={closeDropdown}>Phase 2: Visuals</NavLinkItem>
+              <NavLinkItem href="/engine/bonds" onClick={closeDropdown}>Phase 2: Bonds (Old)</NavLinkItem>
+              <NavLinkItem href="/engine/bond-animation" onClick={closeDropdown}>Phase 3: Animations</NavLinkItem>
+              <NavLinkItem href="/engine/electrons" onClick={closeDropdown}>Phase 4: Electrons</NavLinkItem>
+              <NavLinkItem href="/engine/timeline" onClick={closeDropdown}>Phase 5: Timeline</NavLinkItem>
+              <NavLinkItem href="/engine/action-executor" onClick={closeDropdown}>Phase 6: Executor</NavLinkItem>
+              <NavLinkItem href="/engine/full-reaction" onClick={closeDropdown} className="hover:bg-cyan-700 font-bold border-t border-gray-800 mt-1 pt-2">Phase 7: Full Reaction</NavLinkItem>
+            </NavDropdown>
 
-            <Link
-              href="/reaction-refiner"
-              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-base font-medium transition duration-150"
-            >
-              Refiner 🎨
-            </Link>
-
-            <Link
-              href="/fluid-simulation"
-              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-base font-medium transition duration-150"
-            >
-              Fluid Sim 💧
-            </Link>
-
-            <Link
-              href="/apparatus"
-              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-base font-medium transition duration-150"
-            >
-              Apparatus 🧪
-            </Link>
-
-            <Link
-              href="/apparatus-editor"
-              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-base font-medium transition duration-150"
-            >
-              Editor 🛠️
-            </Link>
-
-            <Link
-              href="/reactant-config"
-              className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-base font-medium transition duration-150"
-            >
-              Reactants 🧪
-            </Link>
-
-            <Link
-              href="/ar-vr"
-              className="bg-cyan-600 text-white hover:bg-cyan-700 px-3 py-2 rounded-md text-base font-medium transition duration-150 ml-2"
-            >
-              AR/VR 👓
-            </Link>
-
-            {/* ── Auth Section ── */}
+            {/* Auth Section */}
             {loading ? (
-              <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin ml-2" />
             ) : user ? (
-              /* User Avatar + Dropdown */
-              <div className="relative ml-2" ref={dropdownRef}>
+              <div className="relative ml-2">
                 <button
-                  onClick={() => setDropdownOpen((o) => !o)}
-                  className="flex items-center gap-2 px-2 py-1 rounded-full border border-cyan-700 hover:border-cyan-400 transition-colors duration-150 focus:outline-none"
+                  onClick={() => toggleDropdown('user')}
+                  className={`flex items-center gap-2 px-2 py-1 rounded-full border transition-colors duration-150 focus:outline-none ${activeDropdown === 'user' ? 'border-cyan-400 bg-gray-800' : 'border-cyan-700 hover:border-cyan-400'}`}
                 >
                   {user.photoURL ? (
                     <img
@@ -135,29 +132,26 @@ const NavBar = () => {
                     </div>
                   )}
                   <svg
-                    className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}
+                    className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${activeDropdown === 'user' ? 'rotate-180' : ''}`}
                     fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
 
-                {/* Dropdown Menu */}
-                {dropdownOpen && (
+                {/* User Dropdown Menu */}
+                {activeDropdown === 'user' && (
                   <div className="absolute right-0 mt-2 w-60 bg-gray-900 border border-cyan-800 rounded-xl shadow-2xl shadow-cyan-900/40 overflow-hidden z-50">
-                    {/* User info */}
                     <div className="px-4 py-3 border-b border-gray-800">
                       <p className="text-white font-semibold text-sm truncate">{user.displayName}</p>
                       <p className="text-gray-400 text-xs truncate">{user.email}</p>
                     </div>
-                    {/* Profile link */}
                     <button
-                      onClick={() => { setDropdownOpen(false); router.push('/profile'); }}
+                      onClick={() => { closeDropdown(); router.push('/profile'); }}
                       className="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors duration-100 flex items-center gap-2"
                     >
                       <span>👤</span> My Profile
                     </button>
-                    {/* Logout */}
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors duration-100 flex items-center gap-2 border-t border-gray-800"
@@ -168,7 +162,6 @@ const NavBar = () => {
                 )}
               </div>
             ) : (
-              /* Sign In Button */
               <button
                 onClick={() => router.push('/login')}
                 className="ml-2 flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white text-sm font-semibold transition-all duration-150 shadow-lg shadow-cyan-900/40"
