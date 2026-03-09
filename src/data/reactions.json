@@ -467,6 +467,125 @@
                     }
                 ]
             }
+        },
+        "microView": {
+            "script": {
+                "atoms": [
+                    {
+                        "id": "Zn1",
+                        "element": "Zn",
+                        "charge": 0,
+                        "startPos": [
+                            0.8268548594497893,
+                            -8.005208886567997e-16,
+                            3.6052255758570615
+                        ]
+                    },
+                    {
+                        "id": "Cl1",
+                        "element": "Cl",
+                        "charge": 0,
+                        "startPos": [
+                            7.642827310130466,
+                            6.304042887003744e-16,
+                            -2.8390885196837687
+                        ]
+                    },
+                    {
+                        "id": "H1",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            5.820790189041869,
+                            8.866996711908974e-16,
+                            -3.993340308764867
+                        ]
+                    },
+                    {
+                        "id": "Cl2",
+                        "element": "Cl",
+                        "charge": 0,
+                        "startPos": [
+                            -0.8214560038912574,
+                            1.0152243875539162e-15,
+                            -4.572164173485257
+                        ]
+                    },
+                    {
+                        "id": "H2",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            -1.6791003730939829,
+                            5.751923896231759e-16,
+                            -2.59043623157328
+                        ]
+                    }
+                ],
+                "bonds": [
+                    {
+                        "id": "B_H1_Cl1",
+                        "from": "H1",
+                        "to": "Cl1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_Cl2_H2",
+                        "from": "Cl2",
+                        "to": "H2",
+                        "order": 1,
+                        "color": "#ffffff"
+                    }
+                ],
+                "actions": [],
+                "tracks": [
+                    {
+                        "id": "trk_1772872227505",
+                        "name": "Track 1",
+                        "startTime": 0,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_Cl2_H2"
+                            },
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_H1_Cl1"
+                            }
+                        ],
+                        "targetPositions": {}
+                    },
+                    {
+                        "id": "trk_1772872269137",
+                        "name": "Track 2",
+                        "startTime": 5,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "FORM_BOND",
+                                "from": "Cl2",
+                                "to": "Zn1",
+                                "order": 1
+                            },
+                            {
+                                "type": "FORM_BOND",
+                                "from": "Cl1",
+                                "to": "Zn1",
+                                "order": 1
+                            },
+                            {
+                                "type": "FORM_BOND",
+                                "from": "H2",
+                                "to": "H1",
+                                "order": 1
+                            }
+                        ],
+                        "targetPositions": {}
+                    }
+                ]
+            }
         }
     },
     {
@@ -566,6 +685,120 @@
                 "Clear liquids mixing",
                 "Immediate formation of cloudy white precipitate"
             ]
+        },
+        "microView": {
+            "script": {
+                "atoms": [
+                    {
+                        "id": "Ag1",
+                        "element": "Ag",
+                        "charge": 0,
+                        "startPos": [
+                            -4.279866249883226,
+                            5.054543734498215e-16,
+                            -2.503178281769187
+                        ]
+                    },
+                    {
+                        "id": "N1",
+                        "element": "N",
+                        "charge": 0,
+                        "startPos": [
+                            -3.288121267179628,
+                            -4.647792356967131e-16,
+                            1.9778186205305135
+                        ]
+                    },
+                    {
+                        "id": "O1",
+                        "element": "O",
+                        "charge": 0,
+                        "startPos": [
+                            -3.9235016118442436,
+                            -1.4786555658693337e-17,
+                            -0.2982197740648879
+                        ]
+                    },
+                    {
+                        "id": "O2",
+                        "element": "O",
+                        "charge": 0,
+                        "startPos": [
+                            -4.625998899783295,
+                            8.102688499002081e-16,
+                            3.588536962154049
+                        ]
+                    },
+                    {
+                        "id": "O3",
+                        "element": "O",
+                        "charge": 0,
+                        "startPos": [
+                            -1.302271891100246,
+                            -2.0109186555652675e-15,
+                            2.634951914132457
+                        ]
+                    },
+                    {
+                        "id": "Na1",
+                        "element": "Na",
+                        "charge": 0,
+                        "startPos": [
+                            4.505722781772387,
+                            8.558835492158661e-16,
+                            -2.24769259419484
+                        ]
+                    },
+                    {
+                        "id": "Cl1",
+                        "element": "Cl",
+                        "charge": 0,
+                        "startPos": [
+                            4.941514597768802,
+                            8.346929973544034e-16,
+                            -0.1311498728973869
+                        ]
+                    }
+                ],
+                "bonds": [
+                    {
+                        "id": "B_Na1_Cl1",
+                        "from": "Na1",
+                        "to": "Cl1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_O1_Ag1",
+                        "from": "O1",
+                        "to": "Ag1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_N1_O2",
+                        "from": "N1",
+                        "to": "O2",
+                        "order": 2,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_O3_N1",
+                        "from": "O3",
+                        "to": "N1",
+                        "order": 2,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_N1_O1",
+                        "from": "N1",
+                        "to": "O1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    }
+                ],
+                "actions": []
+            }
         }
     },
     {
@@ -711,6 +944,86 @@
                         ]
                     }
                 ]
+            }
+        },
+        "microView": {
+            "script": {
+                "atoms": [
+                    {
+                        "id": "H1",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            4.548440142318176,
+                            -3.0457027179994327e-16,
+                            1.3718330785037451
+                        ]
+                    },
+                    {
+                        "id": "Cl1",
+                        "element": "Cl",
+                        "charge": 0,
+                        "startPos": [
+                            4.468818977613154,
+                            1.7568108949768197e-16,
+                            -0.7859086664293338
+                        ]
+                    },
+                    {
+                        "id": "Na1",
+                        "element": "Na",
+                        "charge": 0,
+                        "startPos": [
+                            -3.14363909305342,
+                            -2.3662766596633177e-16,
+                            1.0676405474543342
+                        ]
+                    },
+                    {
+                        "id": "O1",
+                        "element": "O",
+                        "charge": 0,
+                        "startPos": [
+                            -3.0149260359973478,
+                            2.489490390862464e-16,
+                            -1.1205809436505052
+                        ]
+                    },
+                    {
+                        "id": "H2",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            -2.9896889734795344,
+                            7.357486417306534e-16,
+                            -3.313551646146709
+                        ]
+                    }
+                ],
+                "bonds": [
+                    {
+                        "id": "B_Cl1_H1",
+                        "from": "Cl1",
+                        "to": "H1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_O1_Na1",
+                        "from": "O1",
+                        "to": "Na1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_O1_H2",
+                        "from": "O1",
+                        "to": "H2",
+                        "order": 1,
+                        "color": "#ffffff"
+                    }
+                ],
+                "actions": []
             }
         }
     },
