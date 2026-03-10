@@ -117,24 +117,7 @@ export default function LandingPage() {
           molecules in 3D, and run experiments — all in your browser.
         </p>
 
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
-          <Link
-            href="/chemical-reactions"
-            className="group relative px-8 py-4 rounded-2xl font-bold text-base text-white overflow-hidden shadow-xl shadow-cyan-900/50 transition-all duration-300 hover:scale-105 active:scale-95"
-            style={{ background: 'linear-gradient(135deg, #0891b2, #7c3aed)' }}
-          >
-            <span className="relative z-10">Open the Lab ⚗️</span>
-            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
-          </Link>
 
-          <Link
-            href="/periodic-table"
-            className="px-8 py-4 rounded-2xl font-bold text-base border border-gray-700 hover:border-cyan-600 text-gray-300 hover:text-white transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur"
-          >
-            Periodic Table 🔬
-          </Link>
-        </div>
 
         {/* Auth nudge */}
         {!user && (
@@ -155,19 +138,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════
-          STATS BAR
-      ═══════════════════════════════════════════════════════════ */}
-      <section className="relative border-y border-gray-800/60 py-10 px-4">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
-          {STATS.map(({ value, label }) => (
-            <div key={label}>
-              <div className="text-4xl font-black text-cyan-400 tabular-nums">{value}</div>
-              <div className="text-gray-500 text-sm mt-1 uppercase tracking-widest">{label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+
 
       {/* ═══════════════════════════════════════════════════════════
           FEATURES GRID

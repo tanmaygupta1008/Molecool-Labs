@@ -1068,7 +1068,7 @@
                 "model": "TestTube",
                 "position": [
                     -0.038993280537950814,
-                    4.6,
+                    4.300000000000001,
                     0.05231851754285445
                 ],
                 "rotation": [
@@ -1080,6 +1080,18 @@
                     1,
                     1,
                     1
+                ],
+                "reactants": [
+                    {
+                        "id": "1773129629125",
+                        "chemicalId": "caco3",
+                        "state": "l",
+                        "amount": 20,
+                        "unit": "mL",
+                        "concentration": 0,
+                        "temperature": 25,
+                        "pressure": 1
+                    }
                 ]
             },
             {
@@ -1087,7 +1099,7 @@
                 "model": "Clamp",
                 "position": [
                     -0.6389932805379508,
-                    6,
+                    4.9,
                     0.05231851754285445
                 ],
                 "rotation": [
