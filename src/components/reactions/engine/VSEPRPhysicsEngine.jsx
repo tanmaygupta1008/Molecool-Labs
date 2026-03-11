@@ -183,10 +183,10 @@ const VSEPRPhysicsEngine = ({ active, script, updateAllAtomPositions }) => {
                 newPositions[a.id] = [p.x, p.y, p.z];
             } else {
                 velocities.current[a.id].set(0, 0, 0);
-                newPositions[a.id] = a.currentPos || a.startPos;
             }
         });
 
+        // Only call state update if actual positional changes occurred above the noise threshold
         if (needsUpdate && updateAllAtomPositions) {
             updateAllAtomPositions(newPositions);
         }

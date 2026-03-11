@@ -191,7 +191,7 @@ export default function Phase2ActionEditorPage() {
     // Compute derived state at currentTime (Apply events dynamically)
     // Here we DO NOT use pre-calculated positions. We run VSEPR dynamically if bonds change.
     const derivedScript = useMemo(() => {
-        let currentAtoms = script.atoms.map(a => ({ ...a, currentPos: livePositions[a.id] || [...a.startPos] }));
+        let currentAtoms = script.atoms.map(a => ({ ...a, currentPos: livePositions[a.id] || a.startPos }));
         let currentBonds = [...script.bonds];
 
         // Fold logical states up to currentTime

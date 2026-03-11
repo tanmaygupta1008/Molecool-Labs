@@ -797,7 +797,47 @@
                         "color": "#ffffff"
                     }
                 ],
-                "actions": []
+                "actions": [],
+                "tracks": [
+                    {
+                        "id": "trk_1773236075760",
+                        "name": "Track 1",
+                        "startTime": 0,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_O1_Ag1"
+                            },
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_Na1_Cl1"
+                            }
+                        ],
+                        "targetPositions": {}
+                    },
+                    {
+                        "id": "trk_1773236101571",
+                        "name": "Track 2",
+                        "startTime": 5,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "FORM_BOND",
+                                "from": "Na1",
+                                "to": "O1",
+                                "order": 1
+                            },
+                            {
+                                "type": "FORM_BOND",
+                                "from": "Ag1",
+                                "to": "Cl1",
+                                "order": 1
+                            }
+                        ],
+                        "targetPositions": {}
+                    }
+                ]
             }
         }
     },
