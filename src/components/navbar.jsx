@@ -81,6 +81,7 @@ const NavBar = () => {
             <NavDropdown title="Discover 🔍" name="discover" activeDropdown={activeDropdown} toggleDropdown={toggleDropdown}>
               <NavLinkItem href="/periodic-table" onClick={closeDropdown}>Periodic Table</NavLinkItem>
               <NavLinkItem href="/compounds" onClick={closeDropdown}>Compounds 🧬</NavLinkItem>
+              <NavLinkItem href="/dna" onClick={closeDropdown}>DNA 🧬</NavLinkItem>
             </NavDropdown>
 
             {/* Labs */}
@@ -101,14 +102,10 @@ const NavBar = () => {
 
             {/* Engine Phases */}
             <NavDropdown title="Engine ⚙️" name="engine" activeDropdown={activeDropdown} toggleDropdown={toggleDropdown}>
+              <NavLinkItem href="/engine/reactions" onClick={closeDropdown} className="font-bold border-b border-gray-800 mb-1 pb-2">Phase 0: Reactions</NavLinkItem>
               <NavLinkItem href="/engine/atoms" onClick={closeDropdown}>Phase 1: Reactants</NavLinkItem>
               <NavLinkItem href="/engine/actions" className="font-bold text-cyan-300" onClick={closeDropdown}>Phase 2: Visuals</NavLinkItem>
-              <NavLinkItem href="/engine/bonds" onClick={closeDropdown}>Phase 2: Bonds (Old)</NavLinkItem>
-              <NavLinkItem href="/engine/bond-animation" onClick={closeDropdown}>Phase 3: Animations</NavLinkItem>
               <NavLinkItem href="/engine/electrons" onClick={closeDropdown}>Phase 4: Electrons</NavLinkItem>
-              <NavLinkItem href="/engine/timeline" onClick={closeDropdown}>Phase 5: Timeline</NavLinkItem>
-              <NavLinkItem href="/engine/action-executor" onClick={closeDropdown}>Phase 6: Executor</NavLinkItem>
-              <NavLinkItem href="/engine/full-reaction" onClick={closeDropdown} className="hover:bg-cyan-700 font-bold border-t border-gray-800 mt-1 pt-2">Phase 7: Full Reaction</NavLinkItem>
             </NavDropdown>
 
             {/* Auth Section */}

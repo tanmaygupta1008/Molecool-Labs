@@ -1583,5 +1583,213 @@
                 "Red litmus turning blue at mouth of tube due to ammonia gas"
             ]
         }
+    },
+    {
+        "id": "habers-process",
+        "name": "Habers Process",
+        "type": "Custom Built",
+        "equation": "N₂ + 3H₂ → 2NH₃",
+        "apparatus": [],
+        "macroView": {
+            "visuals": [
+                "Custom reaction loaded"
+            ],
+            "steps": [
+                "Add reactants",
+                "Observe reaction"
+            ],
+            "visualRules": {
+                "timeline": {}
+            }
+        },
+        "microView": {
+            "script": {
+                "atoms": [
+                    {
+                        "id": "N1",
+                        "element": "N",
+                        "charge": 0,
+                        "startPos": [
+                            -1.0042811931332027,
+                            5.874656883241946e-16,
+                            1.9187860040083822
+                        ]
+                    },
+                    {
+                        "id": "N2",
+                        "element": "N",
+                        "charge": 0,
+                        "startPos": [
+                            0.4274824594592736,
+                            2.0372145560733125e-15,
+                            3.0712629016873283
+                        ]
+                    },
+                    {
+                        "id": "H1",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            2.275734071347897,
+                            8.284003552493229e-16,
+                            -6.552193424550311
+                        ]
+                    },
+                    {
+                        "id": "H2",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            0.5420096762810088,
+                            -1.705861314907836e-16,
+                            -5.265910205332029
+                        ]
+                    },
+                    {
+                        "id": "H3",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            4.605114454890938,
+                            -1.2703725166359221e-15,
+                            0.2980346981183346
+                        ]
+                    },
+                    {
+                        "id": "H4",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            -4.11668339219471,
+                            -5.425945710296662e-16,
+                            -2.4543575219031557
+                        ]
+                    },
+                    {
+                        "id": "H5",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            -5.043201728562214,
+                            -1.1265922595456852e-15,
+                            -0.5026608109014481
+                        ]
+                    },
+                    {
+                        "id": "H6",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            3.787773509903263,
+                            1.4948959232590168e-15,
+                            -1.696036573495077
+                        ]
+                    }
+                ],
+                "bonds": [
+                    {
+                        "id": "B_H1_H2",
+                        "from": "H1",
+                        "to": "H2",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_N1_N2",
+                        "from": "N1",
+                        "to": "N2",
+                        "order": 3,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_H5_H4",
+                        "from": "H5",
+                        "to": "H4",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_H3_H6",
+                        "from": "H3",
+                        "to": "H6",
+                        "order": 1,
+                        "color": "#ffffff"
+                    }
+                ],
+                "tracks": [
+                    {
+                        "id": "trk_1773234666123",
+                        "name": "Track 1",
+                        "startTime": 0,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_H5_H4"
+                            },
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_H1_H2"
+                            },
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_H3_H6"
+                            },
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_N1_N2"
+                            }
+                        ],
+                        "targetPositions": {}
+                    },
+                    {
+                        "id": "trk_1773234689417",
+                        "name": "Track 2",
+                        "startTime": 5,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "FORM_BOND",
+                                "from": "N1",
+                                "to": "H5",
+                                "order": 1,
+                                "hidePreview": false
+                            },
+                            {
+                                "type": "FORM_BOND",
+                                "from": "N1",
+                                "to": "H2",
+                                "order": 1
+                            },
+                            {
+                                "type": "FORM_BOND",
+                                "from": "N1",
+                                "to": "H1",
+                                "order": 1
+                            },
+                            {
+                                "type": "FORM_BOND",
+                                "from": "N2",
+                                "to": "H4",
+                                "order": 1
+                            },
+                            {
+                                "type": "FORM_BOND",
+                                "from": "N2",
+                                "to": "H6",
+                                "order": 1
+                            },
+                            {
+                                "type": "FORM_BOND",
+                                "from": "N2",
+                                "to": "H3",
+                                "order": 1
+                            }
+                        ],
+                        "targetPositions": {}
+                    }
+                ]
+            }
+        }
     }
 ]
