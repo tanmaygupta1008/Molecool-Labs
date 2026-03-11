@@ -178,7 +178,137 @@
                 "Mg",
                 "O2",
                 "MgO"
-            ]
+            ],
+            "script": {
+                "atoms": [
+                    {
+                        "id": "Ca1",
+                        "element": "Ca",
+                        "charge": 0,
+                        "startPos": [
+                            -2.2704015775535216,
+                            1.7698172446753543e-16,
+                            -0.7970548283633804
+                        ]
+                    },
+                    {
+                        "id": "O1",
+                        "element": "O",
+                        "charge": 0,
+                        "startPos": [
+                            -0.5943992730087373,
+                            4.983807796750776e-16,
+                            -2.244507493633297
+                        ]
+                    },
+                    {
+                        "id": "O2",
+                        "element": "O",
+                        "charge": 0,
+                        "startPos": [
+                            -0.547920539358486,
+                            -1.3345485941314465e-16,
+                            0.6010272551238202
+                        ]
+                    },
+                    {
+                        "id": "C1",
+                        "element": "C",
+                        "charge": 0,
+                        "startPos": [
+                            1.2301743628386075,
+                            1.8935820948317192e-16,
+                            -0.8527935616679574
+                        ]
+                    },
+                    {
+                        "id": "O3",
+                        "element": "O",
+                        "charge": 0,
+                        "startPos": [
+                            3.307726806437294,
+                            1.7973555808506774e-16,
+                            -0.8094569924171392
+                        ]
+                    }
+                ],
+                "bonds": [
+                    {
+                        "id": "B_Ca1_O1",
+                        "from": "Ca1",
+                        "to": "O1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_Ca1_O2",
+                        "from": "Ca1",
+                        "to": "O2",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_O1_C1",
+                        "from": "O1",
+                        "to": "C1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_O2_C1",
+                        "from": "O2",
+                        "to": "C1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_C1_O3",
+                        "from": "C1",
+                        "to": "O3",
+                        "order": 2,
+                        "color": "#ffffff"
+                    }
+                ],
+                "groups": [],
+                "tracks": [
+                    {
+                        "id": "trk_1773250183835",
+                        "name": "Track 1",
+                        "startTime": 0,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_O1_C1"
+                            },
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_Ca1_O2"
+                            }
+                        ],
+                        "targetPositions": {}
+                    },
+                    {
+                        "id": "trk_1773250199459",
+                        "name": "Track 2",
+                        "startTime": 5,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "UPDATE_BOND_ORDER",
+                                "bondId": "B_Ca1_O1",
+                                "newOrder": 2
+                            },
+                            {
+                                "type": "UPDATE_BOND_ORDER",
+                                "bondId": "B_O2_C1",
+                                "newOrder": 2
+                            }
+                        ],
+                        "targetPositions": {}
+                    }
+                ]
+            }
         }
     },
     {
