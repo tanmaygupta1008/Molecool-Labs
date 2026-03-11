@@ -129,9 +129,15 @@ const VSEPRPhysicsEngine = ({ active, script, updateAllAtomPositions }) => {
 
                 let f = 0;
                 if (atomMoleculeMap[a1.id] !== atomMoleculeMap[a2.id]) {
-                    // Different molecules: Strong push if they overlap, rapid falloff (1/r³)
-                    // This rapidly decaying force keeps molecules from clipping but stops pushing them away globally
-                    f = 200.0 / Math.max(distSq * Math.sqrt(distSq), 0.1);
+                    // Different molecules: Strong push if they overlap, rapid falloff.
+                    // Instead of 1/r^3 which falls off too fast to prevent clipping of large atoms,
+                    // we use a strong baseline repulsion that pushes them at least 3-4 units apart.
+                    f = 150.0 / Math.max(distSq, 0.1);
+                    
+                    // If they are dangerously close (clipping), apply a massive exponential spike force
+                    if (distSq < 4.0) {
+                        f += 500.0 * Math.exp(-distSq);
+                    }
                 } else {
                     // Same molecule: Standard VSEPR repulsion, boosted for double/triple bonds
                     let repulsionMultiplier = 1.0;
@@ -146,6 +152,7 @@ const VSEPRPhysicsEngine = ({ active, script, updateAllAtomPositions }) => {
                     f = (k_repel * repulsionMultiplier) / Math.max(distSq, 0.1);
                 }
 
+                // Apply the calculated repulsion force vector to both atoms (equal and opposite)
                 const forceVec = diff.normalize().multiplyScalar(f);
                 forces[a1.id].add(forceVec);
                 forces[a2.id].sub(forceVec);

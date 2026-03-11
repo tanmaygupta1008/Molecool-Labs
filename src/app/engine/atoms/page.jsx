@@ -5,6 +5,7 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Grid, Plane, TransformControls } from '@react-three/drei';
 import * as THREE from 'three';
+import AnimatedDashedLine from '@/components/reactions/engine/AnimatedDashedLine';
 import { useReactionEditor } from '@/context/ReactionEditorContext';
 import AtomNode from '@/components/reactions/engine/AtomNode';
 import BondLine from '@/components/reactions/engine/BondLine';
@@ -137,6 +138,14 @@ export default function Phase1ReactantEditorPage() {
     // Interaction State
     const [selectedAtomId, setSelectedAtomId] = useState(null);
     const [selectedBondId, setSelectedBondId] = useState(null);
+    const [pointerPos3D, setPointerPos3D] = useState(null);
+
+    // Clear pointer tracking when not creating a bond
+    useEffect(() => {
+        if (mode !== 'bond' || !selectedAtomId) {
+            setPointerPos3D(null);
+        }
+    }, [mode, selectedAtomId]);
 
     // Cached element list
     const elementList = useMemo(() => getAllElementsList(), []);
@@ -236,6 +245,7 @@ export default function Phase1ReactantEditorPage() {
                     addBond(selectedAtomId, id, bondOrder);
                 }
                 setSelectedAtomId(null); // Reset selection
+                setPointerPos3D(null); // Clear preview line
             }
         } else if (mode === 'group') {
             setSelectedGroupAtoms(prev =>
@@ -596,7 +606,18 @@ export default function Phase1ReactantEditorPage() {
                         const AtomContent = (
                             <group
                                 onClick={(e) => handleAtomClick(e, atom.id)}
-                                onPointerOver={() => { if (mode !== 'none') document.body.style.cursor = 'pointer' }}
+                                onPointerOver={(e) => { 
+                                    if (mode !== 'none') document.body.style.cursor = 'pointer';
+                                    if (mode === 'bond' && selectedAtomId && selectedAtomId !== atom.id) {
+                                        setPointerPos3D(atom.startPos);
+                                    }
+                                }}
+                                onPointerMove={(e) => {
+                                    if (mode === 'bond' && selectedAtomId && selectedAtomId !== atom.id) {
+                                        e.stopPropagation();
+                                        setPointerPos3D(atom.startPos);
+                                    }
+                                }}
                                 onPointerOut={() => { document.body.style.cursor = 'crosshair' }}
                             >
                                 {/* Selection Ring Base */}
@@ -690,6 +711,42 @@ export default function Phase1ReactantEditorPage() {
                             </group>
                         );
                     })}
+
+                    {/* Temporary Dotted Bond Preview */}
+                    {mode === 'bond' && selectedAtomId && pointerPos3D && (() => {
+                        const startAtom = script.atoms.find(a => a.id === selectedAtomId);
+                        if (!startAtom) return null;
+                        return (
+                            <AnimatedDashedLine 
+                                points={[startAtom.startPos, pointerPos3D]} 
+                                color="#00ffff" 
+                                lineWidth={2}
+                                dashed={true}
+                                dashSize={0.4}
+                                dashScale={1}
+                                gapSize={0.2}
+                            />
+                        );
+                    })()}
+
+                    {/* Invisible tracking plane for drawing dotted bonds into empty space */}
+                    {mode === 'bond' && selectedAtomId && (() => {
+                        const startAtom = script.atoms.find(a => a.id === selectedAtomId);
+                        if (!startAtom) return null;
+                        return (
+                            <mesh 
+                                rotation={[-Math.PI / 2, 0, 0]} 
+                                position={[0, startAtom.startPos[1], 0]}
+                                onPointerMove={(e) => {
+                                    e.stopPropagation();
+                                    setPointerPos3D([e.point.x, e.point.y, e.point.z]);
+                                }}
+                            >
+                                <planeGeometry args={[100, 100]} />
+                                <meshBasicMaterial transparent opacity={0} depthWrite={false} color="white" />
+                            </mesh>
+                        );
+                    })()}
 
                     {/* Render Radical Groups */}
                     {(script.groups || []).map(group => (

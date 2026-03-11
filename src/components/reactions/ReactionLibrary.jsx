@@ -77,8 +77,9 @@
 
 
 // src/components/reactions/ReactionLibrary.jsx
-import { Search, FlaskConical, Atom } from 'lucide-react';
+import { Search, FlaskConical, Atom, Plus } from 'lucide-react';
 import { useState } from 'react';
+import Link from 'next/link';
 
 const ReactionLibrary = ({ reactions, currentReaction, onSelect }) => {
     const [searchTerm, setSearchTerm] = useState('');

@@ -2,10 +2,12 @@
 // src/app/engine/actions/page.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, Trash2, Clock, Play, Pause, RotateCw, Eye, EyeOff } from 'lucide-react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls, Environment, Grid } from '@react-three/drei';
 import { useReactionEditor } from '@/context/ReactionEditorContext';
+import AnimatedDashedLine from '@/components/reactions/engine/AnimatedDashedLine';
 import AtomNode from '@/components/reactions/engine/AtomNode';
 import BondLine from '@/components/reactions/engine/BondLine';
 import { getElementData } from '@/utils/elementColors';
@@ -132,6 +134,14 @@ export default function Phase2ActionEditorPage() {
     // Interaction Modes for adding Events to an active Step
     const [eventMode, setEventMode] = useState('none'); // 'none', 'break_bond', 'form_bond', 'update_charge'
     const [pendingFormAtoms, setPendingFormAtoms] = useState([]); // Array of 1 or 2 atom IDs
+    const [pointerPos3D, setPointerPos3D] = useState(null);
+
+    // Clear pointer tracking when not creating a bond
+    useEffect(() => {
+        if (eventMode !== 'form_bond' || pendingFormAtoms.length === 0) {
+            setPointerPos3D(null);
+        }
+    }, [eventMode, pendingFormAtoms]);
 
     // Data State
     const [reactions, setReactions] = useState([]);
@@ -375,10 +385,25 @@ export default function Phase2ActionEditorPage() {
                                                     {ev.type === 'UPDATE_BOND_ORDER' && `Bond: ${ev.bondId} → ${ev.newOrder}`}
                                                 </span>
                                             </div>
-                                            <button
-                                                onClick={() => removeEventFromTrack(selectedTrackId, idx)}
-                                                className="text-gray-500 hover:text-red-400 transition-colors cursor-pointer p-1"
-                                            >✕</button>
+                                            <div className="flex gap-1 items-center">
+                                                {ev.type === 'FORM_BOND' && (
+                                                    <button
+                                                        onClick={() => {
+                                                            const newEvents = [...selectedTrack.events];
+                                                            newEvents[idx] = { ...ev, hidePreview: !ev.hidePreview };
+                                                            handleUpdateTrack({ events: newEvents });
+                                                        }}
+                                                        className="text-gray-500 hover:text-cyan-400 p-1 transition-colors"
+                                                        title={ev.hidePreview ? "Show Dotted Line Preview" : "Hide Dotted Line Preview"}
+                                                    >
+                                                        {ev.hidePreview ? <EyeOff size={12} /> : <Eye size={12} />}
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => removeEventFromTrack(selectedTrackId, idx)}
+                                                    className="text-gray-500 hover:text-red-400 p-1 transition-colors"
+                                                >✕</button>
+                                            </div>
                                         </div>
                                     ))}
                                     {(!selectedTrack?.events || selectedTrack.events.length === 0) && (
@@ -503,6 +528,19 @@ export default function Phase2ActionEditorPage() {
                                 element={atom.element}
                                 charge={atom.charge || 0}
                                 showGlow={pendingFormAtoms.includes(atom.id)}
+                                onPointerOver={(e) => { 
+                                    if (eventMode !== 'none') document.body.style.cursor = 'pointer';
+                                    if (eventMode === 'form_bond' && pendingFormAtoms.length === 1 && pendingFormAtoms[0] !== atom.id) {
+                                        setPointerPos3D(atom.currentPos);
+                                    }
+                                }}
+                                onPointerMove={(e) => {
+                                    if (eventMode === 'form_bond' && pendingFormAtoms.length === 1 && pendingFormAtoms[0] !== atom.id) {
+                                        e.stopPropagation();
+                                        setPointerPos3D(atom.currentPos);
+                                    }
+                                }}
+                                onPointerOut={() => { document.body.style.cursor = 'crosshair' }}
                                 onClick={(e) => {
                                     if (!selectedTrackId) return;
                                     e.stopPropagation();
@@ -533,6 +571,72 @@ export default function Phase2ActionEditorPage() {
                                 }}
                             />
                         ))}
+
+                        {/* Temporary Dotted Bond Preview */}
+                        {eventMode === 'form_bond' && pendingFormAtoms.length === 1 && pointerPos3D && (() => {
+                            const startAtom = derivedScript.atoms.find(a => a.id === pendingFormAtoms[0]);
+                            if (!startAtom) return null;
+                            return (
+                                <AnimatedDashedLine 
+                                    points={[startAtom.currentPos, pointerPos3D]} 
+                                    color="#00ffff" 
+                                    lineWidth={2}
+                                    dashed={true}
+                                    dashSize={0.4}
+                                    dashScale={1}
+                                    gapSize={0.2}
+                                />
+                            );
+                        })()}
+
+                        {/* Invisible tracking plane for drawing dotted bonds into empty space */}
+                        {eventMode === 'form_bond' && pendingFormAtoms.length === 1 && (() => {
+                            const startAtom = derivedScript.atoms.find(a => a.id === pendingFormAtoms[0]);
+                            if (!startAtom) return null;
+                            return (
+                                <mesh 
+                                    rotation={[-Math.PI / 2, 0, 0]} 
+                                    position={[0, startAtom.currentPos[1], 0]}
+                                    onPointerMove={(e) => {
+                                        e.stopPropagation();
+                                        setPointerPos3D([e.point.x, e.point.y, e.point.z]);
+                                    }}
+                                >
+                                    <planeGeometry args={[100, 100]} />
+                                    <meshBasicMaterial transparent opacity={0} depthWrite={false} color="white" />
+                                </mesh>
+                            );
+                        })()}
+
+                        {/* Static Event-Based Dotted Bonds when Paused */}
+                        {!isPlaying && (script.tracks || []).map(track => {
+                            const trackStart = parseFloat(track.startTime) || 0;
+                            // Only show previews for events that happen IN THE FUTURE relative to currentTime
+                            if (currentTime >= trackStart) return null;
+
+                            return (track.events || []).map((ev, idx) => {
+                                if (ev.type !== 'FORM_BOND' || ev.hidePreview) return null;
+
+                                const startAtom = derivedScript.atoms.find(a => a.id === ev.from);
+                                const endAtom = derivedScript.atoms.find(a => a.id === ev.to);
+                                if (!startAtom || !endAtom) return null;
+
+                                return (
+                                    <AnimatedDashedLine 
+                                        key={`ghost-bond-${track.id}-${idx}`}
+                                        points={[startAtom.currentPos, endAtom.currentPos]} 
+                                        color="#00ffff" 
+                                        lineWidth={2}
+                                        dashed={true}
+                                        dashSize={0.4}
+                                        dashScale={1}
+                                        gapSize={0.2}
+                                        opacity={0.4}
+                                        transparent={true}
+                                    />
+                                );
+                            });
+                        })}
 
                         {derivedScript.bonds.map(bond => {
                             const a1 = derivedScript.atoms.find(a => a.id === bond.from);
