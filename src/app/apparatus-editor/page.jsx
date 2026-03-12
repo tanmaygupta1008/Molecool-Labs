@@ -1220,132 +1220,153 @@ export default function ApparatusEditorPage() {
 
 
     return (
-        <div className="flex h-screen w-full bg-neutral-900 text-white">
+        <div className="flex h-screen w-full bg-[#0a0a0a] text-white selection:bg-blue-500/30 overflow-hidden font-sans">
             {/* Sidebar */}
-            <div className="w-80 flex flex-col border-r border-white/10 p-4 gap-4 overflow-y-auto">
-                <h1 className="text-xl font-bold text-blue-400">Apparatus Editor</h1>
-
-                {/* Reaction Selector */}
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm text-neutral-400">Select Reaction</label>
-                    <select
-                        className="bg-black/40 border border-white/20 rounded p-2 text-sm"
-                        value={selectedReactionId || ''}
-                        onChange={(e) => setSelectedReactionId(e.target.value)}
-                    >
-                        {reactions.map(r => (
-                            <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                    </select>
+            <div className="w-[350px] flex flex-col border-r border-white/5 bg-[#111111] shadow-2xl z-10 shrink-0">
+                {/* Header */}
+                <div className="px-5 py-4 border-b border-white/5 bg-gradient-to-r from-blue-900/10 to-transparent">
+                    <h1 className="text-lg font-bold text-blue-400 flex items-center gap-2">
+                        <span>🧪</span> Apparatus Editor
+                    </h1>
                 </div>
 
-                {/* Tools Section */}
-                <div className="flex flex-col gap-2 p-2 bg-white/5 rounded">
-                    <h3 className="text-xs font-bold text-neutral-400 uppercase">Tools</h3>
-
-                    {/* Transform Modes */}
-                    <div className="flex gap-2">
-                        <button
-                            className={`flex-1 text-xs py-1 rounded ${!builderState.active && transformMode === 'translate' ? 'bg-blue-600' : 'hover:bg-white/10'}`}
-                            onClick={() => { setTubeBuilderState({ ...builderState, active: false }); setTransformMode('translate'); }}
-                        >
-                            Move
-                        </button>
-                        <button
-                            className={`flex-1 text-xs py-1 rounded ${!builderState.active && transformMode === 'rotate' ? 'bg-blue-600' : 'hover:bg-white/10'}`}
-                            onClick={() => { setTubeBuilderState({ ...builderState, active: false }); setTransformMode('rotate'); }}
-                        >
-                            Rotate
-                        </button>
-                    </div>
-
-                    {/* Tube Builder Toggle */}
-                    <div className="flex flex-col gap-1 mt-2 border-t border-white/10 pt-2">
-                        <label className="text-xs text-purple-300">Smart Tube Builder</label>
-                        <div className="flex items-center justify-between mb-1">
-                            <label className="text-[10px] text-neutral-400">Planar Mode (2D)</label>
-                            <input
-                                type="checkbox"
-                                checked={planarMode}
-                                onChange={(e) => setPlanarMode(e.target.checked)}
-                                className="accent-purple-500"
-                            />
-                        </div>
-                        <div className="flex gap-2">
-                            <button
-                                className={`flex-1 text-xs py-1 rounded ${builderState.active && builderState.mode === 'straight' ? 'bg-purple-600' : 'bg-purple-900/30 hover:bg-purple-900/50'}`}
-                                onClick={() => setTubeBuilderState({ active: true, mode: 'straight', startAnchor: null, points: [] })}
-                            >
-                                Polyline
-                            </button>
-                            <button
-                                className={`flex-1 text-xs py-1 rounded ${builderState.active && builderState.mode === 'curved' ? 'bg-purple-600' : 'bg-purple-900/30 hover:bg-purple-900/50'}`}
-                                onClick={() => setTubeBuilderState({ active: true, mode: 'curved', startAnchor: null, points: [] })}
-                            >
-                                Curved
-                            </button>
-                        </div>
-                        {builderState.active && (
-                            <p className="text-[10px] text-neutral-400 mt-1">
-                                {builderState.startAnchor
-                                    ? "Click empty space to add points, or anchor to finish."
-                                    : "Click 1st anchor to start."}
-                            </p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Add New Apparatus */}
-                <div className="flex flex-col gap-2 border-t border-white/10 pt-4">
-                    <label className="text-sm font-semibold text-green-400">Add Apparatus</label>
-                    <div className="flex gap-2">
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6 custom-scrollbar">
+                    
+                    {/* Reaction Selector */}
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Reaction Context</label>
                         <select
-                            className="bg-black/40 border border-white/20 rounded p-1 text-xs flex-1"
-                            value={selectedModelToAdd}
-                            onChange={(e) => setSelectedModelToAdd(e.target.value)}
+                            className="bg-black/40 border border-white/10 rounded-md p-2.5 text-sm text-neutral-200 outline-none focus:border-blue-500/50 transition-colors cursor-pointer"
+                            value={selectedReactionId || ''}
+                            onChange={(e) => setSelectedReactionId(e.target.value)}
                         >
-                            {/* Filter duplicates/aliases if needed, but for now map all */}
-                            {Object.keys(APPARATUS_MAP).map(model => (
-                                <option key={model} value={model}>{model}</option>
+                            {reactions.map(r => (
+                                <option key={r.id} value={r.id}>{r.name}</option>
                             ))}
                         </select>
-                        <button
-                            onClick={() => handleAddItem(selectedModelToAdd)}
-                            className="bg-green-700/50 hover:bg-green-600 text-white px-3 rounded text-xs"
-                        >
-                            Add
-                        </button>
                     </div>
-                </div>
 
-                {/* Apparatus List (Flat) */}
-                <div className="flex flex-col gap-2 mt-4">
-                    <h2 className="text-sm font-semibold text-neutral-300">Scene Objects</h2>
-                    <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
-                        {currentReaction?.apparatus?.map(item => (
-                            <div
-                                key={item.id}
-                                className={`p-2 rounded cursor-pointer flex justify-between items-center ${selectedApparatusId === item.id ? 'bg-blue-600/30 border border-blue-500/50' : 'bg-white/5 hover:bg-white/10'
-                                    }`}
-                                onClick={() => setSelectedApparatusId(item.id)}
+                    {/* Tools Section */}
+                    <div className="flex flex-col gap-3 p-4 bg-white/[0.02] border border-white/5 rounded-xl">
+                        <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Transform Tools</h3>
+
+                        {/* Transform Modes */}
+                        <div className="flex gap-1 p-1 bg-black/40 rounded-lg">
+                            <button
+                                className={`flex-1 text-xs py-1.5 rounded-md transition-all duration-200 ${!builderState.active && transformMode === 'translate' ? 'bg-blue-600 text-white shadow-md' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+                                onClick={() => { setTubeBuilderState({ ...builderState, active: false }); setTransformMode('translate'); }}
                             >
-                                <span className="text-xs font-mono truncate w-1/2">{item.id}</span>
-                                <div className="flex items-center gap-1">
-                                    <span className="text-[10px] text-neutral-500 truncate">{item.model}</span>
+                                Move
+                            </button>
+                            <button
+                                className={`flex-1 text-xs py-1.5 rounded-md transition-all duration-200 ${!builderState.active && transformMode === 'rotate' ? 'bg-blue-600 text-white shadow-md' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+                                onClick={() => { setTubeBuilderState({ ...builderState, active: false }); setTransformMode('rotate'); }}
+                            >
+                                Rotate
+                            </button>
+                        </div>
+
+                        {/* Tube Builder Toggle */}
+                        <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-white/5">
+                            <div className="flex items-center justify-between">
+                                <label className="text-[11px] font-semibold text-purple-400">Smart Tube Builder</label>
+                                <div className="flex items-center gap-1.5 bg-black/30 px-2 py-1 rounded-full border border-white/5">
+                                    <label className="text-[9px] text-neutral-400 uppercase tracking-widest cursor-pointer">2D Planar</label>
+                                    <input
+                                        type="checkbox"
+                                        checked={planarMode}
+                                        onChange={(e) => setPlanarMode(e.target.checked)}
+                                        className="accent-purple-500 w-3 h-3 cursor-pointer"
+                                    />
                                 </div>
                             </div>
-                        ))}
+                            
+                            <div className="flex gap-1 p-1 bg-black/40 rounded-lg">
+                                <button
+                                    className={`flex-1 text-xs py-1.5 rounded-md transition-all duration-200 ${builderState.active && builderState.mode === 'straight' ? 'bg-purple-600 text-white shadow-md' : 'text-purple-300/50 hover:text-purple-200 hover:bg-purple-900/20'}`}
+                                    onClick={() => setTubeBuilderState({ active: true, mode: 'straight', startAnchor: null, points: [] })}
+                                >
+                                    Polyline
+                                </button>
+                                <button
+                                    className={`flex-1 text-xs py-1.5 rounded-md transition-all duration-200 ${builderState.active && builderState.mode === 'curved' ? 'bg-purple-600 text-white shadow-md' : 'text-purple-300/50 hover:text-purple-200 hover:bg-purple-900/20'}`}
+                                    onClick={() => setTubeBuilderState({ active: true, mode: 'curved', startAnchor: null, points: [] })}
+                                >
+                                    Curved
+                                </button>
+                            </div>
+                            {builderState.active && (
+                                <div className="bg-purple-900/20 border border-purple-500/20 rounded p-2 mt-1">
+                                    <p className="text-[10px] text-purple-200 text-center leading-relaxed">
+                                        {builderState.startAnchor
+                                            ? "Click empty space to add points, or anchor to finish."
+                                            : "Click 1st anchor to start."}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                {/* Selected Item Properties */}
-                {selectedApparatusId && currentReaction && (() => {
+                    {/* Add New Apparatus */}
+                    <div className="flex flex-col gap-2">
+                        <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Library</label>
+                        </div>
+                        <div className="flex gap-2">
+                            <select
+                                className="bg-black/40 border border-white/10 rounded-md p-2 text-sm flex-1 text-neutral-300 outline-none focus:border-green-500/50 transition-colors cursor-pointer"
+                                value={selectedModelToAdd}
+                                onChange={(e) => setSelectedModelToAdd(e.target.value)}
+                            >
+                                {Object.keys(APPARATUS_MAP).map(model => (
+                                    <option key={model} value={model}>{model}</option>
+                                ))}
+                            </select>
+                            <button
+                                onClick={() => handleAddItem(selectedModelToAdd)}
+                                className="bg-green-600/80 hover:bg-green-500 text-white px-5 rounded-md text-xs font-bold shadow-md transition-all uppercase tracking-wider"
+                            >
+                                Add
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Apparatus List (Flat) */}
+                    <div className="flex flex-col border border-white/5 bg-white/[0.02] rounded-xl overflow-hidden flex-1 min-h-[180px]">
+                        <div className="p-3 border-b border-white/5 bg-black/20 flex justify-between items-center">
+                            <h2 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Scene Objects</h2>
+                            <span className="text-[9px] bg-white/10 text-neutral-300 px-2 py-0.5 rounded-full font-mono">{currentReaction?.apparatus?.length || 0}</span>
+                        </div>
+                        <div className="flex flex-col overflow-y-auto custom-scrollbar p-1.5 gap-1 flex-1">
+                            {currentReaction?.apparatus?.map(item => (
+                                <div
+                                    key={item.id}
+                                    className={`px-3 py-2 rounded-lg cursor-pointer flex justify-between items-center transition-all ${
+                                        selectedApparatusId === item.id 
+                                        ? 'bg-blue-600/20 border border-blue-500/30 shadow-inner' 
+                                        : 'border border-transparent hover:bg-white/5 hover:border-white/5'
+                                    }`}
+                                    onClick={() => setSelectedApparatusId(item.id)}
+                                >
+                                    <span className={`text-xs font-mono truncate w-1/2 ${selectedApparatusId === item.id ? 'text-blue-300 font-semibold' : 'text-neutral-300'}`}>{item.id}</span>
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/40 text-neutral-400 truncate max-w-[45%] border border-white/5">{item.model}</span>
+                                </div>
+                            ))}
+                            {(!currentReaction?.apparatus || currentReaction.apparatus.length === 0) && (
+                                <div className="text-center py-8 text-xs text-neutral-500 italic">No objects in scene</div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Selected Item Properties Component Injection point */}
+                    {selectedApparatusId && currentReaction && (() => {
                     const item = currentReaction.apparatus.find(a => a.id === selectedApparatusId);
                     if (!item) return null;
                     return (
                         <div className="flex flex-col gap-2 mt-4 border-t border-white/10 pt-4">
                             <div className="flex justify-between items-center">
-                                <h3 className="text-sm font-semibold text-orange-400">Properties: {item.id}</h3>
+                                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]"></div><h3 className="text-[11px] font-bold text-orange-400 uppercase tracking-widest truncate max-w-[140px]">{item.id}</h3></div>
                                 <button
                                     onClick={() => handleDeleteItem(item.id)}
                                     className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-red-900/30 rounded border border-red-900/50"
@@ -1358,12 +1379,11 @@ export default function ApparatusEditorPage() {
                             {item.model === 'Tongs' && (
                                 <div className="flex flex-col gap-1 mt-2">
                                     <label className="text-xs text-yellow-300">Tongs Opening</label>
-                                    <input
-                                        type="range"
+                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
                                         min="0" max="1" step="0.05"
                                         value={item.angle || 0}
                                         onChange={(e) => handleUpdateItem(item.id, { angle: parseFloat(e.target.value) })}
-                                        className="w-full accent-yellow-400"
+                                        
                                     />
                                 </div>
                             )}
@@ -1371,24 +1391,21 @@ export default function ApparatusEditorPage() {
                             {item.model === 'Clamp' && (
                                 <div className="flex flex-col gap-1 mt-2">
                                     <label className="text-xs text-blue-300">Clamp Opening</label>
-                                    <input
-                                        type="range"
+                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
                                         min="0" max="1" step="0.05"
                                         value={item.angle || 0}
                                         onChange={(e) => handleUpdateItem(item.id, { angle: parseFloat(e.target.value) })}
-                                        className="w-full accent-blue-400"
+                                        
                                     />
                                     <label className="text-xs text-blue-300 mt-1">Head Rotation</label>
-                                    <input
-                                        type="range"
+                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
                                         min={-Math.PI} max={Math.PI} step="0.1"
                                         value={item.headAngle || 0}
                                         onChange={(e) => handleUpdateItem(item.id, { headAngle: parseFloat(e.target.value) })}
-                                        className="w-full accent-blue-400"
+                                        
                                     />
                                     <label className="text-xs text-blue-300 mt-1">Stand Rotation</label>
-                                    <input
-                                        type="range"
+                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
                                         min={-Math.PI} max={Math.PI} step="0.05"
                                         value={item.rotation ? item.rotation[1] : 0}
                                         onChange={(e) => {
@@ -1416,11 +1433,10 @@ export default function ApparatusEditorPage() {
                                                 position: [newPos.x, newPos.y, newPos.z]
                                             });
                                         }}
-                                        className="w-full accent-blue-400"
+                                        
                                     />
                                     <label className="text-xs text-blue-300 mt-1">Vertical Position</label>
-                                    <input
-                                        type="range"
+                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
                                         min="0.5" max="10" step="0.1"
                                         value={item.position ? item.position[1] : 1}
                                         onChange={(e) => {
@@ -1428,15 +1444,14 @@ export default function ApparatusEditorPage() {
                                             const currentPos = item.position || [0, 0, 0];
                                             handleUpdateItem(item.id, { position: [currentPos[0], newY, currentPos[2]] });
                                         }}
-                                        className="w-full accent-blue-400"
+                                        
                                     />
                                     <label className="text-xs text-blue-300 mt-1">Clamp Size</label>
-                                    <input
-                                        type="range"
+                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
                                         min="0.5" max="2" step="0.1"
                                         value={item.size || 1}
                                         onChange={(e) => handleUpdateItem(item.id, { size: parseFloat(e.target.value) })}
-                                        className="w-full accent-blue-400"
+                                        
                                     />
                                 </div>
                             )}
@@ -1457,22 +1472,20 @@ export default function ApparatusEditorPage() {
                                 <div className="flex flex-col gap-2 mt-2 border-t border-white/10 pt-2">
                                     <div className="flex items-center justify-between">
                                         <label className="text-xs text-blue-300">Lid Attached</label>
-                                        <input
-                                            type="checkbox"
+                                        <input type="checkbox" className="w-4 h-4 accent-orange-500 bg-black/40 border-white/10 rounded cursor-pointer" 
                                             checked={item.hasLid !== false}
                                             onChange={(e) => handleUpdateItem(item.id, { hasLid: e.target.checked })}
-                                            className="accent-blue-500"
+                                            
                                         />
                                     </div>
                                     {(item.hasLid !== false) && (
                                         <div className="flex flex-col gap-1">
                                             <label className="text-xs text-blue-300">Holes in Lid: {item.holeCount || 0}</label>
-                                            <input
-                                                type="range"
+                                            <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
                                                 min="0" max="4" step="1"
                                                 value={item.holeCount || 0}
                                                 onChange={(e) => handleUpdateItem(item.id, { holeCount: parseInt(e.target.value) })}
-                                                className="w-full accent-blue-400"
+                                                
                                             />
                                         </div>
                                     )}
@@ -1482,12 +1495,11 @@ export default function ApparatusEditorPage() {
                             {item.model === 'RubberCork' && (
                                 <div className="flex flex-col gap-1 mt-2">
                                     <label className="text-xs text-orange-300">Holes: {item.holes || 1}</label>
-                                    <input
-                                        type="range"
+                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
                                         min="1" max="3" step="1"
                                         value={item.holes || 1}
                                         onChange={(e) => handleUpdateItem(item.id, { holes: parseInt(e.target.value) })}
-                                        className="w-full accent-orange-400"
+                                        
                                     />
                                 </div>
                             )}
@@ -1495,12 +1507,11 @@ export default function ApparatusEditorPage() {
                             {item.model === 'RetortStand' && (
                                 <div className="flex flex-col gap-1 mt-2">
                                     <label className="text-xs text-blue-300">Rod Height: {item.height || 5}</label>
-                                    <input
-                                        type="range"
+                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
                                         min="2" max="10" step="0.5"
                                         value={item.height || 5}
                                         onChange={(e) => handleUpdateItem(item.id, { height: parseFloat(e.target.value) })}
-                                        className="w-full accent-blue-400"
+                                        
                                     />
                                 </div>
                             )}
@@ -1510,12 +1521,7 @@ export default function ApparatusEditorPage() {
                                     <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
                                         Trough Height: {(item.customHeight || 1).toFixed(1)}x
                                     </label>
-                                    <input
-                                        type="range"
-                                        min="0.5"
-                                        max="3.0"
-                                        step="0.1"
-                                        className="w-full accent-cyan-500"
+                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner"  
                                         value={item.customHeight || 1}
                                         onChange={(e) => handleUpdateItem(item.id, { customHeight: parseFloat(e.target.value) })}
                                     />
@@ -1530,22 +1536,20 @@ export default function ApparatusEditorPage() {
                                 <div className="flex flex-col gap-2 mt-2 border-t border-white/10 pt-2">
                                     <div className="flex flex-col gap-1">
                                         <label className="text-xs text-blue-300">Height: {item.height || 3.0}</label>
-                                        <input
-                                            type="range"
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
                                             min="2.0" max="5.0" step="0.1"
                                             value={item.height || 3.0}
                                             onChange={(e) => handleUpdateItem(item.id, { height: parseFloat(e.target.value) })}
-                                            className="w-full accent-blue-400"
+                                            
                                         />
                                     </div>
                                     <div className="flex flex-col gap-1">
                                         <label className="text-xs text-blue-300">Leg Angle: {((item.legAngle || 0.15) * 180 / Math.PI).toFixed(0)}°</label>
-                                        <input
-                                            type="range"
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
                                             min="0" max="0.5" step="0.01"
                                             value={item.legAngle || 0.15}
                                             onChange={(e) => handleUpdateItem(item.id, { legAngle: parseFloat(e.target.value) })}
-                                            className="w-full accent-blue-400"
+                                            
                                         />
                                     </div>
                                 </div>
@@ -1557,8 +1561,7 @@ export default function ApparatusEditorPage() {
                                     {/* LOCK STRAIGHT / LENGTH CONTROLS */}
                                     <div className="flex items-center justify-between">
                                         <label className="text-xs text-blue-300">Lock Straight</label>
-                                        <input
-                                            type="checkbox"
+                                        <input type="checkbox" className="w-4 h-4 accent-orange-500 bg-black/40 border-white/10 rounded cursor-pointer" 
                                             checked={item.isLockedStraight || false}
                                             onChange={(e) => {
                                                 const isLocked = e.target.checked;
@@ -1580,7 +1583,7 @@ export default function ApparatusEditorPage() {
                                                     handleUpdateItem(item.id, { isLockedStraight: isLocked });
                                                 }
                                             }}
-                                            className="accent-blue-500"
+                                            
                                         />
                                     </div>
 
@@ -1774,17 +1777,21 @@ export default function ApparatusEditorPage() {
                     );
                 })()}
 
-                <div className="mt-auto pt-4">
-                    <div className="flex gap-2 mb-2">
+
+                </div> {/* End Scrollable Content */}
+
+                {/* Bottom Actions - Fixed to Bottom */}
+                <div className="p-5 bg-[#0a0a0a] border-t border-white/10 z-20 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+                    <div className="flex gap-2 mb-3">
                         <button
                             onClick={() => setTubeBuilderState(prev => ({ ...prev, active: !prev.active, mode: 'straight' }))}
-                            className={`flex-1 py-1 rounded text-xs ${builderState.active && builderState.mode !== 'wire' ? 'bg-blue-600 text-white' : 'bg-neutral-700 text-neutral-300'}`}
+                            className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all border ${builderState.active && builderState.mode !== 'wire' ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white border-blue-400/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-white/[0.03] text-neutral-300 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white hover:shadow-lg'}`}
                         >
                             {builderState.active && builderState.mode !== 'wire' ? 'Cancel Tube' : 'Add Tube'}
                         </button>
                         <button
                             onClick={() => setTubeBuilderState(prev => ({ ...prev, active: !prev.active, mode: 'wire' }))}
-                            className={`flex-1 py-1 rounded text-xs ${builderState.active && builderState.mode === 'wire' ? 'bg-red-600 text-white' : 'bg-neutral-700 text-neutral-300'}`}
+                            className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all border ${builderState.active && builderState.mode === 'wire' ? 'bg-gradient-to-r from-red-600 to-red-500 text-white border-red-400/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'bg-white/[0.03] text-neutral-300 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white hover:shadow-lg'}`}
                         >
                             {builderState.active && builderState.mode === 'wire' ? 'Cancel Wire' : 'Add Wire'}
                         </button>
@@ -1792,14 +1799,15 @@ export default function ApparatusEditorPage() {
 
                     <button
                         onClick={handleSave}
-                        className="w-full bg-green-600 hover:bg-green-500 text-white rounded py-2 font-semibold transition-colors"
+                        className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 border border-green-500/50 text-white rounded-lg py-3 font-bold tracking-wider uppercase transition-all shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:shadow-[0_4px_25px_rgba(16,185,129,0.5)] flex justify-center items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0"
                     >
-                        Save Changes
+                        <span className="text-base">💾</span> Save All Changes
                     </button>
-                    {status && <p className="text-center text-xs mt-2 text-yellow-400">{status}</p>}
+                    <div className="h-4 mt-3">
+                        {status && <p className="text-center text-xs text-green-400 font-bold uppercase tracking-widest animate-pulse">{status}</p>}
+                    </div>
                 </div>
             </div>
-
             {/* 3D Viewport */}
             <div className="flex-1 relative bg-gradient-to-br from-neutral-800 to-neutral-900">
                 <Canvas camera={{ position: [5, 5, 5], fov: 50 }}>
