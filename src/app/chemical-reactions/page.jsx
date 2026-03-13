@@ -157,6 +157,7 @@ import ReactionControls from '@/components/reactions/ReactionControls';
 import EnergyProfile from '@/components/reactions/EnergyProfile';
 import ReactionLibrary from '@/components/reactions/ReactionLibrary';
 import ReactorConditions from '@/components/reactions/ReactorConditions';
+import ReactionChatbot from '@/components/reactions/ReactionChatbot';
 
 // Import JSON Configuration
 // import REACTIONS_LIST from '@/data/reactions.json'; // REMOVED to avoid HMR
@@ -344,6 +345,8 @@ const ChemicalReactionsPage = () => {
           />
         </div>
       </div>
+
+      <ReactionChatbot currentReaction={currentReaction} />
     </div>
   );
 };
