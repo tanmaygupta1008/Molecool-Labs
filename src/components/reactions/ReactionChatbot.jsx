@@ -1,54 +1,61 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, User, Sparkles } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { X, Send, Bot, Sparkles, Zap, ZapOff } from 'lucide-react';
 
 const ReactionChatbot = ({ currentReaction }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [backendOnline, setBackendOnline] = useState(null); // null = unknown, true/false
   const messagesEndRef = useRef(null);
+  const sessionIdRef = useRef(crypto.randomUUID());
 
-  // Initialize greeting only once or when reaction changes significantly, but let's just do it cleanly
+  // ── Check ML backend connectivity ──────────────────────
+  const checkBackendHealth = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ml-predict', { method: 'GET' });
+      const data = await res.json();
+      setBackendOnline(data.connected === true);
+    } catch {
+      setBackendOnline(false);
+    }
+  }, []);
+
+  // Check health on mount and when chat opens
+  useEffect(() => {
+    if (isOpen) checkBackendHealth();
+  }, [isOpen, checkBackendHealth]);
+
+  // Periodic health check every 30s while open
+  useEffect(() => {
+    if (!isOpen) return;
+    const interval = setInterval(checkBackendHealth, 30000);
+    return () => clearInterval(interval);
+  }, [isOpen, checkBackendHealth]);
+
+  // ── Reset greeting when reaction changes ───────────────
   useEffect(() => {
     if (currentReaction) {
       setMessages([
-        { 
-          role: 'assistant', 
-          content: `Hello! I'm your AI lab assistant. What would you like to know about ${currentReaction.name}?` 
-        }
+        {
+          role: 'assistant',
+          content: `Hello! I'm your AI lab assistant. Ask me anything about chemistry — try something like *"What happens when sodium reacts with water?"*\n\nCurrently viewing: **${currentReaction.name}**`,
+        },
       ]);
     }
-  }, [currentReaction?.id]); // Restart chat context when reaction changes
+  }, [currentReaction?.id]);
 
+  // ── Auto-scroll ────────────────────────────────────────
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+  useEffect(() => { scrollToBottom(); }, [messages, isTyping]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
-
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-
-    const userMessage = input.trim();
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setIsTyping(true);
-
-    // Mock AI response delay
-    setTimeout(() => {
-      const response = generateMockResponse(userMessage, currentReaction);
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
-  };
-
+  // ── Mock fallback (kept for graceful degradation) ──────
   const generateMockResponse = (msg, reaction) => {
     const lowerMsg = msg.toLowerCase();
     if (!reaction) return "I don't have information on the current reaction.";
-    
+
     if (lowerMsg.includes('equation') || lowerMsg.includes('formula')) {
       return `The chemical equation is: ${reaction.equation}.`;
     }
@@ -65,12 +72,102 @@ const ReactionChatbot = ({ currentReaction }) => {
       return `The enthalpy change (ΔH) is ${reaction.enthalpy} kJ/mol. It is an ${reaction.enthalpy < 0 ? 'exothermic' : 'endothermic'} reaction.`;
     }
     if (lowerMsg.includes('catalyst')) {
-        return reaction.catalysts && reaction.catalysts.length > 0 
-            ? `Catalysts often used: ${reaction.catalysts.join(', ')}.`
-            : `This reaction typically does not require a specific catalyst described here.`;
+      return reaction.catalysts && reaction.catalysts.length > 0
+        ? `Catalysts often used: ${reaction.catalysts.join(', ')}.`
+        : `This reaction typically does not require a specific catalyst described here.`;
     }
-    
     return `That's a great question about ${reaction.name}. As a molecular AI assistant, I can confirm this is an important chemical process: ${reaction.description}`;
+  };
+
+  // ── Send message ───────────────────────────────────────
+  const handleSend = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || isTyping) return;
+
+    const userMessage = input.trim();
+    setInput('');
+    setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
+    setIsTyping(true);
+
+    try {
+      // Try the real ML backend via the proxy
+      const res = await fetch('/api/ml-predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: userMessage,
+          session_id: sessionIdRef.current,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.fallback) {
+        // Backend returned fallback flag → use mock
+        throw new Error('Fallback triggered');
+      }
+
+      // Successful ML response
+      setBackendOnline(true);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: data.message,
+          source: data.source,
+          raw: data.raw,
+        },
+      ]);
+    } catch {
+      // Fallback to mock response
+      setBackendOnline(false);
+      const fallbackResponse = generateMockResponse(userMessage, currentReaction);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: fallbackResponse,
+          source: 'offline',
+        },
+      ]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  // ── Render helpers ─────────────────────────────────────
+  const renderMessageContent = (content) => {
+    // Simple markdown-ish rendering: **bold**, *italic*, \n → <br>
+    const parts = content.split('\n').map((line, i) => {
+      let html = line
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/\_(.+?)\_/g, '<em>$1</em>');
+      return <span key={i} dangerouslySetInnerHTML={{ __html: html }} />;
+    });
+    return parts.reduce((acc, el, i) => {
+      if (i === 0) return [el];
+      return [...acc, <br key={`br-${i}`} />, el];
+    }, []);
+  };
+
+  const StatusDot = () => {
+    if (backendOnline === null) return null;
+    return (
+      <div className="flex items-center gap-1.5 ml-auto">
+        {backendOnline ? (
+          <>
+            <Zap size={10} className="text-emerald-400" />
+            <span className="text-[9px] text-emerald-400/80 font-medium">ML Online</span>
+          </>
+        ) : (
+          <>
+            <ZapOff size={10} className="text-amber-400" />
+            <span className="text-[9px] text-amber-400/80 font-medium">Offline</span>
+          </>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -92,19 +189,22 @@ const ReactionChatbot = ({ currentReaction }) => {
       {/* Chat Window */}
       {isOpen && (
         <div className="absolute bottom-6 right-6 z-50 w-80 md:w-96 h-[500px] max-h-[80vh] flex flex-col bg-black/80 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto transition-all duration-300 transform origin-bottom-right">
-          
+
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-cyan-900/40 to-black/40">
             <div className="flex items-center gap-2">
               <Bot className="text-cyan-400" size={24} />
               <div>
                 <h3 className="text-white font-bold tracking-wide text-sm">AI Lab Assistant</h3>
-                <p className="text-cyan-400/60 text-xs">Molecool Labs</p>
+                <p className="text-cyan-400/60 text-xs">MoleCool Labs</p>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-lg">
-              <X size={18} />
-            </button>
+            <div className="flex items-center gap-2">
+              <StatusDot />
+              <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-lg">
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           {/* Messages Area */}
@@ -117,19 +217,24 @@ const ReactionChatbot = ({ currentReaction }) => {
                   </div>
                 )}
                 <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed ${
-                  msg.role === 'user' 
-                    ? 'bg-cyan-600 text-white rounded-br-none shadow-md shadow-cyan-900/20' 
+                  msg.role === 'user'
+                    ? 'bg-cyan-600 text-white rounded-br-none shadow-md shadow-cyan-900/20'
                     : 'bg-white/10 text-gray-200 border border-white/5 rounded-bl-none shadow-md'
                 }`}>
-                  {msg.content}
+                  <div>{renderMessageContent(msg.content)}</div>
+                  {msg.source === 'offline' && (
+                    <div className="mt-2 text-[10px] text-amber-400/60 flex items-center gap-1">
+                      <ZapOff size={8} /> Offline response
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
             {isTyping && (
               <div className="flex justify-start">
-                  <div className="w-6 h-6 rounded-full bg-cyan-900/50 flex items-center justify-center mr-2 mt-1 shrink-0 border border-cyan-500/30">
-                    <Bot size={14} className="text-cyan-400" />
-                  </div>
+                <div className="w-6 h-6 rounded-full bg-cyan-900/50 flex items-center justify-center mr-2 mt-1 shrink-0 border border-cyan-500/30">
+                  <Bot size={14} className="text-cyan-400" />
+                </div>
                 <div className="bg-white/10 border border-white/5 p-3 rounded-2xl rounded-bl-none flex gap-1.5 items-center h-10 w-16 justify-center">
                   <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -146,11 +251,11 @@ const ReactionChatbot = ({ currentReaction }) => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={`Ask about ${currentReaction?.name || 'reaction'}...`}
+              placeholder="Ask about any reaction..."
               className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50 transition-colors placeholder:text-gray-500"
             />
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={!input.trim() || isTyping}
               className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:hover:bg-cyan-600 text-white p-2.5 rounded-xl transition-colors flex items-center justify-center shrink-0 border border-cyan-400/30"
             >
