@@ -53,9 +53,13 @@
 
 // src/components/ElementModal.jsx
 // src/components/ElementModal.jsx
+import { useState } from 'react';
 import Atom3DModel from './Atom3DModel';
+import ElectronConfigBuilder from './ElectronConfigBuilder';
 
 const ElementModal = ({ element, onClose }) => {
+  const [activeTab, setActiveTab] = useState('overview');
+
   if (!element) return null;
   
   // Destructure all relevant fields for display
@@ -87,56 +91,86 @@ const ElementModal = ({ element, onClose }) => {
       onClick={onClose}
     >
       <div 
-        className="bg-gray-800 text-white p-6 rounded-lg shadow-2xl max-w-4xl w-full mx-4"
+        className="bg-gray-800 text-white p-6 rounded-lg shadow-2xl max-w-4xl w-full mx-4 flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()} 
       >
         <div className="flex justify-between items-start mb-4 border-b border-gray-700 pb-3">
-          <h2 className="text-4xl font-extrabold text-cyan-300">{name} ({symbol})</h2>
+          <div>
+            <h2 className="text-4xl font-extrabold text-cyan-300">{name} ({symbol})</h2>
+            <div className="flex gap-4 mt-3">
+               <button 
+                  onClick={() => setActiveTab('overview')}
+                  className={`text-sm font-semibold pb-1 border-b-2 transition-colors duration-200 ${
+                     activeTab === 'overview' 
+                     ? 'border-cyan-400 text-cyan-300' 
+                     : 'border-transparent text-gray-400 hover:text-gray-200'
+                  }`}
+               >
+                  Overview
+               </button>
+               <button 
+                  onClick={() => setActiveTab('config')}
+                  className={`text-sm font-semibold pb-1 border-b-2 transition-colors duration-200 ${
+                     activeTab === 'config' 
+                     ? 'border-cyan-400 text-cyan-300' 
+                     : 'border-transparent text-gray-400 hover:text-gray-200'
+                  }`}
+               >
+                  Configuration Builder
+               </button>
+            </div>
+          </div>
           <button onClick={onClose} className="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          {/* 3D Model Area (Spans 2 columns) */}
-          <div className="md:col-span-2 h-80 w-full bg-black rounded-lg border border-gray-700">
-            <Atom3DModel glbUrl={bohr_model_3d} /> 
-          </div>
-          
-          {/* Summary and Properties (Spans 1 column) */}
-          <div className="md:col-span-1">
-            
-            {/* Summary */}
-            <p className="text-sm italic text-gray-400 mb-3">
-                {summary ? summary.substring(0, 150) + (summary.length > 150 ? '...' : '') : 'Summary not available.'}
-            </p>
-            
-            <div className="space-y-2 text-sm">
-                <p><span className="font-semibold text-cyan-300">Atomic No:</span> {number || element.atomic_number}</p>
-                <p><span className="font-semibold text-cyan-300">Atomic Mass:</span> {atomic_mass.toFixed(4)} u</p>
-                <p><span className="font-semibold text-cyan-300">Category:</span> <span className="capitalize">{category}</span></p>
-                <p><span className="font-semibold text-cyan-300">Phase:</span> {phase}</p>
-                
-                {/* Electron Configuration */}
-                <p className="break-words">
-                    <span className="font-semibold text-cyan-300">Config: </span> 
-                    {electron_configuration || 'N/A'}
-                </p>
-
-                {/* Shell Electrons */}
-                <p>
-                    <span className="font-semibold text-cyan-300">Shells (e-): </span> 
-                    {formatShells(shells)}
-                </p>
-
-                <p><span className="font-semibold text-cyan-300">Melting Pt:</span> {melt ? `${melt.toFixed(2)} K` : 'N/A'}</p>
-                <p><span className="font-semibold text-cyan-300">Boiling Pt:</span> {boil ? `${boil.toFixed(2)} K` : 'N/A'}</p>
-                <p><span className="font-semibold text-cyan-300">Discovered By:</span> {discovered_by || 'Unknown'}</p>
-            </div>
-            
-            <p className="mt-4 text-xs text-gray-400 italic">
-                * Drag and zoom the 3D model above to interact.
-            </p>
-          </div>
+        <div className="flex-1 overflow-y-auto min-h-[400px]">
+          {activeTab === 'overview' ? (
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+               
+               {/* 3D Model Area (Spans 2 columns) */}
+               <div className="md:col-span-2 h-80 min-h-full w-full bg-black rounded-lg border border-gray-700">
+                 <Atom3DModel glbUrl={bohr_model_3d} /> 
+               </div>
+               
+               {/* Summary and Properties (Spans 1 column) */}
+               <div className="md:col-span-1 overflow-y-auto pr-2">
+                 
+                 {/* Summary */}
+                 <p className="text-sm italic text-gray-400 mb-3">
+                     {summary ? summary.substring(0, 150) + (summary.length > 150 ? '...' : '') : 'Summary not available.'}
+                 </p>
+                 
+                 <div className="space-y-2 text-sm">
+                     <p><span className="font-semibold text-cyan-300">Atomic No:</span> {number || element.atomic_number}</p>
+                     <p><span className="font-semibold text-cyan-300">Atomic Mass:</span> {atomic_mass?.toFixed(4)} u</p>
+                     <p><span className="font-semibold text-cyan-300">Category:</span> <span className="capitalize">{category}</span></p>
+                     <p><span className="font-semibold text-cyan-300">Phase:</span> {phase}</p>
+                     
+                     {/* Electron Configuration */}
+                     <p className="break-words">
+                         <span className="font-semibold text-cyan-300">Config: </span> 
+                         {electron_configuration || 'N/A'}
+                     </p>
+     
+                     {/* Shell Electrons */}
+                     <p>
+                         <span className="font-semibold text-cyan-300">Shells (e-): </span> 
+                         {formatShells(shells)}
+                     </p>
+     
+                     <p><span className="font-semibold text-cyan-300">Melting Pt:</span> {melt ? `${melt.toFixed(2)} K` : 'N/A'}</p>
+                     <p><span className="font-semibold text-cyan-300">Boiling Pt:</span> {boil ? `${boil.toFixed(2)} K` : 'N/A'}</p>
+                     <p><span className="font-semibold text-cyan-300">Discovered By:</span> {discovered_by || 'Unknown'}</p>
+                 </div>
+                 
+                 <p className="mt-4 text-xs text-gray-500 italic">
+                     * Drag and zoom the 3D model above to interact.
+                 </p>
+               </div>
+             </div>
+          ) : (
+             <ElectronConfigBuilder element={element} />
+          )}
         </div>
       </div>
     </div>
