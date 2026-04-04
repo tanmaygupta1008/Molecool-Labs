@@ -931,9 +931,9 @@
                         "id": "trough",
                         "model": "WaterTrough",
                         "position": [
-                            2.878,
+                            3.005,
                             0,
-                            0
+                            0.15000000000000036
                         ],
                         "rotation": [
                             0,
@@ -1178,7 +1178,9 @@
                     }
                 }
             }
-        ]
+        ],
+        "tableWidth": 12,
+        "tableDepth": 8.5
     },
     {
         "id": "sodium-water",
@@ -3415,14 +3417,14 @@
                             1
                         ],
                         "ringRadius": 0.8,
-                        "height": 4
+                        "height": 4.1
                     },
                     {
                         "id": "wiregauze-0634",
                         "model": "WireGauze",
                         "position": [
                             0,
-                            4.05,
+                            4.1499999999999995,
                             0
                         ],
                         "rotation": [
@@ -3481,7 +3483,7 @@
                         "id": "retortstand-5433",
                         "model": "RetortStand",
                         "position": [
-                            -5.178,
+                            -3.586,
                             0,
                             -6.013
                         ],
@@ -3814,7 +3816,7 @@
                         "model": "Clamp",
                         "position": [
                             2.220446049250313e-16,
-                            6.2,
+                            5.7,
                             1.55
                         ],
                         "rotation": [
@@ -3891,7 +3893,9 @@
                             1,
                             1
                         ],
-                        "isOn": true
+                        "isOn": true,
+                        "gasFlow": 0.9,
+                        "airFlow": 0.9
                     },
                     {
                         "id": "bunsenburner-1128",
@@ -3954,8 +3958,8 @@
                             1
                         ],
                         "isOn": true,
-                        "airFlow": 0.6,
-                        "gasFlow": 0.75
+                        "airFlow": 0.65,
+                        "gasFlow": 0.65
                     },
                     {
                         "id": "twoneckflask-1227",
@@ -4002,7 +4006,7 @@
                         "model": "SeparatoryFunnel",
                         "position": [
                             0,
-                            -1.2,
+                            -2.7,
                             0
                         ],
                         "rotation": [
@@ -4036,7 +4040,7 @@
                             1
                         ],
                         "parentId": "retortstand-8252",
-                        "ringRadius": 0.8
+                        "ringRadius": 0.85
                     },
                     {
                         "id": "tripodstand-6726",
@@ -4160,9 +4164,9 @@
                         "id": "tripodstand-9796",
                         "model": "TripodStand",
                         "position": [
-                            4.95,
+                            5.62,
                             0,
-                            -6.183
+                            -6.158
                         ],
                         "rotation": [
                             0,
@@ -4335,6 +4339,25 @@
                             1
                         ],
                         "parentId": "tripodstand-9796"
+                    },
+                    {
+                        "id": "thermometer-5976",
+                        "model": "Thermometer",
+                        "position": [
+                            -8.882,
+                            0,
+                            -1.386
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
                     }
                 ],
                 "macroView": {
@@ -4351,7 +4374,7 @@
                 }
             },
             {
-                "id": "stage-1775200431708",
+                "id": "stage-1775293274928",
                 "name": "Stage 2",
                 "apparatus": [],
                 "macroView": {}
