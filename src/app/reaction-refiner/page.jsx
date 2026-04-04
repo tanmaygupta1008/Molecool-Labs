@@ -321,7 +321,7 @@ const ReactionRefinerPage = () => {
                             <InitialStateEditor
                                 initialState={currentReaction.macroView?.visualRules?.initialState}
                                 onChange={(newState) => handleVisualChange('initialState', newState)}
-                                apparatusList={currentReaction.apparatus || []}
+                                apparatusList={currentReaction.stages?.[0]?.apparatus || currentReaction.apparatus || []}
                             />
 
                             {/* Section: Step Details (Visible only when a step is selected) */}
@@ -334,7 +334,7 @@ const ReactionRefinerPage = () => {
                                     <div className="flex-1">
                                         <StepDetailEditor
                                             step={currentReaction.macroView?.visualRules?.timeline?.[selectedStepIndex]}
-                                            apparatusList={currentReaction.apparatus || []}
+                                            apparatusList={currentReaction.stages?.[0]?.apparatus || currentReaction.apparatus || []}
                                             onChange={(updatedStep) => {
                                                 const newTimeline = { ...currentReaction.macroView?.visualRules?.timeline };
                                                 newTimeline[selectedStepIndex] = updatedStep;
@@ -367,7 +367,7 @@ const ReactionRefinerPage = () => {
                                     <div className="flex-1">
                                         <ReactantBlockEditor
                                             block={currentReaction.macroView?.visualRules?.reactantTimeline?.find(b => b.id === selectedReactantBlockId)}
-                                            apparatusList={currentReaction.apparatus || []}
+                                            apparatusList={currentReaction.stages?.[0]?.apparatus || currentReaction.apparatus || []}
                                             onChange={(updatedBlock) => {
                                                 const newTimeline = [...(currentReaction.macroView?.visualRules?.reactantTimeline || [])];
                                                 const idx = newTimeline.findIndex(b => b.id === selectedReactantBlockId);

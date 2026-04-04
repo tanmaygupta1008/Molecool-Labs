@@ -34,6 +34,7 @@ const ApparatusPreview = ({ apparatus }) => {
 };
 
 const FullSetupPreview = ({ reaction }) => {
+    const apparatusList = reaction.stages?.[0]?.apparatus || reaction.apparatus || [];
     return (
         <div className="h-64 w-full bg-[#161616] rounded-xl border border-gray-800 mb-6 relative overflow-hidden">
             <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur px-2 py-1 rounded text-xs font-mono text-purple-400 border border-purple-500/20 flex items-center gap-1">
@@ -45,14 +46,14 @@ const FullSetupPreview = ({ reaction }) => {
                 <Environment preset="city" />
                 <Center>
                     <group>
-                        {reaction.apparatus.map(app => {
+                        {apparatusList.map(app => {
                             const Component = Apparatus[app.model] || Apparatus.Beaker;
                             // Destructure transforms to avoid double application
                             const { id, position, rotation, scale, ...props } = app;
 
                             // Inject flame logic
                             if (app.model === 'BunsenBurner') {
-                                const detection = detectApparatusTypeAbove(app, reaction.apparatus);
+                                const detection = detectApparatusTypeAbove(app, apparatusList);
                                 props.apparatusType = detection.type;
                                 props.flameTargetY = detection.distY;
                             }
@@ -90,6 +91,20 @@ const ReactantConfigPage = () => {
         fetch('/api/reactions', { cache: 'no-store' })
             .then(res => res.json())
             .then(data => {
+                // Recover autosaved state from local storage first to prevent losing work and stay synced with editor
+                const autosaved = localStorage.getItem('molecool_reactions_autosave');
+                if (autosaved) {
+                    try {
+                        const parsed = JSON.parse(autosaved);
+                        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                            setReactions(parsed);
+                            let sel = localStorage.getItem('molecool_selected_reaction') || parsed[0].id;
+                            setSelectedReactionId(sel);
+                            return;
+                        }
+                    } catch(e) { console.error('Corrupted autosave', e); }
+                }
+
                 setReactions(data);
                 if (data.length > 0) {
                     setSelectedReactionId(data[0].id);
@@ -97,6 +112,18 @@ const ReactantConfigPage = () => {
             })
             .catch(err => console.error("Failed to load reactions", err));
     }, []);
+
+    // Autosave syncing logic
+    useEffect(() => {
+        if (reactions.length > 0) {
+            localStorage.setItem('molecool_reactions_autosave', JSON.stringify(reactions));
+        }
+    }, [reactions]);
+    useEffect(() => {
+        if (selectedReactionId) {
+            localStorage.setItem('molecool_selected_reaction', selectedReactionId);
+        }
+    }, [selectedReactionId]);
 
     // Load Selected Reaction
     useEffect(() => {
@@ -109,8 +136,10 @@ const ReactantConfigPage = () => {
 
     const sanitizeReaction = (reaction) => {
         const r = JSON.parse(JSON.stringify(reaction));
-        if (r.apparatus) {
-            r.apparatus.forEach(app => {
+        
+        const sanitizeList = (list) => {
+            if (!list) return;
+            list.forEach(app => {
                 if (app.reactants) {
                     app.reactants.forEach(rect => {
                         rect.amount = parseFloat(rect.amount) || 0;
@@ -120,6 +149,12 @@ const ReactantConfigPage = () => {
                     });
                 }
             });
+        };
+
+        if (r.stages) {
+            r.stages.forEach(stage => sanitizeList(stage.apparatus));
+        } else {
+            sanitizeList(r.apparatus);
         }
         return r;
     };
@@ -150,15 +185,21 @@ const ReactantConfigPage = () => {
         }
     };
 
-    const updateReactants = (apparatusId, newReactants) => {
-        const updatedApparatusList = currentReaction.apparatus.map(app => {
-            if (app.id === apparatusId) {
-                return { ...app, reactants: newReactants };
-            }
-            return app;
-        });
+    const getAppList = (r) => r?.stages?.[0]?.apparatus || r?.apparatus || [];
 
-        const updatedReaction = { ...currentReaction, apparatus: updatedApparatusList };
+    const updateReactants = (apparatusId, newReactants) => {
+        const updatedReaction = { ...currentReaction };
+        
+        const updateList = (list) => {
+            return list.map(app => app.id === apparatusId ? { ...app, reactants: newReactants } : app);
+        };
+
+        if (updatedReaction.stages && updatedReaction.stages.length > 0) {
+            updatedReaction.stages[0].apparatus = updateList(updatedReaction.stages[0].apparatus || []);
+        } else {
+            updatedReaction.apparatus = updateList(updatedReaction.apparatus || []);
+        }
+
         setCurrentReaction(updatedReaction);
 
         // Update main list
@@ -166,7 +207,8 @@ const ReactantConfigPage = () => {
     };
 
     const addReactant = (apparatusId) => {
-        const apparatus = currentReaction.apparatus.find(a => a.id === apparatusId);
+        const apparatus = getAppList(currentReaction).find(a => a.id === apparatusId);
+        if (!apparatus) return;
         const currentReactants = apparatus.reactants || [];
         const newReactant = {
             id: Date.now().toString(),
@@ -182,13 +224,15 @@ const ReactantConfigPage = () => {
     };
 
     const removeReactant = (apparatusId, reactantId) => {
-        const apparatus = currentReaction.apparatus.find(a => a.id === apparatusId);
+        const apparatus = getAppList(currentReaction).find(a => a.id === apparatusId);
+        if (!apparatus) return;
         const currentReactants = apparatus.reactants || [];
         updateReactants(apparatusId, currentReactants.filter(r => r.id !== reactantId));
     };
 
     const updateReactantField = (apparatusId, reactantId, field, value) => {
-        const apparatus = currentReaction.apparatus.find(a => a.id === apparatusId);
+        const apparatus = getAppList(currentReaction).find(a => a.id === apparatusId);
+        if (!apparatus) return;
         const currentReactants = apparatus.reactants || [];
         const updatedReactants = currentReactants.map(r => {
             if (r.id === reactantId) {
@@ -266,7 +310,7 @@ const ReactantConfigPage = () => {
                             <FlaskConical size={20} className="text-cyan-400" /> Apparatus Setup
                         </h2>
                         <div className="space-y-2">
-                            {currentReaction.apparatus.map((app) => (
+                            {getAppList(currentReaction).map((app) => (
                                 <div
                                     key={app.id}
                                     onClick={() => setSelectedApparatusId(app.id)}
@@ -296,7 +340,7 @@ const ReactantConfigPage = () => {
 
                         {selectedApparatusId ? (
                             (() => {
-                                const selectedApp = currentReaction.apparatus.find(a => a.id === selectedApparatusId);
+                                const selectedApp = getAppList(currentReaction).find(a => a.id === selectedApparatusId);
                                 if (!selectedApp) return null;
 
                                 return (

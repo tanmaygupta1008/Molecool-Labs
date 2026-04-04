@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, TransformControls, Grid, Environment, ContactShadows, Html, useGLTF, useCursor } from '@react-three/drei';
+import { OrbitControls, TransformControls, Grid, Environment, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { useRouter } from 'next/navigation';
 
 // Import apparatus map - we'll need to duplicate or export this from MacroView/Apparatus index
 // For now, let's assume we can import from '../../components/apparatus' directly like MacroView did
@@ -13,6 +12,9 @@ import Clamp from '../../components/apparatus/Clamp';
 import PowerSupply from '../../components/apparatus/PowerSupply';
 import Wire from '../../components/apparatus/Wire';
 import RubberCork from '../../components/apparatus/RubberCork';
+import WorkTable from '../../components/apparatus/WorkTable';
+import GasSource from '../../components/apparatus/GasSource';
+import WaterSource from '../../components/apparatus/WaterSource';
 import { getApparatusAnchors } from '../../utils/apparatus-anchors';
 import { detectApparatusTypeAbove } from '../../utils/apparatus-logic';
 
@@ -28,6 +30,14 @@ const APPARATUS_MAP = {
     'HeatproofMat': Apparatus.HeatproofMat,
     'Beaker': Apparatus.Beaker,
     'ConicalFlask': Apparatus.ConicalFlask,
+    'RoundBottomFlask': Apparatus.RoundBottomFlask,
+    'TwoNeckFlask': Apparatus.TwoNeckFlask,
+    'ThreeNeckFlask': Apparatus.ThreeNeckFlask,
+    'SeparatoryFunnel': Apparatus.SeparatoryFunnel,
+    'VolumetricFlask': Apparatus.VolumetricFlask,
+    'DistillationFlask': Apparatus.DistillationFlask,
+    'VacuumFlask': Apparatus.VacuumFlask,
+    'Thermometer': Apparatus.Thermometer,
     'TestTube': Apparatus.TestTube,
     'BoilingTube': Apparatus.BoilingTube || Apparatus.TestTube,
     'MeasuringCylinder': Apparatus.MeasuringCylinder,
@@ -42,6 +52,7 @@ const APPARATUS_MAP = {
     'Burette': Apparatus.Burette,
     'RetortStand': Apparatus.RetortStand,
     'Clamp': Clamp,
+    'RingClamp': Apparatus.RingClamp,
     'ElectrolysisSetup': Apparatus.ElectrolysisSetup,
     'PowerSupply': PowerSupply,
     'MagnesiumRibbon': Apparatus.MagnesiumRibbon,
@@ -53,7 +64,266 @@ const APPARATUS_MAP = {
     'GasTap': Apparatus.GasTap,
     'LitmusPaper': Apparatus.LitmusPaper,
     'Wire': Wire,
+    'WorkTable': WorkTable,
+    'GasSource': GasSource,
+    'WaterSource': WaterSource,
 };
+
+const LabTable = ({ width = 14, depth = 10 }) => (
+    <group position={[0, -0.05, 0]}>
+        {/* Table Top (Dark Epoxy Resin) */}
+        <mesh receiveShadow position={[0, 0, 0]}>
+            <boxGeometry args={[width, 0.1, depth]} />
+            <meshStandardMaterial color="#1f2022" roughness={0.7} metalness={0.1} />
+        </mesh>
+
+        {/* Anti-Spill Lip / Rim */}
+        <mesh receiveShadow position={[0, 0.08, -depth/2 + 0.05]}>
+            <boxGeometry args={[width + 0.2, 0.05, 0.1]} />
+            <meshStandardMaterial color="#141517" roughness={0.8} />
+        </mesh>
+        <mesh receiveShadow position={[0, 0.08, depth/2 - 0.05]}>
+            <boxGeometry args={[width + 0.2, 0.05, 0.1]} />
+            <meshStandardMaterial color="#141517" roughness={0.8} />
+        </mesh>
+        <mesh receiveShadow position={[-width/2 - 0.05, 0.08, 0]}>
+            <boxGeometry args={[0.1, 0.05, depth]} />
+            <meshStandardMaterial color="#141517" roughness={0.8} />
+        </mesh>
+        <mesh receiveShadow position={[width/2 + 0.05, 0.08, 0]}>
+            <boxGeometry args={[0.1, 0.05, depth]} />
+            <meshStandardMaterial color="#141517" roughness={0.8} />
+        </mesh>
+
+        {/* === WASH BASIN (raised stainless lab sink) === */}
+        {width >= 10 && depth >= 8 && (() => {
+            // Raised basin — walls go UP so interior is always visible
+            const bW  = 2.0;   // outer width
+            const bD  = 1.4;   // outer depth
+            const bH  = 0.44;  // basin height above table
+            const wT  = 0.08;  // wall thickness
+            const bInW = bW - wT * 2;   // 1.84  inner width
+            const bInD = bD - wT * 2;   // 1.24  inner depth
+
+            // Brushed-stainless material params (matches reference image)
+            const sc = "#8a9696";   // steel color
+            const sr = 0.40;        // roughness
+            const sm = 0.92;        // metalness
+            const se = "#0c1010";   // emissive (prevents pitch-black in shadow)
+
+            // Faucet — gooseneck: vertical stem → semicircular arc → downward spout
+            const fZ = -(bD / 2 - wT / 2);    // Z centre of back wall (stem base)
+            const stemBaseY = bH + 0.07;
+            const stemTopY  = bH + 1.28;
+            // Arc constants (semicircle in ZY plane, going from stem top forward + over)
+            const arcR  = 0.34;                             // gooseneck bend radius
+            const arcN  = 12;                              // segments for smoothness
+            const arcCZ = fZ + arcR;                       // arc centre Z
+            const spoutZ = fZ + 2 * arcR;                  // spout hangs here
+            const spoutL = 0.60;                           // downward spout length
+            const spoutCY = stemTopY - spoutL / 2;
+            const spoutBY = stemTopY - spoutL;
+
+            return (
+                // Y=0.05 → the group sits at table-top surface level
+                <group position={[width/2 - 2.2, 0.05, -depth/2 + 2.2]}>
+
+                    {/* ── BACK WALL ── */}
+                    <mesh position={[0, bH/2, -(bD/2 - wT/2)]}>
+                        <boxGeometry args={[bW, bH, wT]} />
+                        <meshStandardMaterial color={sc} roughness={sr} metalness={sm} emissive={se} />
+                    </mesh>
+                    {/* ── FRONT WALL ── */}
+                    <mesh position={[0, bH/2, bD/2 - wT/2]}>
+                        <boxGeometry args={[bW, bH, wT]} />
+                        <meshStandardMaterial color={sc} roughness={sr} metalness={sm} emissive={se} />
+                    </mesh>
+                    {/* ── LEFT WALL ── */}
+                    <mesh position={[-(bW/2 - wT/2), bH/2, 0]}>
+                        <boxGeometry args={[wT, bH, bInD]} />
+                        <meshStandardMaterial color={sc} roughness={sr} metalness={sm} emissive={se} />
+                    </mesh>
+                    {/* ── RIGHT WALL ── */}
+                    <mesh position={[bW/2 - wT/2, bH/2, 0]}>
+                        <boxGeometry args={[wT, bH, bInD]} />
+                        <meshStandardMaterial color={sc} roughness={sr} metalness={sm} emissive={se} />
+                    </mesh>
+
+                    {/* ── BASIN FLOOR (darker — depth cue) ── */}
+                    <mesh position={[0, wT/2, 0]}>
+                        <boxGeometry args={[bInW, wT, bInD]} />
+                        <meshStandardMaterial color="#788484" roughness={0.38} metalness={0.94} emissive="#0a0d0d" />
+                    </mesh>
+
+                    {/* ── TOP RIM CAPS (polished lip) ── */}
+                    <mesh position={[0, bH + 0.012, -(bD/2 - wT/2)]}>
+                        <boxGeometry args={[bW + 0.05, 0.024, wT + 0.04]} />
+                        <meshStandardMaterial color="#b4c2c2" roughness={0.13} metalness={0.98} />
+                    </mesh>
+                    <mesh position={[0, bH + 0.012, bD/2 - wT/2]}>
+                        <boxGeometry args={[bW + 0.05, 0.024, wT + 0.04]} />
+                        <meshStandardMaterial color="#b4c2c2" roughness={0.13} metalness={0.98} />
+                    </mesh>
+                    <mesh position={[-(bW/2 - wT/2), bH + 0.012, 0]}>
+                        <boxGeometry args={[wT + 0.04, 0.024, bInD + 0.02]} />
+                        <meshStandardMaterial color="#b4c2c2" roughness={0.13} metalness={0.98} />
+                    </mesh>
+                    <mesh position={[bW/2 - wT/2, bH + 0.012, 0]}>
+                        <boxGeometry args={[wT + 0.04, 0.024, bInD + 0.02]} />
+                        <meshStandardMaterial color="#b4c2c2" roughness={0.13} metalness={0.98} />
+                    </mesh>
+
+                    {/* ── DRAIN — concentric ring design ── */}
+                    {/* Outer flat disc */}
+                    <mesh position={[0, wT + 0.008, 0]}>
+                        <cylinderGeometry args={[0.13, 0.13, 0.014, 40]} />
+                        <meshStandardMaterial color="#9ab0b0" roughness={0.20} metalness={0.97} emissive="#080c0c" />
+                    </mesh>
+                    {/* Middle raised bezel */}
+                    <mesh position={[0, wT + 0.020, 0]}>
+                        <cylinderGeometry args={[0.083, 0.103, 0.018, 40]} />
+                        <meshStandardMaterial color="#afc0c0" roughness={0.14} metalness={0.98} />
+                    </mesh>
+                    {/* Inner collar */}
+                    <mesh position={[0, wT + 0.028, 0]}>
+                        <cylinderGeometry args={[0.040, 0.058, 0.014, 32]} />
+                        <meshStandardMaterial color="#c2d2d2" roughness={0.13} metalness={0.98} />
+                    </mesh>
+                    {/* Drain hole */}
+                    <mesh position={[0, wT + 0.004, 0]}>
+                        <cylinderGeometry args={[0.034, 0.034, 0.018, 30]} />
+                        <meshStandardMaterial color="#1a2020" roughness={0.6} metalness={0.5} />
+                    </mesh>
+                    {/* Centre nub */}
+                    <mesh position={[0, wT + 0.030, 0]}>
+                        <cylinderGeometry args={[0.010, 0.014, 0.010, 16]} />
+                        <meshStandardMaterial color="#5a6666" roughness={0.3} metalness={0.9} />
+                    </mesh>
+
+                    {/* ── GOOSENECK FAUCET ── */}
+                    {/* Base disc on back rim */}
+                    <mesh position={[0, stemBaseY, fZ]}>
+                        <cylinderGeometry args={[0.09, 0.10, 0.14, 18]} />
+                        <meshStandardMaterial color="#b0b0b0" roughness={0.05} metalness={1.0} />
+                    </mesh>
+                    {/* Vertical stem */}
+                    <mesh position={[0, (stemBaseY + 0.07 + stemTopY) / 2, fZ]}>
+                        <cylinderGeometry args={[0.048, 0.054, stemTopY - stemBaseY - 0.07, 16]} />
+                        <meshStandardMaterial color="#c2c2c2" roughness={0.05} metalness={1.0} />
+                    </mesh>
+                    {/* Collar cap */}
+                    <mesh position={[0, stemTopY, fZ]}>
+                        <cylinderGeometry args={[0.055, 0.048, 0.04, 16]} />
+                        <meshStandardMaterial color="#a8a8a8" roughness={0.06} metalness={1.0} />
+                    </mesh>
+                    {/* ── SMOOTH GOOSENECK ARC (10-segment semicircle) ── */}
+                    {/*
+                      Arc: in ZY plane, centre = (0, stemTopY, arcCZ)
+                      θ sweeps from π (pointing back → stem top) to 0 (pointing forward → spout top)
+                      pos  = (0, stemTopY + arcR·sin(θ_mid), arcCZ + arcR·cos(θ_mid))
+                      rot  = [-θ_mid, 0, 0]   (tangent direction = [0, cos(θ), -sin(θ)])
+                      len  = 2·arcR·sin(π/(2·arcN))  (chord length)
+                    */}
+                    {Array.from({ length: arcN }, (_, i) => {
+                        const tS   = Math.PI - (Math.PI / arcN) * i;
+                        const tE   = Math.PI - (Math.PI / arcN) * (i + 1);
+                        const tM   = (tS + tE) / 2;
+                        const segLen = 2 * arcR * Math.sin(Math.PI / (2 * arcN));
+                        const py   = stemTopY + arcR * Math.sin(tM);
+                        const pz   = arcCZ    + arcR * Math.cos(tM);
+                        return (
+                            <mesh key={i} position={[0, py, pz]} rotation={[-tM, 0, 0]}>
+                                <cylinderGeometry args={[0.044, 0.044, segLen + 0.01, 16]} />
+                                <meshStandardMaterial color="#c8c8c8" roughness={0.04} metalness={1.0} />
+                            </mesh>
+                        );
+                    })}
+                    {/* ── NOZZLE TIP (small cap at arc opening end) ── */}
+                    <mesh position={[0, stemTopY, spoutZ]}>
+                        <cylinderGeometry args={[0.040, 0.044, 0.06, 20]} />
+                        <meshStandardMaterial color="#909090" roughness={0.12} metalness={0.9} />
+                    </mesh>
+
+                    {/* ── HOT HANDLE (Red, Left) ── */}
+                    <group position={[0, bH + 0.28, fZ]}>
+                        <mesh position={[-0.17, 0, 0]} rotation={[0, 0, Math.PI/2]}>
+                            <cylinderGeometry args={[0.024, 0.024, 0.23, 10]} />
+                            <meshStandardMaterial color="#bcbcbc" roughness={0.08} metalness={0.9} />
+                        </mesh>
+                        <mesh position={[-0.295, 0, 0]} rotation={[0, 0, Math.PI/2]}>
+                            <cylinderGeometry args={[0.055, 0.055, 0.04, 20]} />
+                            <meshStandardMaterial color="#cc2222" roughness={0.28} metalness={0.5} />
+                        </mesh>
+                        <mesh position={[-0.295, 0, 0]}>
+                            <boxGeometry args={[0.04, 0.016, 0.12]} />
+                            <meshStandardMaterial color="#991111" />
+                        </mesh>
+                        <mesh position={[-0.295, 0, 0]}>
+                            <boxGeometry args={[0.04, 0.12, 0.016]} />
+                            <meshStandardMaterial color="#991111" />
+                        </mesh>
+                    </group>
+
+                    {/* ── COLD HANDLE (Blue, Right) ── */}
+                    <group position={[0, bH + 0.28, fZ]}>
+                        <mesh position={[0.17, 0, 0]} rotation={[0, 0, Math.PI/2]}>
+                            <cylinderGeometry args={[0.024, 0.024, 0.23, 10]} />
+                            <meshStandardMaterial color="#bcbcbc" roughness={0.08} metalness={0.9} />
+                        </mesh>
+                        <mesh position={[0.295, 0, 0]} rotation={[0, 0, Math.PI/2]}>
+                            <cylinderGeometry args={[0.055, 0.055, 0.04, 20]} />
+                            <meshStandardMaterial color="#2244cc" roughness={0.28} metalness={0.5} />
+                        </mesh>
+                        <mesh position={[0.295, 0, 0]}>
+                            <boxGeometry args={[0.04, 0.016, 0.12]} />
+                            <meshStandardMaterial color="#112299" />
+                        </mesh>
+                        <mesh position={[0.295, 0, 0]}>
+                            <boxGeometry args={[0.04, 0.12, 0.016]} />
+                            <meshStandardMaterial color="#112299" />
+                        </mesh>
+                    </group>
+
+                </group>
+            );
+        })()}
+
+
+
+        {/* Legs / Framing */}
+
+        {[-width/2 + 0.35, width/2 - 0.35].map(x =>
+            [-depth/2 + 0.35, depth/2 - 0.35].map(z => (
+                <group key={`${x}-${z}`} position={[x, -2.05, z]}>
+                    {/* Main Leg */}
+                    <mesh receiveShadow castShadow>
+                        <boxGeometry args={[0.3, 4, 0.3]} />
+                        <meshStandardMaterial color="#333333" roughness={0.6} />
+                    </mesh>
+                    {/* Metal Foot Pad */}
+                    <mesh receiveShadow position={[0, -2.02, 0]}>
+                        <cylinderGeometry args={[0.2, 0.2, 0.04, 16]} />
+                        <meshStandardMaterial color="#555555" roughness={0.4} metalness={0.8} />
+                    </mesh>
+                </group>
+            ))
+        )}
+
+        {/* Support Crossbars */}
+        <mesh position={[0, -1.05, 0]}>
+            <boxGeometry args={[width - 0.8, 0.15, 0.15]} />
+            <meshStandardMaterial color="#333333" roughness={0.6} />
+        </mesh>
+        <mesh position={[-width/2 + 0.35, -1.05, 0]}>
+            <boxGeometry args={[0.15, 0.15, depth - 0.8]} />
+            <meshStandardMaterial color="#333333" roughness={0.6} />
+        </mesh>
+        <mesh position={[width/2 - 0.35, -1.05, 0]}>
+            <boxGeometry args={[0.15, 0.15, depth - 0.8]} />
+            <meshStandardMaterial color="#333333" roughness={0.6} />
+        </mesh>
+    </group>
+);
 
 // --- COMPONENTS ---
 
@@ -322,10 +592,13 @@ const AnchorEditor = ({ item, onUpdateItem }) => {
     );
 };
 
-const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateItems, transformMode, allItems, isBuilding }) => {
+const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateItems, transformMode, allItems, isBuilding, gridSnap, isGhost, basinBounds }) => {
     const Component = APPARATUS_MAP[item.model];
     // Use state-based ref to ensure re-render when the group is actually mounted
     const [group, setGroup] = useState(null);
+
+    // Ghost preview removed - was causing WebGL shader errors by imperatively
+    // replacing materials mid-render. Ghost previews are no longer used.
 
     if (!Component) return null;
 
@@ -336,24 +609,85 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
 
         if (group) {
             const { position, rotation, scale } = group;
-            // Current (New) Transform
-            let newPos = [Number(position.x.toFixed(3)), Number(position.y.toFixed(3)), Number(position.z.toFixed(3))];
+            // Native dragged position is Local if nested, World if not nested
+            let dragLocalPos = [
+                Number(position.x.toFixed(3)), 
+                Number(position.y.toFixed(3)), 
+                Number(position.z.toFixed(3))
+            ];
             let newScale = [Number(scale.x.toFixed(3)), Number(scale.y.toFixed(3)), Number(scale.z.toFixed(3))];
             let newRot = [Number(rotation.x.toFixed(3)), Number(rotation.y.toFixed(3)), Number(rotation.z.toFixed(3))];
 
-            // Calculate Delta for Group Movement (only if position changed)
-            const oldPos = item.position || [0, 0, 0];
-            const delta = new THREE.Vector3(
-                newPos[0] - oldPos[0],
-                newPos[1] - oldPos[1],
-                newPos[2] - oldPos[2]
-            );
+            if (!item.parentId) {
+                let floorY = -4.0; // The physical room ground
+
+                // If the item ITSELF is a WorkTable, it sits on the room floor natively
+                if (item.model === 'WorkTable') {
+                    floorY = -4.0;
+                } else {
+                    // Check if dragged item's World X,Z is within any WorkTable's bounds
+                    const tables = allItems.filter(i => i.model === 'WorkTable' && i.id !== item.id);
+                    for (const table of tables) {
+                        const width = table.width || 6;
+                        const depth = table.depth || 4;
+                        const tableX = table.position[0];
+                        const tableZ = table.position[2];
+                        
+                        // Simple AABB bound check assuming no extreme table rotations for now
+                        if (Math.abs(dragLocalPos[0] - tableX) <= width / 2 &&
+                            Math.abs(dragLocalPos[2] - tableZ) <= depth / 2) {
+                            
+                            // The WorkTable's local surface is at Y=0 relative to its group origin
+                            // So the world surface Y = table.position[1]
+                            floorY = table.position[1];
+                            break;
+                        }
+                    }
+                }
+
+                if (dragLocalPos[1] < floorY) {
+                    dragLocalPos[1] = floorY;
+                }
+            }
+
+            const getWorldTransform = (itemId) => {
+                const i = allItems.find(x => x.id === itemId);
+                if (!i) return new THREE.Object3D();
+                const obj = new THREE.Object3D();
+                obj.position.set(...(i.position || [0, 0, 0]));
+                obj.rotation.set(...(i.rotation || [0, 0, 0]));
+                obj.scale.set(...(i.scale || [1, 1, 1]));
+                if (i.parentId) {
+                    const parentObj = getWorldTransform(i.parentId);
+                    parentObj.add(obj);
+                    parentObj.updateMatrixWorld(true);
+                    return obj;
+                }
+                obj.updateMatrixWorld(true);
+                return obj;
+            };
+
+            const tempMyObj = new THREE.Object3D();
+            tempMyObj.position.set(...dragLocalPos);
+            tempMyObj.rotation.set(...newRot);
+            tempMyObj.scale.set(...newScale);
+            if (item.parentId) {
+                const parentObj = getWorldTransform(item.parentId);
+                parentObj.add(tempMyObj);
+                parentObj.updateMatrixWorld(true);
+            } else {
+                tempMyObj.updateMatrixWorld(true);
+            }
+            const myWorldPos = new THREE.Vector3();
+            tempMyObj.getWorldPosition(myWorldPos);
+
+            let finalParentId = item.parentId; // default keep parent
+            let finalStatePos = dragLocalPos;  // default keep drag pos
+            let didSnap = false;
 
             // --- AUTO-SNAP LOGIC FOR RUBBER CORK ---
             if (item.model === 'RubberCork') {
-                // ... (Existing Cork Logic, abbreviated for clarity if unchanged? No, keep it) ...
-                // [Copying existing Cork logic strictly]
-                const SNAP_THRESHOLD = 0.5;
+                const SNAP_THRESHOLD = 0.8;
                 const SNAP_TARGETS = {
                     'ConicalFlask': { offset: [0, 2.5, 0], radius: 0.35 },
                     'TestTube': { offset: [0, 1.7, 0], radius: 0.2 },
@@ -361,58 +695,54 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
                     'GasJar': { offset: [0, 2.5, 0], radius: 0.5 },
                 };
                 let closestDist = Infinity;
-                let snapTarget = null;
+                let snapParentId = null;
+                let snapWorldPos = null;
+                
                 allItems.forEach(other => {
                     if (other.id === item.id) return;
                     const targetInfo = SNAP_TARGETS[other.model];
                     if (targetInfo) {
-                        const containerPos = new THREE.Vector3(...other.position);
-                        const mouthWorldPos = containerPos.clone().add(new THREE.Vector3(...targetInfo.offset));
-                        const corkPos = new THREE.Vector3(...newPos);
-                        const dist = corkPos.distanceTo(mouthWorldPos);
+                        const containerObj = getWorldTransform(other.id);
+                        const mouthLocal = new THREE.Vector3(...targetInfo.offset);
+                        const mouthWorldPos = containerObj.localToWorld(mouthLocal);
+                        
+                        const dist = myWorldPos.distanceTo(mouthWorldPos);
                         if (dist < SNAP_THRESHOLD && dist < closestDist) {
                             closestDist = dist;
-                            snapTarget = targetInfo;
-                            newPos = [mouthWorldPos.x, mouthWorldPos.y, mouthWorldPos.z];
+                            snapParentId = other.id;
+                            snapWorldPos = mouthWorldPos;
+                            const scaleFactor = targetInfo.radius / 0.2;
+                            newScale = [scaleFactor, scaleFactor, scaleFactor];
                         }
                     }
                 });
-                if (snapTarget) {
-                    const scaleFactor = snapTarget.radius / 0.2;
-                    newScale = [scaleFactor, scaleFactor, scaleFactor];
+                if (snapWorldPos) {
+                    didSnap = true;
+                    finalParentId = snapParentId;
+                    const parentObj = getWorldTransform(snapParentId);
+                    const localSnap = parentObj.worldToLocal(snapWorldPos);
+                    finalStatePos = [Number(localSnap.x.toFixed(3)), Number(localSnap.y.toFixed(3)), Number(localSnap.z.toFixed(3))];
                 }
             }
 
             // --- AUTO-SNAP LOGIC FOR DELIVERY TUBE (3D ALIGNMENT) ---
             if (item.model === 'DeliveryTube') {
-                const TUBE_SNAP_THRESHOLD = 0.5; // Increased from 0.3
+                const TUBE_SNAP_THRESHOLD = 1.0; 
                 let snapOffset = new THREE.Vector3();
                 let snapped = false;
 
-                const tempObj = new THREE.Object3D();
-                tempObj.position.set(...newPos);
-                tempObj.rotation.set(...newRot);
-                tempObj.scale.set(...newScale);
-                tempObj.updateMatrix();
-
                 const myPoints = item.points || [[0, 0, 0], [0, 1, 0]];
-                const myStart = new THREE.Vector3(...myPoints[0]).applyMatrix4(tempObj.matrix);
-                const myEnd = new THREE.Vector3(...myPoints[myPoints.length - 1]).applyMatrix4(tempObj.matrix);
+                const myStart = new THREE.Vector3(...myPoints[0]).applyMatrix4(tempMyObj.matrixWorld);
+                const myEnd = new THREE.Vector3(...myPoints[myPoints.length - 1]).applyMatrix4(tempMyObj.matrixWorld);
 
-                // Find Snap Target
                 for (const other of allItems) {
                     if (other.id === item.id) continue;
                     if (other.model !== 'DeliveryTube') continue;
 
-                    const otherObj = new THREE.Object3D();
-                    otherObj.position.set(...(other.position || [0, 0, 0]));
-                    otherObj.rotation.set(...(other.rotation || [0, 0, 0]));
-                    otherObj.scale.set(...(other.scale || [1, 1, 1]));
-                    otherObj.updateMatrix();
-
+                    const otherObj = getWorldTransform(other.id);
                     const otherPoints = other.points || [[0, 0, 0], [0, 1, 0]];
-                    const otherStart = new THREE.Vector3(...otherPoints[0]).applyMatrix4(otherObj.matrix);
-                    const otherEnd = new THREE.Vector3(...otherPoints[otherPoints.length - 1]).applyMatrix4(otherObj.matrix);
+                    const otherStart = new THREE.Vector3(...otherPoints[0]).applyMatrix4(otherObj.matrixWorld);
+                    const otherEnd = new THREE.Vector3(...otherPoints[otherPoints.length - 1]).applyMatrix4(otherObj.matrixWorld);
 
                     if (myStart.distanceTo(otherStart) < TUBE_SNAP_THRESHOLD) { snapOffset.subVectors(otherStart, myStart); snapped = true; break; }
                     if (myStart.distanceTo(otherEnd) < TUBE_SNAP_THRESHOLD) { snapOffset.subVectors(otherEnd, myStart); snapped = true; break; }
@@ -421,311 +751,425 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
                 }
 
                 if (snapped) {
-                    newPos[0] += snapOffset.x;
-                    newPos[1] += snapOffset.y;
-                    newPos[2] += snapOffset.z;
-                    // Update delta to include snap
-                    delta.add(snapOffset);
-                    // Visual Feedback
-                    document.body.style.cursor = 'crosshair';
-                    setTimeout(() => document.body.style.cursor = 'default', 500);
+                    myWorldPos.add(snapOffset);
+                    finalStatePos = [Number(myWorldPos.x.toFixed(3)), Number(myWorldPos.y.toFixed(3)), Number(myWorldPos.z.toFixed(3))];
+                    didSnap = true;
                 }
             }
 
             // --- AUTO-SNAP LOGIC FOR CLAMP (TO RETORT STAND) ---
-            if (item.model === 'Clamp') {
-                const CLAMP_SNAP_THRESHOLD = 2.0;
+            if (item.model === 'Clamp' || item.model === 'RingClamp') {
+                const CLAMP_SNAP_THRESHOLD = 3.0;
                 const ROD_OFFSET_Z = -0.4;
-                const CLAMP_LOOP_OFFSET_X = -1.65;
-
+                
                 let closestDist = Infinity;
-                let snapPos = null;
+                let targetStandId = null;
+                let snapWorldPos = null;
 
                 const rotY = newRot[1];
-                const loopOffsetLocal = new THREE.Vector3(CLAMP_LOOP_OFFSET_X, 0, 0);
+                const loopOffsetLocal = item.model === 'RingClamp' ? new THREE.Vector3(0, 0, -3.0) : new THREE.Vector3(-1.65, 0, 0);
                 loopOffsetLocal.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotY);
 
                 allItems.forEach(other => {
                     if (other.model === 'RetortStand') {
-                        const standPos = new THREE.Vector3(...other.position);
-                        const standRot = new THREE.Euler(...(other.rotation || [0, 0, 0]));
+                        const standObj = getWorldTransform(other.id);
+                        
                         const rodOffsetLocal = new THREE.Vector3(0, 0, ROD_OFFSET_Z);
-                        rodOffsetLocal.applyEuler(standRot);
+                        const rodWorldPos = standObj.localToWorld(rodOffsetLocal.clone());
+                        
+                        const targetWorldX = rodWorldPos.x - loopOffsetLocal.x;
+                        const targetWorldZ = rodWorldPos.z - loopOffsetLocal.z;
 
-                        const rodWorldX = standPos.x + rodOffsetLocal.x;
-                        const rodWorldZ = standPos.z + rodOffsetLocal.z;
-
-                        const targetX = rodWorldX - loopOffsetLocal.x;
-                        const targetZ = rodWorldZ - loopOffsetLocal.z;
-
-                        const currentDist = Math.sqrt(Math.pow(newPos[0] - targetX, 2) + Math.pow(newPos[2] - targetZ, 2));
+                        const currentDist = Math.sqrt(Math.pow(myWorldPos.x - targetWorldX, 2) + Math.pow(myWorldPos.z - targetWorldZ, 2));
 
                         if (currentDist < CLAMP_SNAP_THRESHOLD && currentDist < closestDist) {
                             closestDist = currentDist;
-
-                            const rodBaseY = standPos.y;
-                            const minY = rodBaseY + 0.5;
-                            const maxY = rodBaseY + 4.5;
-
-                            let targetY = newPos[1];
+                            
+                            const baseWorldPos = standObj.localToWorld(new THREE.Vector3(0, 0, 0));
+                            const minY = baseWorldPos.y + 0.5;
+                            const maxY = baseWorldPos.y + 4.5;
+                            
+                            let targetY = myWorldPos.y;
                             if (targetY < minY) targetY = minY;
                             if (targetY > maxY) targetY = maxY;
 
-                            snapPos = [targetX, targetY, targetZ];
+                            targetStandId = other.id;
+                            snapWorldPos = new THREE.Vector3(targetWorldX, targetY, targetWorldZ);
                         }
                     }
                 });
 
-                if (snapPos) {
-                    newPos[0] = snapPos[0];
-                    newPos[1] = snapPos[1];
-                    newPos[2] = snapPos[2];
-                    document.body.style.cursor = 'crosshair';
+                if (snapWorldPos) {
+                    didSnap = true;
+                    finalParentId = targetStandId;
+                    const parentObj = getWorldTransform(targetStandId);
+                    const localSnap = parentObj.worldToLocal(snapWorldPos);
+                    finalStatePos = [Number(localSnap.x.toFixed(3)), Number(localSnap.y.toFixed(3)), Number(localSnap.z.toFixed(3))];
                 }
             }
 
+            // --- AUTO-SNAP LOGIC FOR FUNNELS & FLASKS (TO RING CLAMP) ---
+            if (['SeparatoryFunnel', 'TwoNeckFlask', 'ThreeNeckFlask', 'RoundBottomFlask', 'VolumetricFlask', 'DistillationFlask', 'VacuumFlask'].includes(item.model)) {
+                const RING_SNAP_THRESHOLD = 2.5; // Generous 2D threshold
+                let closestDist = Infinity;
+                let targetRingId = null;
+                let snapWorldPos = null;
 
+                allItems.forEach(other => {
+                    if (other.model === 'RingClamp') {
+                        const ringObj = getWorldTransform(other.id);
+                        const ringCenterWorld = ringObj.localToWorld(new THREE.Vector3(0, 0, 0));
+                        
+                        // Planar distance check so users can drop it from high vertically
+                        const planarDist = Math.sqrt(
+                            Math.pow(myWorldPos.x - ringCenterWorld.x, 2) + 
+                            Math.pow(myWorldPos.z - ringCenterWorld.z, 2)
+                        );
+
+                        if (planarDist < RING_SNAP_THRESHOLD && planarDist < closestDist) {
+                            closestDist = planarDist;
+                            targetRingId = other.id;
+                            // Pre-compute the locked X/Z position, keep our dragged Y
+                            snapWorldPos = new THREE.Vector3(ringCenterWorld.x, myWorldPos.y, ringCenterWorld.z);
+                        }
+                    }
+                });
+
+                if (snapWorldPos && !didSnap) {
+                    didSnap = true;
+                    finalParentId = targetRingId;
+                    const parentObj = getWorldTransform(targetRingId);
+                    const localSnap = parentObj.worldToLocal(snapWorldPos);
+                    
+                    // We lock X and Z cleanly inside the ring.
+                    localSnap.x = 0;
+                    localSnap.z = 0;
+                    
+                    // Enforce the resting height — ring at local Y=0 of RingClamp
+                    if (item.model === 'SeparatoryFunnel') {
+                         // Cone body: Cylinder args=[1, 0.08, 2.5] center at Y=1.95
+                         // At Y=2.7, cone radius ≈ 0.82 — this is where the ring hugs it
+                         // So funnel origin must be -2.7 below ring
+                         localSnap.y = -2.7;
+                         // Ring exactly wraps the upper shoulder of the cone
+                         setTimeout(() => { if (typeof updateItem === 'function') updateItem(targetRingId, { ringRadius: 0.85 }); }, 0);
+                    } else if (item.model === 'VolumetricFlask') {
+                         localSnap.y = -0.55; 
+                         setTimeout(() => { if (typeof updateItem === 'function') updateItem(targetRingId, { ringRadius: 0.55 }); }, 0);
+                    } else if (item.model === 'VacuumFlask') {
+                         localSnap.y = -0.65; // Conical vacuum flask rests nicely
+                         setTimeout(() => { if (typeof updateItem === 'function') updateItem(targetRingId, { ringRadius: 0.8 }); }, 0);
+                    } else {
+                         localSnap.y = -0.6; // Sits with bulb in ring
+                         setTimeout(() => { if (typeof updateItem === 'function') updateItem(targetRingId, { ringRadius: 0.7 }); }, 0);
+                    }
+                    
+                    finalStatePos = [Number(localSnap.x.toFixed(3)), Number(localSnap.y.toFixed(3)), Number(localSnap.z.toFixed(3))];
+                }
+            }
 
             // --- AUTO-SNAP LOGIC FOR GLASSWARE (TO CLAMP) ---
-            const GLASSWARE_TYPES = ['TestTube', 'BoilingTube', 'ConicalFlask', 'RoundBottomFlask', 'Beaker'];
+            const GLASSWARE_TYPES = ['TestTube', 'BoilingTube', 'ConicalFlask', 'VacuumFlask', 'RoundBottomFlask', 'TwoNeckFlask', 'ThreeNeckFlask', 'VolumetricFlask', 'SeparatoryFunnel', 'DistillationFlask', 'Beaker', 'Burette'];
             if (GLASSWARE_TYPES.includes(item.model)) {
-                // Increased threshold for easier snapping
-                const GLASS_SNAP_THRESHOLD = 1.0;
-                const GRIP_OFFSETS = {
-                    'TestTube': 1.4,
-                    'BoilingTube': 1.4,
-                    'ConicalFlask': 2.2,
-                    'RoundBottomFlask': 2.0,
-                    'Beaker': 1.5
-                };
+                const GLASS_SNAP_THRESHOLD = 1.5;
+                const GRIP_OFFSETS = { 'TestTube': 1.4, 'BoilingTube': 1.4, 'ConicalFlask': 2.2, 'RoundBottomFlask': 2.0, 'Beaker': 1.5, 'Burette': 2.8 };
                 const CLAMP_SETTINGS = {
                     'TestTube': { size: 1.0, angle: 0.3 },
                     'BoilingTube': { size: 1.0, angle: 0.4 },
                     'ConicalFlask': { size: 1.2, angle: 0.5 },
                     'RoundBottomFlask': { size: 1.2, angle: 0.5 },
-                    'Beaker': { size: 1.5, angle: 0.7 }
+                    'Beaker': { size: 1.5, angle: 0.7 },
+                    'Burette': { size: 0.6, angle: 0.1 }
                 };
 
                 const gripOffset = GRIP_OFFSETS[item.model] || 1.0;
-                let snapPos = null;
+                let snapWorldPos = null;
                 let targetClampId = null;
                 let closestDist = Infinity;
-
                 allItems.forEach(other => {
                     if (other.model === 'Clamp') {
-                        const clampPos = new THREE.Vector3(...(other.position || [0, 0, 0]));
-                        const clampRot = new THREE.Euler(...(other.rotation || [0, 0, 0]));
-                        const headAngle = other.headAngle || 0;
-                        const size = other.size || 1;
+                        const clampObj = getWorldTransform(other.id);
+                        const settings = CLAMP_SETTINGS[item.model] || { size: 1.0, angle: 0 };
+                        const intendedSize = settings.size;
+                        const intendedHeadAngle = other.headAngle || 0;
 
-                        const gripLocal = new THREE.Vector3(0.6 * size, 0, 0);
-                        gripLocal.applyAxisAngle(new THREE.Vector3(1, 0, 0), headAngle);
-                        gripLocal.applyEuler(clampRot);
-
-                        const gripWorld = clampPos.clone().add(gripLocal);
-
-                        const glassTargetPos = gripWorld.clone().sub(new THREE.Vector3(0, gripOffset, 0));
-
-                        const dist = new THREE.Vector3(...newPos).distanceTo(glassTargetPos);
-
+                        // Calculate grip position using the size the clamp WILL BE after snapping
+                        const gripLocal = new THREE.Vector3(0.62 * intendedSize, 0, 0); 
+                        gripLocal.applyAxisAngle(new THREE.Vector3(1, 0, 0), intendedHeadAngle);
+                        
+                        const gripWorld = clampObj.localToWorld(gripLocal.clone());
+                        const glassTargetWorldPos = gripWorld.clone().sub(new THREE.Vector3(0, gripOffset, 0));
+                        
+                        const dist = myWorldPos.distanceTo(glassTargetWorldPos);
                         if (dist < GLASS_SNAP_THRESHOLD && dist < closestDist) {
                             closestDist = dist;
-                            snapPos = [glassTargetPos.x, glassTargetPos.y, glassTargetPos.z];
+                            snapWorldPos = glassTargetWorldPos;
                             targetClampId = other.id;
                         }
                     }
                 });
 
-                if (snapPos) {
-                    newPos[0] = snapPos[0];
-                    newPos[1] = snapPos[1];
-                    newPos[2] = snapPos[2];
-                    document.body.style.cursor = 'crosshair';
+                if (snapWorldPos) {
+                    didSnap = true;
+                    finalParentId = targetClampId;
+                    const parentObj = getWorldTransform(targetClampId);
+                    const localSnap = parentObj.worldToLocal(snapWorldPos);
+                    finalStatePos = [Number(localSnap.x.toFixed(3)), Number(localSnap.y.toFixed(3)), Number(localSnap.z.toFixed(3))];
 
-                    if (targetClampId) {
-                        const settings = CLAMP_SETTINGS[item.model];
-                        const targetClamp = allItems.find(c => c.id === targetClampId);
-                        if (targetClamp && settings) {
-                            if (targetClamp.size !== settings.size || Math.abs((targetClamp.angle || 0) - settings.angle) > 0.01) {
-                                setTimeout(() => {
-                                    if (typeof updateItem === 'function') {
-                                        updateItem(targetClampId, { size: settings.size, angle: settings.angle });
-                                    }
-                                }, 0);
-                            }
+                    const settings = CLAMP_SETTINGS[item.model];
+                    const targetClamp = allItems.find(c => c.id === targetClampId);
+                    if (targetClamp && settings) {
+                        if (targetClamp.size !== settings.size || Math.abs((targetClamp.angle || 0) - settings.angle) > 0.01) {
+                            setTimeout(() => { if (typeof updateItem === 'function') updateItem(targetClampId, { size: settings.size, angle: settings.angle }); }, 0);
                         }
                     }
                 }
             }
 
+            // --- AUTO-SNAP LOGIC FOR RUBBER CORK ---
+            if (item.model === 'RubberCork') {
+                const CORK_SNAP_THRESHOLD = 1.0;
+                let closestDist = Infinity;
+                let snapWorldPos = null;
+                let targetFlaskId = null;
+                let targetLocalY = 0;
+                let targetScale = 1.0;
 
-            // --- GROUP MOVEMENT LOGIC (RETORT STAND + CLAMPS) ---
-            if (item.model === 'RetortStand' && delta.lengthSq() > 0.0001) {
-                const attachedClamps = [];
-                const standPos = new THREE.Vector3(...oldPos); // Use OLD pos to check attachment
-                const standRot = new THREE.Euler(...(item.rotation || [0, 0, 0]));
-                const ROD_OFFSET_Z = -0.4;
-                const CLAMP_LOOP_OFFSET_X = -1.65;
-                const ATTACH_THRESHOLD = 0.1; // Strict attach check
+                const CORK_HEIGHTS = {
+                    'RoundBottomFlask': 3.1, // sits deep in neck (rim at 3.3)
+                    'ConicalFlask': 2.35,    // rim at 2.5
+                    'TestTube': 2.85,        // rim at 3.0
+                    'BoilingTube': 3.65,     // rim at 3.8
+                };
+
+                const CORK_SCALES = {
+                    'RoundBottomFlask': 1.6, // radius 0.35
+                    'ConicalFlask': 1.35,    // radius 0.3
+                    'TestTube': 0.9,         // radius 0.2
+                    'BoilingTube': 1.25,     // radius 0.28
+                };
 
                 allItems.forEach(other => {
-                    if (other.model === 'Clamp') {
-                        const clampPos = new THREE.Vector3(...(other.position || [0, 0, 0]));
-                        const clampRot = new THREE.Euler(...(other.rotation || [0, 0, 0]));
-
-                        // Calculate where the clamp *should* be if attached
-                        const rodOffsetLocal = new THREE.Vector3(0, 0, ROD_OFFSET_Z);
-                        rodOffsetLocal.applyEuler(standRot);
-                        const rodWorldX = standPos.x + rodOffsetLocal.x;
-                        const rodWorldZ = standPos.z + rodOffsetLocal.z;
-
-                        const loopOffsetLocal = new THREE.Vector3(CLAMP_LOOP_OFFSET_X, 0, 0);
-                        loopOffsetLocal.applyAxisAngle(new THREE.Vector3(0, 1, 0), clampRot.y);
-
-                        const targetX = rodWorldX - loopOffsetLocal.x;
-                        const targetZ = rodWorldZ - loopOffsetLocal.z;
-
-                        // Check 2D distance (X/Z)
-                        const dist = Math.sqrt(Math.pow(clampPos.x - targetX, 2) + Math.pow(clampPos.z - targetZ, 2));
-
-                        if (dist < ATTACH_THRESHOLD) {
-                            attachedClamps.push(other);
+                    const snapHeight = CORK_HEIGHTS[other.model];
+                    if (snapHeight !== undefined) {
+                        const otherObj = getWorldTransform(other.id);
+                        const topCenterLocal = new THREE.Vector3(0, snapHeight, 0);
+                        const targetWorldPos = otherObj.localToWorld(topCenterLocal);
+                        
+                        const dist = myWorldPos.distanceTo(targetWorldPos);
+                        if (dist < CORK_SNAP_THRESHOLD && dist < closestDist) {
+                            closestDist = dist;
+                            snapWorldPos = targetWorldPos;
+                            targetFlaskId = other.id;
+                            targetLocalY = snapHeight;
+                            targetScale = CORK_SCALES[other.model] || 1.0;
                         }
                     }
                 });
 
-                if (attachedClamps.length > 0) {
-                    const updates = [];
-                    // Update Self
-                    updates.push({ id: item.id, position: newPos, rotation: newRot, scale: newScale });
+                if (snapWorldPos && !didSnap) {
+                    didSnap = true;
+                    finalParentId = targetFlaskId;
+                    const parentObj = getWorldTransform(targetFlaskId);
+                    const localSnap = parentObj.worldToLocal(snapWorldPos);
+                    
+                    localSnap.y = targetLocalY;
+                    localSnap.x = 0;
+                    localSnap.z = 0;
 
-                    // Update Clamps
-                    attachedClamps.forEach(clamp => {
-                        const cp = clamp.position || [0, 0, 0];
-                        updates.push({
-                            id: clamp.id,
-                            position: [cp[0] + delta.x, cp[1] + delta.y, cp[2] + delta.z]
-                            // We don't rotate clamps if stand rotates for now, just translate
-                        });
-                    });
-
-                    if (typeof onUpdateItems === 'function') {
-                        onUpdateItems(updates);
-                        return; // Skip default update
-                    }
+                    finalStatePos = [Number(localSnap.x.toFixed(3)), Number(localSnap.y.toFixed(3)), Number(localSnap.z.toFixed(3))];
+                    newScale = [targetScale, targetScale, targetScale];
                 }
             }
 
+            // --- AUTO-SNAP LOGIC FOR TRIPOD & WIRE GAUZE ---
+            // VolumetricFlask has a flat base - sits ON the ring, not inside it
+            // RoundBottom/Multi-neck/Distillation flasks sink into the ring
+            if (['RoundBottomFlask', 'TwoNeckFlask', 'ThreeNeckFlask', 'VolumetricFlask', 'DistillationFlask', 'WireGauze'].includes(item.model)) {
+                const TRIPOD_SNAP_THRESHOLD = 2.0;
+                let closestDist = Infinity;
+                let snapWorldPos = null;
+                let targetTripodId = null;
 
-            // --- GROUP MOVEMENT LOGIC (TUBES) ---
-            // If we moved (delta > 0), check for connected tubes
-            if (item.model === 'DeliveryTube' && delta.lengthSq() > 0.0001) {
-                // BFS to find all connected tubes
-                const connectedIds = new Set([item.id]);
-                const queue = [item.id];
-                const visited = new Set([item.id]);
-                const GROUP_THRESHOLD = 0.35; // Connection tolerance
-
-                while (queue.length > 0) {
-                    const currId = queue.shift();
-                    const currItem = allItems.find(i => i.id === currId);
-                    if (!currItem) continue;
-
-                    // Calc curr endpoints world pos
-                    // (Note: For the *moving* item, we use NewPos. For others, use OldPos unless already moved?
-                    // Actually, effectively we want to find who WAS connected before move?
-                    // Or who IS connected?
-                    // If we move A, B is attached. B should move.
-                    // We should use the positions *before* this current transform?
-                    // But we only have `allItems` which has OLD positions for A (and B).
-                    // Yes, use `allItems` (old state) to find connections.
-
-                    const currObj = new THREE.Object3D();
-                    currObj.position.set(...currItem.position);
-                    currObj.rotation.set(...currItem.rotation);
-                    currObj.scale.set(...currItem.scale);
-                    currObj.updateMatrix();
-                    const pts = currItem.points || [[0, 0, 0], [0, 1, 0]];
-                    const s = new THREE.Vector3(...pts[0]).applyMatrix4(currObj.matrix);
-                    const e = new THREE.Vector3(...pts[pts.length - 1]).applyMatrix4(currObj.matrix);
-
-                    allItems.forEach(other => {
-                        if (other.model !== 'DeliveryTube' || visited.has(other.id)) return;
-
-                        const otherObj = new THREE.Object3D();
-                        otherObj.position.set(...other.position);
-                        otherObj.rotation.set(...other.rotation);
-                        otherObj.scale.set(...other.scale);
-                        otherObj.updateMatrix();
-                        const opts = other.points || [[0, 0, 0], [0, 1, 0]];
-                        const os = new THREE.Vector3(...opts[0]).applyMatrix4(otherObj.matrix);
-                        const oe = new THREE.Vector3(...opts[opts.length - 1]).applyMatrix4(otherObj.matrix);
-
-                        if (s.distanceTo(os) < GROUP_THRESHOLD || s.distanceTo(oe) < GROUP_THRESHOLD ||
-                            e.distanceTo(os) < GROUP_THRESHOLD || e.distanceTo(oe) < GROUP_THRESHOLD) {
-                            visited.add(other.id);
-                            connectedIds.add(other.id);
-                            queue.push(other.id);
+                allItems.forEach(other => {
+                    if (other.model === 'TripodStand') {
+                        const tripodObj = getWorldTransform(other.id);
+                        const tripodHeight = other.height || 3.0; // matching default props
+                        const topCenterLocal = new THREE.Vector3(0, tripodHeight, 0);
+                        const ringWorldPos = tripodObj.localToWorld(topCenterLocal);
+                        
+                        let targetWorldY = ringWorldPos.y;
+                        if (['RoundBottomFlask', 'TwoNeckFlask', 'ThreeNeckFlask', 'DistillationFlask'].includes(item.model)) {
+                            targetWorldY -= 0.3; // spherical base sinks into the ring
+                        } else if (item.model === 'VolumetricFlask') {
+                            targetWorldY += 0.13; // flat base rests ON TOP of the ring torus
                         }
-                    });
-                }
-
-                if (connectedIds.size > 1) {
-                    // Update all connected items
-                    const updates = [];
-                    connectedIds.forEach(id => {
-                        if (id === item.id) {
-                            updates.push({ id, position: newPos, rotation: newRot, scale: newScale });
-                        } else {
-                            const other = allItems.find(i => i.id === id);
-                            if (other) {
-                                const op = other.position || [0, 0, 0];
-                                updates.push({
-                                    id,
-                                    position: [op[0] + delta.x, op[1] + delta.y, op[2] + delta.z]
-                                });
-                            }
+                        const targetWorldPos = new THREE.Vector3(ringWorldPos.x, targetWorldY, ringWorldPos.z);
+                        
+                        const dist = myWorldPos.distanceTo(targetWorldPos);
+                        if (dist < TRIPOD_SNAP_THRESHOLD && dist < closestDist) {
+                            closestDist = dist;
+                            snapWorldPos = targetWorldPos;
+                            targetTripodId = other.id;
                         }
-                    });
-
-                    if (typeof onUpdateItems === 'function') {
-                        onUpdateItems(updates);
-                        return; // Skip default update
                     }
+                });
+
+                if (snapWorldPos && !didSnap) {
+                    didSnap = true;
+                    finalParentId = targetTripodId;
+                    const parentObj = getWorldTransform(targetTripodId);
+                    const localSnap = parentObj.worldToLocal(snapWorldPos);
+
+                    // Mathematical Override: Guarantee the local positional heights
+                    const tripod = allItems.find(x => x.id === targetTripodId);
+                    const tHeight = tripod?.height || 3.0;
+                    
+                    if (['RoundBottomFlask', 'TwoNeckFlask', 'ThreeNeckFlask', 'DistillationFlask'].includes(item.model)) {
+                        localSnap.y = tHeight - 0.3; // Spherical base sits inside the ring
+                        localSnap.x = 0;
+                        localSnap.z = 0;
+                        setTimeout(() => { if (typeof updateItem === 'function') updateItem(targetTripodId, { ringRadius: 0.7 }); }, 0);
+                    } else if (item.model === 'VolumetricFlask') {
+                        localSnap.y = tHeight + 0.13; // Flat base rests ON ring torus top surface
+                        localSnap.x = 0;
+                        localSnap.z = 0;
+                        // Ring expands to be visible as a support platform under the flat base
+                        setTimeout(() => { if (typeof updateItem === 'function') updateItem(targetTripodId, { ringRadius: 0.55 }); }, 0);
+                    } else if (item.model === 'WireGauze') {
+                        localSnap.y = tHeight + 0.05; // Sit directly on top of the torus tube
+                        localSnap.x = 0;
+                        localSnap.z = 0;
+                        setTimeout(() => { if (typeof updateItem === 'function') updateItem(targetTripodId, { ringRadius: 0.8 }); }, 0);
+                    }
+
+                    finalStatePos = [Number(localSnap.x.toFixed(3)), Number(localSnap.y.toFixed(3)), Number(localSnap.z.toFixed(3))];
                 }
+            }
+
+            // --- AUTO-SNAP LOGIC FOR STANDING ON WIRE GAUZE ---
+            if (['ConicalFlask', 'VacuumFlask', 'VolumetricFlask', 'Beaker', 'BoilingTube'].includes(item.model)) {
+                const GAUZE_SNAP_THRESHOLD = 1.5;
+                let closestDist = Infinity;
+                let snapWorldPos = null;
+                let targetGauzeId = null;
+
+                allItems.forEach(other => {
+                    if (other.model === 'WireGauze') {
+                        const gauzeObj = getWorldTransform(other.id);
+                        const topSurfaceLocal = new THREE.Vector3(0, 0.05, 0);
+                        const surfaceWorldPos = gauzeObj.localToWorld(topSurfaceLocal);
+                        
+                        const dist = myWorldPos.distanceTo(surfaceWorldPos);
+                        if (dist < GAUZE_SNAP_THRESHOLD && dist < closestDist) {
+                            closestDist = dist;
+                            snapWorldPos = surfaceWorldPos;
+                            targetGauzeId = other.id;
+                        }
+                    }
+                });
+
+                if (snapWorldPos && !didSnap) { // Don't snap if already snapped to Clamp
+                    didSnap = true;
+                    finalParentId = targetGauzeId;
+                    const parentObj = getWorldTransform(targetGauzeId);
+                    const localSnap = parentObj.worldToLocal(snapWorldPos);
+                    finalStatePos = [Number(localSnap.x.toFixed(3)), Number(localSnap.y.toFixed(3)), Number(localSnap.z.toFixed(3))];
+                }
+            }
+
+            // --- DETACH LOGIC ---
+            if (!didSnap && item.parentId) {
+                // Determine if we dragged it away far enough to detach
+                finalParentId = null;
+                finalStatePos = [
+                    Number(myWorldPos.x.toFixed(3)),
+                    Math.max(0, Number(myWorldPos.y.toFixed(3))),
+                    Number(myWorldPos.z.toFixed(3))
+                ];
+            }
+
+            if (didSnap) {
+                document.body.style.cursor = 'crosshair';
+                setTimeout(() => document.body.style.cursor = 'default', 500);
             }
 
             updateItem(item.id, {
-                position: newPos,
+                position: finalStatePos,
                 rotation: newRot,
-                scale: newScale
+                scale: newScale,
+                parentId: finalParentId
             });
         }
     };
 
     const componentProps = {};
     if (item.model === 'Tongs' || item.model === 'Clamp') componentProps.angle = item.angle || 0;
+    if (item.model === 'VacuumFlask') componentProps.sideArmType = item.sideArmType || 'plastic';
+    if (item.model === 'Thermometer') componentProps.temperature = item.temperature || 20;
+    if (item.model === 'TripodStand' || item.model === 'RingClamp') componentProps.ringRadius = item.ringRadius || 1.2;
     if (item.model === 'Clamp') {
         componentProps.headAngle = item.headAngle || 0;
         componentProps.size = item.size || 1;
+        componentProps.extendLength = item.extendLength || 0;
+    }
+    if (item.model === 'RingClamp') {
+        componentProps.extendLength = item.extendLength || 0;
     }
     if (item.model === 'BunsenBurner') {
-        componentProps.isOn = item.isOn || false;
-        const detection = detectApparatusTypeAbove(item, allItems);
+        componentProps.isOn       = item.isOn || false;
+        componentProps.airFlow    = item.airFlow  ?? 0.8;   // 0=yellow/luminous, 1=blue/non-luminous
+        componentProps.gasFlow    = item.gasFlow  ?? 0.6;   // 0=small flame, 1=large flame
+        const detection = detectApparatusTypeAbove(item, allItems, item.gasFlow ?? 0.6);
+        componentProps.isHeating     = detection.isHeating;
         componentProps.apparatusType = detection.type;
-        componentProps.flameTargetY = detection.distY;
+        componentProps.flameTargetY  = detection.distY;
+        componentProps.baseRadius    = detection.baseRadius;
+        componentProps.proximity     = detection.proximity ?? 0;
     }
     if (item.model === 'GasJar') { componentProps.hasLid = item.hasLid !== false; componentProps.holeCount = item.holeCount || 0; }
     if (item.model === 'RubberCork') componentProps.holes = item.holes || 1;
     if (item.model === 'DeliveryTube' && item.points?.length > 0) componentProps.points = item.points;
     if (item.model === 'Wire' && item.points?.length > 0) componentProps.points = item.points;
     if (item.model === 'Wire') componentProps.color = item.color || 'red';
+    if (item.model === 'WorkTable') {
+        componentProps.width = item.width || 6;
+        componentProps.depth = item.depth || 4;
+    }
 
 
     return (
         <group>
-            {isSelected && group && !item.isEditingPoints && !item.isEditingAnchors && transformMode !== 'none' && (
-                <TransformControls object={group} mode={transformMode} onMouseUp={handleTransform} size={0.5} />
+            {!isGhost && isSelected && group && !item.isEditingPoints && !item.isEditingAnchors && transformMode !== 'none' && (
+                <TransformControls 
+                    object={group} 
+                    mode={transformMode} 
+                    onChange={() => {
+                        if (!group || item.parentId) return;
+                        // Floor clamp
+                        if (group.position.y < 0) group.position.y = 0;
+                        // Real-time basin collision — prevents passing through walls during drag
+                        if (basinBounds) {
+                            const { xMin, xMax, zMin, zMax, yMax } = basinBounds;
+                            const { x, y, z } = group.position;
+                            if (y <= yMax && x >= xMin && x <= xMax && z >= zMin && z <= zMax) {
+                                const dXMin = x - xMin;
+                                const dXMax = xMax - x;
+                                const dZMin = z - zMin;
+                                const dZMax = zMax - z;
+                                const minD = Math.min(dXMin, dXMax, dZMin, dZMax);
+                                if      (minD === dXMin) group.position.x = xMin;
+                                else if (minD === dXMax) group.position.x = xMax;
+                                else if (minD === dZMin) group.position.z = zMin;
+                                else                     group.position.z = zMax;
+                            }
+                        }
+                    }}
+                    onMouseUp={handleTransform} 
+                    size={0.6}
+                    translationSnap={gridSnap ? 0.5 : null}
+                    rotationSnap={gridSnap ? Math.PI / 12 : null}
+                />
             )}
             <group
                 ref={setGroup}
@@ -742,9 +1186,8 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
                     onSelect(item.id);
                 }}
             >
-                {isSelected && <axesHelper args={[2]} />}
+                {!isGhost && isSelected && <axesHelper args={[2]} />}
                 <Component
-                    {...componentProps}
                     {...componentProps}
                     height={item.height}
                     legAngle={item.legAngle}
@@ -774,23 +1217,31 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
                 {isSelected && item.isEditingAnchors && (
                     <AnchorEditor item={item} onUpdateItem={updateItem} />
                 )}
-            </group>
+
+            
+            {!isGhost && allItems && allItems.filter(i => i.parentId === item.id).map(childItem => (
+                <ApparatusEditorItem
+                    key={childItem.id}
+                    item={childItem}
+                    selectedId={selectedId}
+                    onSelect={onSelect}
+                    updateItem={updateItem}
+                    onUpdateItems={onUpdateItems}
+                    transformMode={selectedId === childItem.id && !isBuilding ? transformMode : 'none'}
+                    allItems={allItems}
+                    isBuilding={isBuilding}
+                    gridSnap={gridSnap}
+                    isGhost={childItem.isGhostPreviewObj}
+                    basinBounds={basinBounds}
+                />
+            ))}
+        </group>
         </group>
     );
 };
 
 // ... (skipping TubeBuilderTool definition as it is fine) ...
 // ... (skipping rest of file until render loop) ...
-
-// I need to target the render loop instantiation of ApparatusEditorItem.
-// Since `replace_file_content` targets a contiguous block, and the `onClick` is at ~530 and render loop is at ~1240, 
-// I CANNOT do both in one block unless I replace the entire 700 lines (bad idea).
-
-// I will do the `onClick` update first in this step.
-// And use a second step for the prop passing.
-
-
-
 
 const TubeBuilderTool = ({ allItems, builderState, setBuilderState, onCreateTube, planarMode }) => {
     const { camera, scene } = useThree();
@@ -1028,9 +1479,87 @@ const TubeBuilderTool = ({ allItems, builderState, setBuilderState, onCreateTube
     );
 };
 
+const APPARATUS_CATEGORIES = [
+    {
+        name: "Glassware",
+        items: [
+            { id: "Beaker", name: "Beaker", icon: "⚗️" },
+            { id: "ConicalFlask", name: "Conical Flask", icon: "🧪" },
+            { id: "RoundBottomFlask", name: "Round Bottom Flask", icon: "⚗️" },
+            { id: "TwoNeckFlask", name: "2-Neck Flask", icon: "⚗️" },
+            { id: "ThreeNeckFlask", name: "3-Neck Flask", icon: "⚗️" },
+            { id: "SeparatoryFunnel", name: "Separatory Funnel", icon: "🌪️" },
+            { id: "VolumetricFlask", name: "Volumetric Flask", icon: "🎈" },
+            { id: "DistillationFlask", name: "Distillation Flask", icon: "⚗️" },
+            { id: "VacuumFlask", name: "Vacuum Flask", icon: "🧪" },
+            { id: "TestTube", name: "Test Tube", icon: "🧪" },
+            { id: "BoilingTube", name: "Boiling Tube", icon: "🧪" },
+            { id: "MeasuringCylinder", name: "Cylinder", icon: "📏" },
+            { id: "GasJar", name: "Gas Jar", icon: "🔋" },
+            { id: "WaterTrough", name: "Water Trough", icon: "🚰" },
+            { id: "Burette", name: "Burette", icon: "💉" }
+        ]
+    },
+    {
+        name: "Stands & Clamps",
+        items: [
+            { id: "RetortStand", name: "Retort Stand", icon: "🏗️" },
+            { id: "TripodStand", name: "Tripod Stand", icon: "🗼" },
+            { id: "Clamp", name: "Clamp", icon: "🗜️" },
+            { id: "RingClamp", name: "Ring Clamp", icon: "⭕" }
+        ]
+    },
+    {
+        name: "Heating",
+        items: [
+            { id: "BunsenBurner", name: "Bunsen Burner", icon: "🔥" },
+            { id: "HeatproofMat", name: "Heatproof Mat", icon: "⬛" },
+            { id: "WireGauze", name: "Wire Gauze", icon: "🕸️" },
+            { id: "Crucible", name: "Crucible", icon: "🥣" }
+        ]
+    },
+    {
+        name: "Tools & Misc",
+        items: [
+            { id: "Thermometer", name: "Thermometer", icon: "🌡️" },
+            { id: "Dropper", name: "Dropper", icon: "💧" },
+            { id: "DropperBottle", name: "Dropper Bottle", icon: "🧴" },
+            { id: "StirringRod", name: "Glass Rod", icon: "🪄" },
+            { id: "Tongs", name: "Tongs", icon: "✂️" },
+            { id: "Forceps", name: "Forceps", icon: "🥢" },
+            { id: "RubberCork", name: "Rubber Cork", icon: "🟫" },
+            { id: "DeliveryTube", name: "Delivery Tube", icon: "🔀" },
+            { id: "LitmusPaper", name: "Litmus Paper", icon: "📄" },
+            { id: "SafetyShield", name: "Safety Shield", icon: "🛡️" }
+        ]
+    },
+    {
+        name: "Environment & Utilities",
+        items: [
+            { id: "WorkTable", name: "Work Table", icon: "🪑" },
+            { id: "GasSource", name: "Gas Fixture", icon: "🔥" },
+            { id: "WaterSource", name: "Water Tap", icon: "🚰" }
+        ]
+    },
+    {
+        name: "Chemicals & Electrical",
+        items: [
+            { id: "PowerSupply", name: "Power Supply", icon: "🔌" },
+            { id: "ElectrolysisSetup", name: "Electrolysis", icon: "⚡" },
+            { id: "Wire", name: "Wire", icon: "〰️" },
+            { id: "ZincGranules", name: "Zinc Granules", icon: "🪨" },
+            { id: "MagnesiumRibbon", name: "Mg Ribbon", icon: "🎗️" },
+            { id: "IronNail", name: "Iron Nail", icon: "🔩" },
+            { id: "GasTap", name: "Gas Tap", icon: "🚰" }
+        ]
+    }
+];
+
 export default function ApparatusEditorPage() {
     const [reactions, setReactions] = useState([]);
+    const [activeTab, setActiveTab] = useState('library');
     const [selectedReactionId, setSelectedReactionId] = useState('');
+    const [selectedStageIndex, setSelectedStageIndex] = useState(0);
     const [selectedApparatusId, setSelectedApparatusId] = useState(null);
 
     // Fetch data on mount
@@ -1038,12 +1567,56 @@ export default function ApparatusEditorPage() {
         fetch('/api/reactions')
             .then(res => res.json())
             .then(data => {
-                setReactions(data);
-                if (data.length > 0) setSelectedReactionId(data[0].id);
+                // Recover autosaved state from local storage first to prevent losing work on reload
+                const autosaved = localStorage.getItem('molecool_reactions_autosave');
+                if (autosaved) {
+                    try {
+                        const parsed = JSON.parse(autosaved);
+                        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                            setReactions(parsed);
+                            let sel = localStorage.getItem('molecool_selected_reaction') || parsed[0].id;
+                            setSelectedReactionId(sel);
+                            return;
+                        }
+                    } catch(e) { console.error('Corrupted autosave'); }
+                }
+
+                // Ensure all reactions have a 'stages' array for backward compatibility
+                const migratedData = data.map(r => {
+                    if (!r.stages || r.stages.length === 0) {
+                        return {
+                            ...r,
+                            stages: [
+                                {
+                                    id: `stage-${Date.now()}`,
+                                    name: "Stage 1",
+                                    apparatus: r.apparatus || [],
+                                    macroView: r.macroView || {}
+                                }
+                            ]
+                        };
+                    }
+                    return r;
+                });
+                setReactions(migratedData);
+                if (migratedData.length > 0) setSelectedReactionId(migratedData[0].id);
             })
             .catch(err => console.error("Failed to load reactions", err));
     }, []);
+
+    // Autosave reactions and selected reaction ID
+    useEffect(() => {
+        if (reactions.length > 0) {
+            localStorage.setItem('molecool_reactions_autosave', JSON.stringify(reactions));
+        }
+    }, [reactions]);
+    useEffect(() => {
+        if (selectedReactionId) {
+            localStorage.setItem('molecool_selected_reaction', selectedReactionId);
+        }
+    }, [selectedReactionId]);
     const [status, setStatus] = useState('');
+    const [showNewStageModal, setShowNewStageModal] = useState(false);
 
     // Tube Builder State
     const [builderState, setTubeBuilderState] = useState({ active: false, mode: 'straight', startAnchor: null });
@@ -1051,20 +1624,103 @@ export default function ApparatusEditorPage() {
     const [planarMode, setPlanarMode] = useState(false); // Default to false to match current behavior, but easy to toggle.
     const [transformMode, setTransformMode] = useState('translate');
     const [selectedModelToAdd, setSelectedModelToAdd] = useState(Object.keys(APPARATUS_MAP)[0]);
+    const [gridSnap, setGridSnap] = useState(false);
+
+    // Global Environment State with LocalStorage
+    const [showTable, setShowTable] = useState(true);
+    const [globalTableWidth, setGlobalTableWidth] = useState(14);
+    const [globalTableDepth, setGlobalTableDepth] = useState(10);
+    const [envLoaded, setEnvLoaded] = useState(false);
+
+    useEffect(() => {
+        const _st = localStorage.getItem('env_showTable');
+        const _gw = localStorage.getItem('env_globalTableWidth');
+        const _gd = localStorage.getItem('env_globalTableDepth');
+        if (_st !== null) setShowTable(JSON.parse(_st));
+        if (_gw !== null) setGlobalTableWidth(JSON.parse(_gw));
+        if (_gd !== null) setGlobalTableDepth(JSON.parse(_gd));
+        setEnvLoaded(true);
+    }, []);
+
+    useEffect(() => {
+        if (!envLoaded) return;
+        localStorage.setItem('env_showTable', JSON.stringify(showTable));
+        localStorage.setItem('env_globalTableWidth', JSON.stringify(globalTableWidth));
+        localStorage.setItem('env_globalTableDepth', JSON.stringify(globalTableDepth));
+    }, [showTable, globalTableWidth, globalTableDepth, envLoaded]);
+
 
     const currentReaction = reactions.find(r => r.id === selectedReactionId);
+    let currentStage = currentReaction?.stages?.[selectedStageIndex];
+    
+    // Safety fallback
+    if (currentReaction && !currentStage && currentReaction.stages?.length > 0) {
+        currentStage = currentReaction.stages[0];
+        if (selectedStageIndex !== 0) setTimeout(() => setSelectedStageIndex(0), 0);
+    }
 
     const handleUpdateItems = (updates) => {
-        // updates: [{ id, ...newProps }]
-        if (!currentReaction) return;
-        const updatedApparatus = currentReaction.apparatus.map(item => {
-            const update = updates.find(u => u.id === item.id);
-            return update ? { ...item, ...update } : item;
+        // ── Basin collision clamping ──────────────────────────────────────────
+        // Basin outer half-extents (must match LabTable geometry: bW=2.0, bD=1.4, bH=0.44)
+        const _basinCX  = globalTableWidth  / 2 - 2.2;   // basin centre X in world
+        const _basinCZ  = -globalTableDepth / 2 + 2.2;   // basin centre Z in world
+        const _margin   = 1.5;                            // clearance buffer — must be >= half-width of largest apparatus
+        const _bxMin = _basinCX - (1.0 + _margin);       // world Xmin of exclusion zone
+        const _bxMax = _basinCX + (1.0 + _margin);       // world Xmax
+        const _bzMin = _basinCZ - (0.7 + _margin);       // world Zmin
+        const _bzMax = _basinCZ + (0.7 + _margin);       // world Zmax
+        const _byMax = 0.44 + _margin;                    // max Y (top of basin walls)
+
+        /** Returns pos clamped so it stays outside the basin AABB */
+        const clampAwayFromBasin = (pos, parentId) => {
+            if (!pos || parentId) return pos; // parented items may be inside by design
+            const [x, y, z] = pos;
+            // Only enforce within the vertical range of the basin
+            if (y > _byMax || y < -2.0) return pos;
+            // Check if XZ overlaps the exclusion zone
+            if (x >= _bxMin && x <= _bxMax && z >= _bzMin && z <= _bzMax) {
+                // Push toward the nearest wall of the exclusion zone
+                const dXMin = x - _bxMin;
+                const dXMax = _bxMax - x;
+                const dZMin = z - _bzMin;
+                const dZMax = _bzMax - z;
+                const minD  = Math.min(dXMin, dXMax, dZMin, dZMax);
+                if (minD === dXMin) return [_bxMin, y, z];
+                if (minD === dXMax) return [_bxMax, y, z];
+                if (minD === dZMin) return [x, y, _bzMin];
+                return                     [x, y, _bzMax];
+            }
+            return pos;
+        };
+        // ─────────────────────────────────────────────────────────────────────
+
+        setReactions(prevReactions => {
+            const currentReactionLocal = prevReactions.find(r => r.id === selectedReactionId);
+            if (!currentReactionLocal) return prevReactions;
+            
+            const currentStageLocal = currentReactionLocal.stages?.[selectedStageIndex];
+            if (!currentStageLocal) return prevReactions;
+
+            const updatedApparatus = currentStageLocal.apparatus.map(item => {
+                const update = updates.find(u => u.id === item.id);
+                if (!update) return item;
+                // Resolve effective parentId (update may change it, e.g. detach)
+                const effectiveParentId = 'parentId' in update ? update.parentId : item.parentId;
+                const mergedUpdate = { ...update };
+                if (update.position) {
+                    mergedUpdate.position = clampAwayFromBasin(update.position, effectiveParentId);
+                }
+                return { ...item, ...mergedUpdate };
+            });
+
+            const updatedStages = currentReactionLocal.stages.map((stage, idx) => 
+                idx === selectedStageIndex ? { ...stage, apparatus: updatedApparatus } : stage
+            );
+
+            return prevReactions.map(r =>
+                r.id === selectedReactionId ? { ...r, stages: updatedStages } : r
+            );
         });
-        const updatedReactions = reactions.map(r =>
-            r.id === selectedReactionId ? { ...r, apparatus: updatedApparatus } : r
-        );
-        setReactions(updatedReactions);
     };
 
     const handleUpdateItem = (id, newProps) => {
@@ -1072,8 +1728,6 @@ export default function ApparatusEditorPage() {
     };
 
     const handleAddItem = (model) => {
-        if (!currentReaction) return;
-        // Generate a simple ID
         const id = `${model.toLowerCase()}-${Date.now().toString().slice(-4)}`;
         const newItem = {
             id,
@@ -1082,22 +1736,86 @@ export default function ApparatusEditorPage() {
             rotation: [0, 0, 0],
             scale: [1, 1, 1]
         };
-        const updatedApparatus = [...(currentReaction.apparatus || []), newItem];
-        const updatedReactions = reactions.map(r =>
-            r.id === selectedReactionId ? { ...r, apparatus: updatedApparatus } : r
-        );
-        setReactions(updatedReactions);
+
+        setReactions(prevReactions => {
+            const currentReactionLocal = prevReactions.find(r => r.id === selectedReactionId);
+            if (!currentReactionLocal) return prevReactions;
+            
+            const currentStageLocal = currentReactionLocal.stages?.[selectedStageIndex];
+            if (!currentStageLocal) return prevReactions;
+
+            const updatedApparatus = [...(currentStageLocal.apparatus || []), newItem];
+            const updatedStages = currentReactionLocal.stages.map((stage, idx) => 
+                idx === selectedStageIndex ? { ...stage, apparatus: updatedApparatus } : stage
+            );
+            return prevReactions.map(r =>
+                r.id === selectedReactionId ? { ...r, stages: updatedStages } : r
+            );
+        });
+
         setSelectedApparatusId(id);
     };
 
     const handleDeleteItem = (id) => {
+        setReactions(prevReactions => {
+            const currentReactionLocal = prevReactions.find(r => r.id === selectedReactionId);
+            if (!currentReactionLocal) return prevReactions;
+            
+            const currentStageLocal = currentReactionLocal.stages?.[selectedStageIndex];
+            if (!currentStageLocal) return prevReactions;
+
+            const updatedApparatus = currentStageLocal.apparatus.filter(item => item.id !== id);
+            const updatedStages = currentReactionLocal.stages.map((stage, idx) => 
+                idx === selectedStageIndex ? { ...stage, apparatus: updatedApparatus } : stage
+            );
+            return prevReactions.map(r =>
+                r.id === selectedReactionId ? { ...r, stages: updatedStages } : r
+            );
+        });
+        setSelectedApparatusId(null);
+    };
+
+    const handleAddStage = (copyPrevious) => {
         if (!currentReaction) return;
-        const updatedApparatus = currentReaction.apparatus.filter(item => item.id !== id);
-        const updatedReactions = reactions.map(r =>
-            r.id === selectedReactionId ? { ...r, apparatus: updatedApparatus } : r
+        const previousApparatus = copyPrevious && currentStage ? JSON.parse(JSON.stringify(currentStage.apparatus)) : [];
+        const newStage = {
+            id: `stage-${Date.now()}`,
+            name: `Stage ${currentReaction.stages.length + 1}`,
+            apparatus: previousApparatus,
+            macroView: {}
+        };
+        const updatedReactions = reactions.map(r => 
+            r.id === selectedReactionId ? { ...r, stages: [...r.stages, newStage] } : r
         );
         setReactions(updatedReactions);
+        setSelectedStageIndex(currentReaction.stages.length);
         setSelectedApparatusId(null);
+        setShowNewStageModal(false);
+    };
+
+    const handleRenameStage = (index, newName) => {
+        if (!currentReaction) return;
+        const updatedStages = currentReaction.stages.map((stage, idx) => 
+            idx === index ? { ...stage, name: newName } : stage
+        );
+        const updatedReactions = reactions.map(r => 
+            r.id === selectedReactionId ? { ...r, stages: updatedStages } : r
+        );
+        setReactions(updatedReactions);
+    };
+
+    const handleDeleteStage = (index) => {
+        if (!currentReaction || currentReaction.stages.length <= 1) return; 
+        const updatedStages = currentReaction.stages.filter((_, idx) => idx !== index);
+        const updatedReactions = reactions.map(r => 
+            r.id === selectedReactionId ? { ...r, stages: updatedStages } : r
+        );
+        setReactions(updatedReactions);
+        if (selectedStageIndex >= updatedStages.length) {
+            setSelectedStageIndex(updatedStages.length - 1);
+        } else if (selectedStageIndex === index) {
+            setSelectedApparatusId(null);
+        }
     };
 
     const handleSave = async () => {
@@ -1210,14 +1928,22 @@ export default function ApparatusEditorPage() {
             color: isWire ? color : undefined
         };
 
-        const updatedApparatus = [...(currentReaction.apparatus || []), newItem];
+        const updatedApparatus = [...(currentStage.apparatus || []), newItem];
+        const updatedStages = currentReaction.stages.map((stage, idx) => 
+            idx === selectedStageIndex ? { ...stage, apparatus: updatedApparatus } : stage
+        );
         const updatedReactions = reactions.map(r =>
-            r.id === selectedReactionId ? { ...r, apparatus: updatedApparatus } : r
+            r.id === selectedReactionId ? { ...r, stages: updatedStages } : r
         );
         setReactions(updatedReactions);
         setSelectedApparatusId(id);
     };
 
+
+    const detachItem = (itemId) => {
+        // Simple detach places it slightly forward in world space
+        handleUpdateItem(itemId, { parentId: null, position: [0, 2, 2] });
+    };
 
     return (
         <div className="flex h-screen w-full bg-[#0a0a0a] text-white selection:bg-blue-500/30 overflow-hidden font-sans">
@@ -1230,10 +1956,55 @@ export default function ApparatusEditorPage() {
                     </h1>
                 </div>
 
+                {/* Tab Navigation */}
+                <div className="flex bg-[#161616] p-2 border-b border-white/5 shrink-0">
+                    <button 
+                        onClick={() => setActiveTab('library')} 
+                        className={`flex-1 text-xs py-2 rounded-md font-bold transition-all ${activeTab === 'library' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                        Library
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('properties')} 
+                        className={`flex-1 text-xs py-2 rounded-md font-bold transition-all ${activeTab === 'properties' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                        Properties
+                    </button>
+                </div>
+
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6 custom-scrollbar">
-                    
-                    {/* Reaction Selector */}
+
+                    {activeTab === 'library' && (
+                        <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+                            {APPARATUS_CATEGORIES.map((category) => (
+                                <div key={category.name} className="flex flex-col gap-3">
+                                    <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest border-b border-white/5 pb-1">{category.name}</h3>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {category.items.map(item => {
+                                            if (!APPARATUS_MAP[item.id]) return null;
+                                            return (
+                                                <button
+                                                    key={item.id}
+                                                    onClick={() => handleAddItem(item.id)}
+                                                    className="flex flex-col items-center justify-start gap-1 p-2 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-blue-600/10 hover:border-blue-500/30 hover:scale-[1.02] transition-all aspect-square group"
+                                                >
+                                                    <span className="text-2xl mt-1 mb-0.5 group-hover:scale-110 transition-transform">{item.icon}</span>
+                                                    <span className="text-[9px] text-neutral-400 text-center leading-tight w-full break-words">{item.name}</span>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="pb-4"></div>
+                        </div>
+                    )}
+
+                    {activeTab === 'properties' && (
+                        <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+                            
+                            {/* Reaction Selector */}
                     <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Reaction Context</label>
                         <select
@@ -1245,6 +2016,44 @@ export default function ApparatusEditorPage() {
                                 <option key={r.id} value={r.id}>{r.name}</option>
                             ))}
                         </select>
+                    </div>
+
+                    {/* Stage Manager */}
+                    <div className="flex flex-col gap-2 bg-gradient-to-r from-blue-900/10 to-transparent p-4 border border-blue-500/20 rounded-xl">
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Reaction Stages</label>
+                            <button 
+                                onClick={() => setShowNewStageModal(true)}
+                                className="text-[9px] bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30 transition-colors"
+                            >+ Add Stage</button>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                            {currentReaction?.stages?.map((stage, idx) => (
+                                <div 
+                                    key={stage.id} 
+                                    className={`flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer group ${selectedStageIndex === idx ? 'bg-blue-600/20 border-blue-500/50' : 'bg-black/30 border-white/5 hover:bg-white/5'}`}
+                                    onClick={() => { setSelectedStageIndex(idx); setSelectedApparatusId(null); }}
+                                >
+                                    <div className="flex items-center gap-2 flex-1">
+                                        <span className={`text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold ${selectedStageIndex === idx ? 'bg-blue-500 text-white' : 'bg-white/10 text-neutral-400'}`}>{idx + 1}</span>
+                                        <input 
+                                            value={stage.name || `Stage ${idx + 1}`}
+                                            onChange={(e) => handleRenameStage(idx, e.target.value)}
+                                            onClick={(e) => { e.stopPropagation(); setSelectedStageIndex(idx); }}
+                                            className="bg-transparent text-xs text-neutral-200 outline-none hover:bg-white/5 focus:bg-black/40 focus:px-1 rounded flex-1 transition-all"
+                                        />
+                                    </div>
+                                    {currentReaction.stages.length > 1 && (
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteStage(idx); }}
+                                            className="text-red-400/50 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Tools Section */}
@@ -1265,6 +2074,26 @@ export default function ApparatusEditorPage() {
                             >
                                 Rotate
                             </button>
+                        </div>
+
+                        {/* Snapping & Environment Toggles */}
+                        <div className="flex items-center justify-between bg-black/30 p-2 rounded-lg mt-1 border border-white/5">
+                            <label className="text-[11px] font-semibold text-blue-300">Snap to Grid (0.5m / 15°)</label>
+                            <input
+                                type="checkbox"
+                                checked={gridSnap}
+                                onChange={(e) => setGridSnap(e.target.checked)}
+                                className="accent-blue-500 w-3.5 h-3.5 cursor-pointer"
+                            />
+                        </div>
+                        <div className="flex items-center justify-between bg-black/30 p-2 rounded-lg mt-1 border border-white/5">
+                            <label className="text-[11px] font-semibold text-neutral-300">Show Lab Table</label>
+                            <input
+                                type="checkbox"
+                                checked={showTable}
+                                onChange={(e) => setShowTable(e.target.checked)}
+                                className="accent-neutral-500 w-3.5 h-3.5 cursor-pointer"
+                            />
                         </div>
 
                         {/* Tube Builder Toggle */}
@@ -1308,38 +2137,14 @@ export default function ApparatusEditorPage() {
                         </div>
                     </div>
 
-                    {/* Add New Apparatus */}
-                    <div className="flex flex-col gap-2">
-                        <div className="flex justify-between items-center">
-                            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Library</label>
-                        </div>
-                        <div className="flex gap-2">
-                            <select
-                                className="bg-black/40 border border-white/10 rounded-md p-2 text-sm flex-1 text-neutral-300 outline-none focus:border-green-500/50 transition-colors cursor-pointer"
-                                value={selectedModelToAdd}
-                                onChange={(e) => setSelectedModelToAdd(e.target.value)}
-                            >
-                                {Object.keys(APPARATUS_MAP).map(model => (
-                                    <option key={model} value={model}>{model}</option>
-                                ))}
-                            </select>
-                            <button
-                                onClick={() => handleAddItem(selectedModelToAdd)}
-                                className="bg-green-600/80 hover:bg-green-500 text-white px-5 rounded-md text-xs font-bold shadow-md transition-all uppercase tracking-wider"
-                            >
-                                Add
-                            </button>
-                        </div>
-                    </div>
-
                     {/* Apparatus List (Flat) */}
                     <div className="flex flex-col border border-white/5 bg-white/[0.02] rounded-xl overflow-hidden flex-1 min-h-[180px]">
                         <div className="p-3 border-b border-white/5 bg-black/20 flex justify-between items-center">
-                            <h2 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Scene Objects</h2>
-                            <span className="text-[9px] bg-white/10 text-neutral-300 px-2 py-0.5 rounded-full font-mono">{currentReaction?.apparatus?.length || 0}</span>
+                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Scene Objects</span>
+                            <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-neutral-300">{currentStage?.apparatus?.length || 0}</span>
                         </div>
-                        <div className="flex flex-col overflow-y-auto custom-scrollbar p-1.5 gap-1 flex-1">
-                            {currentReaction?.apparatus?.map(item => (
+                        <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1 custom-scrollbar">
+                            {currentStage?.apparatus?.map(item => (
                                 <div
                                     key={item.id}
                                     className={`px-3 py-2 rounded-lg cursor-pointer flex justify-between items-center transition-all ${
@@ -1353,431 +2158,894 @@ export default function ApparatusEditorPage() {
                                     <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/40 text-neutral-400 truncate max-w-[45%] border border-white/5">{item.model}</span>
                                 </div>
                             ))}
-                            {(!currentReaction?.apparatus || currentReaction.apparatus.length === 0) && (
+                            {(!currentStage?.apparatus || currentStage.apparatus.length === 0) && (
                                 <div className="text-center py-8 text-xs text-neutral-500 italic">No objects in scene</div>
                             )}
                         </div>
                     </div>
 
                     {/* Selected Item Properties Component Injection point */}
-                    {selectedApparatusId && currentReaction && (() => {
-                    const item = currentReaction.apparatus.find(a => a.id === selectedApparatusId);
-                    if (!item) return null;
-                    return (
-                        <div className="flex flex-col gap-2 mt-4 border-t border-white/10 pt-4">
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]"></div><h3 className="text-[11px] font-bold text-orange-400 uppercase tracking-widest truncate max-w-[140px]">{item.id}</h3></div>
-                                <button
-                                    onClick={() => handleDeleteItem(item.id)}
-                                    className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-red-900/30 rounded border border-red-900/50"
-                                >
-                                    Delete
-                                </button>
-                            </div>
-
-                            {/* SPECIAL CONTROLS */}
-                            {item.model === 'Tongs' && (
-                                <div className="flex flex-col gap-1 mt-2">
-                                    <label className="text-xs text-yellow-300">Tongs Opening</label>
-                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
-                                        min="0" max="1" step="0.05"
-                                        value={item.angle || 0}
-                                        onChange={(e) => handleUpdateItem(item.id, { angle: parseFloat(e.target.value) })}
-                                        
-                                    />
-                                </div>
-                            )}
-
-                            {item.model === 'Clamp' && (
-                                <div className="flex flex-col gap-1 mt-2">
-                                    <label className="text-xs text-blue-300">Clamp Opening</label>
-                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
-                                        min="0" max="1" step="0.05"
-                                        value={item.angle || 0}
-                                        onChange={(e) => handleUpdateItem(item.id, { angle: parseFloat(e.target.value) })}
-                                        
-                                    />
-                                    <label className="text-xs text-blue-300 mt-1">Head Rotation</label>
-                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
-                                        min={-Math.PI} max={Math.PI} step="0.1"
-                                        value={item.headAngle || 0}
-                                        onChange={(e) => handleUpdateItem(item.id, { headAngle: parseFloat(e.target.value) })}
-                                        
-                                    />
-                                    <label className="text-xs text-blue-300 mt-1">Stand Rotation</label>
-                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
-                                        min={-Math.PI} max={Math.PI} step="0.05"
-                                        value={item.rotation ? item.rotation[1] : 0}
-                                        onChange={(e) => {
-                                            const newY = parseFloat(e.target.value);
-                                            const currentPos = new THREE.Vector3(...(item.position || [0, 0, 0]));
-                                            const currentRot = new THREE.Euler(...(item.rotation || [0, 0, 0]));
-
-                                            // Pivot Offset (Local)
-                                            // The clamp loop is at x = -1.65
-                                            const pivotOffsetLocal = new THREE.Vector3(-1.65, 0, 0);
-
-                                            // 1. Calculate World Pivot Position from Current State
-                                            const currentOffsetWorld = pivotOffsetLocal.clone().applyEuler(currentRot);
-                                            const pivotWorld = currentPos.clone().add(currentOffsetWorld);
-
-                                            // 2. Calculate New Position based on New Rotation
-                                            const newRotEuler = new THREE.Euler(currentRot.x, newY, currentRot.z);
-                                            const newOffsetWorld = pivotOffsetLocal.clone().applyEuler(newRotEuler);
-
-                                            // NewPos = PivotWorld - NewOffsetWorld
-                                            const newPos = pivotWorld.clone().sub(newOffsetWorld);
-
-                                            handleUpdateItem(item.id, {
-                                                rotation: [currentRot.x, newY, currentRot.z],
-                                                position: [newPos.x, newPos.y, newPos.z]
-                                            });
-                                        }}
-                                        
-                                    />
-                                    <label className="text-xs text-blue-300 mt-1">Vertical Position</label>
-                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
-                                        min="0.5" max="10" step="0.1"
-                                        value={item.position ? item.position[1] : 1}
-                                        onChange={(e) => {
-                                            const newY = parseFloat(e.target.value);
-                                            const currentPos = item.position || [0, 0, 0];
-                                            handleUpdateItem(item.id, { position: [currentPos[0], newY, currentPos[2]] });
-                                        }}
-                                        
-                                    />
-                                    <label className="text-xs text-blue-300 mt-1">Clamp Size</label>
-                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
-                                        min="0.5" max="2" step="0.1"
-                                        value={item.size || 1}
-                                        onChange={(e) => handleUpdateItem(item.id, { size: parseFloat(e.target.value) })}
-                                        
-                                    />
-                                </div>
-                            )}
-
-                            {item.model === 'BunsenBurner' && (
-                                <div className="flex flex-col gap-1 mt-2">
-                                    <label className="text-xs text-orange-300">Flame Control</label>
+                    {selectedApparatusId ? (() => {
+                        const item = currentStage?.apparatus?.find(i => i.id === selectedApparatusId);
+                        if (!item) return null;
+                        return (
+                            <div className="flex flex-col gap-2 mt-4 border-t border-white/10 pt-4">
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]"></div><h3 className="text-[11px] font-bold text-orange-400 uppercase tracking-widest truncate max-w-[140px]">{item.id}</h3></div>
                                     <button
-                                        onClick={() => handleUpdateItem(item.id, { isOn: !item.isOn })}
-                                        className={`w-full py-1 text-xs rounded font-bold ${item.isOn ? 'bg-orange-600 text-white' : 'bg-neutral-700 text-neutral-400'}`}
+                                        onClick={() => handleDeleteItem(item.id)}
+                                        className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-red-900/30 rounded border border-red-900/50"
                                     >
-                                        {item.isOn ? 'EXTINGUISH FLAME' : 'IGNITE FLAME'}
+                                        Delete
                                     </button>
                                 </div>
-                            )}
 
-                            {item.model === 'GasJar' && (
-                                <div className="flex flex-col gap-2 mt-2 border-t border-white/10 pt-2">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-xs text-blue-300">Lid Attached</label>
-                                        <input type="checkbox" className="w-4 h-4 accent-orange-500 bg-black/40 border-white/10 rounded cursor-pointer" 
-                                            checked={item.hasLid !== false}
-                                            onChange={(e) => handleUpdateItem(item.id, { hasLid: e.target.checked })}
+                                {/* ATTACHMENT INFO */}
+                                {item.parentId && (
+                                    <div className="flex flex-col gap-2 mt-2 bg-black/20 p-2 rounded-lg border border-white/5">
+                                        <h4 className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                                            <span>🔗</span> Attachment
+                                        </h4>
+                                        <div className="flex justify-between items-center text-xs mt-1">
+                                            <span className="text-green-400 font-mono truncate max-w-[150px]" title={item.parentId}>
+                                                Connected: {item.parentId.slice(0, 15)}...
+                                            </span>
+                                            <button 
+                                                onClick={() => detachItem(item.id)}
+                                                className="px-2 py-1 bg-red-900/40 text-red-300 hover:bg-red-900/60 rounded border border-red-500/30 transition-all font-semibold"
+                                            >
+                                                Detach
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* SPECIAL CONTROLS */}
+                                {item.model === 'TripodStand' && (
+                                    <div className="flex flex-col gap-1 mt-2">
+                                        <div className="flex justify-between items-center text-xs text-blue-300">
+                                            <label>Ring Radius (m)</label>
+                                            <input 
+                                                type="number" step="0.05"
+                                                className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-16 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                value={(item.ringRadius || 1.2).toFixed(2)}
+                                                onChange={(e) => handleUpdateItem(item.id, { ringRadius: parseFloat(e.target.value) })}
+                                            />
+                                        </div>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                            min="0.4" max="2.0" step="0.05"
+                                            value={item.ringRadius || 1.2}
+                                            onChange={(e) => handleUpdateItem(item.id, { ringRadius: parseFloat(e.target.value) })}
+                                        />
+                                    </div>
+                                )}
+
+                                {item.model === 'Tongs' && (
+                                    <div className="flex flex-col gap-1 mt-2">
+                                        <label className="text-xs text-yellow-300">Tongs Opening</label>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                            min="0" max="1" step="0.05"
+                                            value={item.angle || 0}
+                                            onChange={(e) => handleUpdateItem(item.id, { angle: parseFloat(e.target.value) })}
                                             
                                         />
                                     </div>
-                                    {(item.hasLid !== false) && (
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-xs text-blue-300">Holes in Lid: {item.holeCount || 0}</label>
-                                            <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
-                                                min="0" max="4" step="1"
-                                                value={item.holeCount || 0}
-                                                onChange={(e) => handleUpdateItem(item.id, { holeCount: parseInt(e.target.value) })}
+                                )}
+
+                                {item.model === 'Clamp' && (
+                                    <div className="flex flex-col gap-1 mt-2">
+                                        <div className="flex justify-between items-center text-xs text-blue-300">
+                                            <label>Clamp Opening</label>
+                                            <input 
+                                                type="number" step="0.05"
+                                                className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-16 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                value={(item.angle || 0).toFixed(2)}
+                                                onChange={(e) => handleUpdateItem(item.id, { angle: parseFloat(e.target.value) })}
+                                            />
+                                        </div>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                            min="0" max="1" step="0.05"
+                                            value={item.angle || 0}
+                                            onChange={(e) => handleUpdateItem(item.id, { angle: parseFloat(e.target.value) })}
+                                            
+                                        />
+                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
+                                            <label>Head Rotation (°)</label>
+                                            <input 
+                                                type="number" step="1"
+                                                className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-20 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                value={((item.headAngle || 0) * 180 / Math.PI).toFixed(1)}
+                                                onChange={(e) => handleUpdateItem(item.id, { headAngle: parseFloat(e.target.value) * Math.PI / 180 })}
+                                            />
+                                        </div>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                            min={-Math.PI} max={Math.PI} step="0.1"
+                                            value={item.headAngle || 0}
+                                            onChange={(e) => handleUpdateItem(item.id, { headAngle: parseFloat(e.target.value) })}
+                                            
+                                        />
+                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
+                                            <label>Pipe Length (m)</label>
+                                            <input 
+                                                type="number" step="0.1"
+                                                className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-20 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                value={(item.extendLength || 0).toFixed(2)}
+                                                onChange={(e) => {
+                                                    const newLen = parseFloat(e.target.value);
+                                                    const currentPos = new THREE.Vector3(...(item.position || [0, 0, 0]));
+                                                    const currentRot = new THREE.Euler(...(item.rotation || [0, 0, 0]));
+                                                    
+                                                    const oldPivotLocal = new THREE.Vector3(-1.65 - (item.extendLength || 0), 0, 0);
+                                                    const newPivotLocal = new THREE.Vector3(-1.65 - newLen, 0, 0);
+                                                    
+                                                    const pivotWorld = currentPos.clone().add(oldPivotLocal.clone().applyEuler(currentRot));
+                                                    const newOffsetWorld = newPivotLocal.clone().applyEuler(currentRot);
+                                                    const newPos = pivotWorld.clone().sub(newOffsetWorld);
+                                                    
+                                                    handleUpdateItem(item.id, { 
+                                                        extendLength: newLen,
+                                                        position: [newPos.x, newPos.y, newPos.z]
+                                                    });
+                                                }}
+                                            />
+                                        </div>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                            min="0" max="3" step="0.1"
+                                            value={item.extendLength || 0}
+                                            onChange={(e) => {
+                                                const newLen = parseFloat(e.target.value);
+                                                const currentPos = new THREE.Vector3(...(item.position || [0, 0, 0]));
+                                                const currentRot = new THREE.Euler(...(item.rotation || [0, 0, 0]));
+                                                
+                                                const oldPivotLocal = new THREE.Vector3(-1.65 - (item.extendLength || 0), 0, 0);
+                                                const newPivotLocal = new THREE.Vector3(-1.65 - newLen, 0, 0);
+                                                
+                                                const pivotWorld = currentPos.clone().add(oldPivotLocal.clone().applyEuler(currentRot));
+                                                const newOffsetWorld = newPivotLocal.clone().applyEuler(currentRot);
+                                                const newPos = pivotWorld.clone().sub(newOffsetWorld);
+                                                
+                                                handleUpdateItem(item.id, { 
+                                                    extendLength: newLen,
+                                                    position: [newPos.x, newPos.y, newPos.z]
+                                                });
+                                            }}
+                                            
+                                        />
+                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
+                                            <label>Stand Rotation (°)</label>
+                                            <input 
+                                                type="number" step="1"
+                                                className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-20 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                value={((item.rotation ? item.rotation[1] : 0) * 180 / Math.PI).toFixed(1)}
+                                                onChange={(e) => {
+                                                    const newY = parseFloat(e.target.value) * Math.PI / 180;
+                                                    const currentPos = new THREE.Vector3(...(item.position || [0, 0, 0]));
+                                                    const currentRot = new THREE.Euler(...(item.rotation || [0, 0, 0]));
+
+                                                    const pivotOffsetLocal = new THREE.Vector3(-1.65 - (item.extendLength || 0), 0, 0);
+                                                    const currentOffsetWorld = pivotOffsetLocal.clone().applyEuler(currentRot);
+                                                    const pivotWorld = currentPos.clone().add(currentOffsetWorld);
+
+                                                    const newRotEuler = new THREE.Euler(currentRot.x, newY, currentRot.z);
+                                                    const newOffsetWorld = pivotOffsetLocal.clone().applyEuler(newRotEuler);
+                                                    const newPos = pivotWorld.clone().sub(newOffsetWorld);
+
+                                                    handleUpdateItem(item.id, {
+                                                        rotation: [currentRot.x, newY, currentRot.z],
+                                                        position: [newPos.x, newPos.y, newPos.z]
+                                                    });
+                                                }}
+                                            />
+                                        </div>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                            min={-Math.PI} max={Math.PI} step="0.05"
+                                            value={item.rotation ? item.rotation[1] : 0}
+                                            onChange={(e) => {
+                                                const newY = parseFloat(e.target.value);
+                                                const currentPos = new THREE.Vector3(...(item.position || [0, 0, 0]));
+                                                const currentRot = new THREE.Euler(...(item.rotation || [0, 0, 0]));
+
+                                                // Pivot Offset (Local)
+                                                // The clamp loop is at x = -1.65
+                                                const pivotOffsetLocal = new THREE.Vector3(-1.65 - (item.extendLength || 0), 0, 0);
+
+                                                // 1. Calculate World Pivot Position from Current State
+                                                const currentOffsetWorld = pivotOffsetLocal.clone().applyEuler(currentRot);
+                                                const pivotWorld = currentPos.clone().add(currentOffsetWorld);
+
+                                                // 2. Calculate New Position based on New Rotation
+                                                const newRotEuler = new THREE.Euler(currentRot.x, newY, currentRot.z);
+                                                const newOffsetWorld = pivotOffsetLocal.clone().applyEuler(newRotEuler);
+
+                                                // NewPos = PivotWorld - NewOffsetWorld
+                                                const newPos = pivotWorld.clone().sub(newOffsetWorld);
+
+                                                handleUpdateItem(item.id, {
+                                                    rotation: [currentRot.x, newY, currentRot.z],
+                                                    position: [newPos.x, newPos.y, newPos.z]
+                                                });
+                                            }}
+                                            
+                                        />
+                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
+                                            <label>Vertical Position (m)</label>
+                                            <input 
+                                                type="number" step="0.1"
+                                                className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-20 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                value={(item.position ? item.position[1] : 1).toFixed(2)}
+                                                onChange={(e) => {
+                                                    const newY = parseFloat(e.target.value);
+                                                    const currentPos = item.position || [0, 0, 0];
+                                                    handleUpdateItem(item.id, { position: [currentPos[0], newY, currentPos[2]] });
+                                                }}
+                                            />
+                                        </div>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                            min="0.5" max="10" step="0.1"
+                                            value={item.position ? item.position[1] : 1}
+                                            onChange={(e) => {
+                                                const newY = parseFloat(e.target.value);
+                                                const currentPos = item.position || [0, 0, 0];
+                                                handleUpdateItem(item.id, { position: [currentPos[0], newY, currentPos[2]] });
+                                            }}
+                                            
+                                        />
+                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
+                                            <label>Clamp Size (x)</label>
+                                            <input 
+                                                type="number" step="0.1"
+                                                className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-16 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                value={(item.size || 1).toFixed(2)}
+                                                onChange={(e) => handleUpdateItem(item.id, { size: parseFloat(e.target.value) })}
+                                            />
+                                        </div>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                            min="0.5" max="2" step="0.1"
+                                            value={item.size || 1}
+                                            onChange={(e) => handleUpdateItem(item.id, { size: parseFloat(e.target.value) })}
+                                            
+                                        />
+                                    </div>
+                                )}
+
+                                {item.model === 'RingClamp' && (
+                                    <div className="flex flex-col gap-1 mt-2">
+                                        {!currentStage.apparatus?.some(child => child.parentId === item.id && child.model === 'SeparatoryFunnel') && (
+                                            <>
+                                                <div className="flex justify-between items-center text-xs text-blue-300">
+                                                    <label>Ring Radius (m)</label>
+                                                    <input 
+                                                        type="number" step="0.05"
+                                                        className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-16 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                        value={(item.ringRadius || 1.2).toFixed(2)}
+                                                        onChange={(e) => handleUpdateItem(item.id, { ringRadius: parseFloat(e.target.value) })}
+                                                    />
+                                                </div>
+                                                <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                                    min="0.4" max="2.0" step="0.05"
+                                                    value={item.ringRadius || 1.2}
+                                                    onChange={(e) => handleUpdateItem(item.id, { ringRadius: parseFloat(e.target.value) })}
+                                                />
+                                            </>
+                                        )}
+
+                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
+                                            <label>Vertical Position (m)</label>
+                                            <input 
+                                                type="number" step="0.1"
+                                                className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-20 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                value={(item.position ? item.position[1] : 1).toFixed(2)}
+                                                onChange={(e) => {
+                                                    const newY = parseFloat(e.target.value);
+                                                    const currentPos = item.position || [0, 0, 0];
+                                                    handleUpdateItem(item.id, { position: [currentPos[0], newY, currentPos[2]] });
+                                                }}
+                                            />
+                                        </div>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                            min="0.5" max="10" step="0.1"
+                                            value={item.position ? item.position[1] : 1}
+                                            onChange={(e) => {
+                                                const newY = parseFloat(e.target.value);
+                                                const currentPos = item.position || [0, 0, 0];
+                                                handleUpdateItem(item.id, { position: [currentPos[0], newY, currentPos[2]] });
+                                            }}
+                                        />
+
+                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
+                                            <label>Pipe Length (m)</label>
+                                            <input 
+                                                type="number" step="0.1"
+                                                className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-20 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                value={(item.extendLength || 0).toFixed(2)}
+                                                onChange={(e) => {
+                                                    const newLen = parseFloat(e.target.value);
+                                                    const currentPos = new THREE.Vector3(...(item.position || [0, 0, 0]));
+                                                    const currentRot = new THREE.Euler(...(item.rotation || [0, 0, 0]));
+                                                    
+                                                    const oldPivotLocal = new THREE.Vector3(0, 0, -(3.0 + (item.extendLength || 0)));
+                                                    const newPivotLocal = new THREE.Vector3(0, 0, -(3.0 + newLen));
+                                                    
+                                                    const pivotWorld = currentPos.clone().add(oldPivotLocal.clone().applyEuler(currentRot));
+                                                    const newOffsetWorld = newPivotLocal.clone().applyEuler(currentRot);
+                                                    const newPos = pivotWorld.clone().sub(newOffsetWorld);
+                                                    
+                                                    handleUpdateItem(item.id, { 
+                                                        extendLength: newLen,
+                                                        position: [newPos.x, newPos.y, newPos.z]
+                                                    });
+                                                }}
+                                            />
+                                        </div>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                            min="0" max="3" step="0.1"
+                                            value={item.extendLength || 0}
+                                            onChange={(e) => {
+                                                const newLen = parseFloat(e.target.value);
+                                                const currentPos = new THREE.Vector3(...(item.position || [0, 0, 0]));
+                                                const currentRot = new THREE.Euler(...(item.rotation || [0, 0, 0]));
+                                                
+                                                const oldPivotLocal = new THREE.Vector3(0, 0, -(3.0 + (item.extendLength || 0)));
+                                                const newPivotLocal = new THREE.Vector3(0, 0, -(3.0 + newLen));
+                                                
+                                                const pivotWorld = currentPos.clone().add(oldPivotLocal.clone().applyEuler(currentRot));
+                                                const newOffsetWorld = newPivotLocal.clone().applyEuler(currentRot);
+                                                const newPos = pivotWorld.clone().sub(newOffsetWorld);
+                                                
+                                                handleUpdateItem(item.id, { 
+                                                    extendLength: newLen,
+                                                    position: [newPos.x, newPos.y, newPos.z]
+                                                });
+                                            }}
+                                        />
+
+                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
+                                            <label>Stand Rotation (°)</label>
+                                            <input 
+                                                type="number" step="1"
+                                                className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-20 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                value={((item.rotation ? item.rotation[1] : 0) * 180 / Math.PI).toFixed(1)}
+                                                onChange={(e) => {
+                                                    const newY = parseFloat(e.target.value) * Math.PI / 180;
+                                                    const currentPos = new THREE.Vector3(...(item.position || [0, 0, 0]));
+                                                    const currentRot = new THREE.Euler(...(item.rotation || [0, 0, 0]));
+
+                                                    const pivotOffsetLocal = new THREE.Vector3(0, 0, -(3.0 + (item.extendLength || 0)));
+                                                    const currentOffsetWorld = pivotOffsetLocal.clone().applyEuler(currentRot);
+                                                    const pivotWorld = currentPos.clone().add(currentOffsetWorld);
+
+                                                    const newRotEuler = new THREE.Euler(currentRot.x, newY, currentRot.z);
+                                                    const newOffsetWorld = pivotOffsetLocal.clone().applyEuler(newRotEuler);
+                                                    const newPos = pivotWorld.clone().sub(newOffsetWorld);
+
+                                                    handleUpdateItem(item.id, {
+                                                        rotation: [currentRot.x, newY, currentRot.z],
+                                                        position: [newPos.x, newPos.y, newPos.z]
+                                                    });
+                                                }}
+                                            />
+                                        </div>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                            min={-Math.PI} max={Math.PI} step="0.05"
+                                            value={item.rotation ? item.rotation[1] : 0}
+                                            onChange={(e) => {
+                                                const newY = parseFloat(e.target.value);
+                                                const currentPos = new THREE.Vector3(...(item.position || [0, 0, 0]));
+                                                const currentRot = new THREE.Euler(...(item.rotation || [0, 0, 0]));
+
+                                                const pivotOffsetLocal = new THREE.Vector3(0, 0, -(3.0 + (item.extendLength || 0)));
+                                                const currentOffsetWorld = pivotOffsetLocal.clone().applyEuler(currentRot);
+                                                const pivotWorld = currentPos.clone().add(currentOffsetWorld);
+
+                                                const newRotEuler = new THREE.Euler(currentRot.x, newY, currentRot.z);
+                                                const newOffsetWorld = pivotOffsetLocal.clone().applyEuler(newRotEuler);
+                                                const newPos = pivotWorld.clone().sub(newOffsetWorld);
+
+                                                handleUpdateItem(item.id, {
+                                                    rotation: [currentRot.x, newY, currentRot.z],
+                                                    position: [newPos.x, newPos.y, newPos.z]
+                                                });
+                                            }}
+                                        />
+                                    </div>
+                                )}
+
+                                {item.model === 'BunsenBurner' && (
+                                    <div className="flex flex-col gap-2 mt-2 border-t border-white/10 pt-2">
+                                        <label className="text-xs text-orange-300 font-semibold">Flame Control</label>
+
+                                        {/* Ignite / Extinguish */}
+                                        <button
+                                            onClick={() => handleUpdateItem(item.id, { isOn: !item.isOn })}
+                                            className={`w-full py-1.5 text-xs rounded font-bold transition-colors ${item.isOn ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-neutral-700 hover:bg-neutral-600 text-neutral-300'}`}
+                                        >
+                                            {item.isOn ? '🔥 EXTINGUISH FLAME' : '🔥 IGNITE FLAME'}
+                                        </button>
+
+                                        {item.isOn && (<>
+                                            {/* Gas Supply (size) */}
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="flex justify-between text-xs text-neutral-400">
+                                                    <span>Gas Supply</span>
+                                                    <span className="font-mono text-orange-300">{Math.round((item.gasFlow ?? 0.6) * 100)}%</span>
+                                                </div>
+                                                <input type="range" min="0.1" max="1.0" step="0.05"
+                                                    className="w-full h-1.5 appearance-none cursor-pointer accent-orange-500"
+                                                    value={item.gasFlow ?? 0.6}
+                                                    onChange={e => handleUpdateItem(item.id, { gasFlow: parseFloat(e.target.value) })}
+                                                />
+                                                <div className="flex justify-between text-[10px] text-neutral-600">
+                                                    <span>Low</span><span>High</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Air Supply (luminous vs non-luminous) */}
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="flex justify-between text-xs text-neutral-400">
+                                                    <span>Air Supply</span>
+                                                    <span className="font-mono" style={{color: (item.airFlow ?? 0.8) > 0.5 ? '#88aaff' : '#ff8844'}}>
+                                                        {(item.airFlow ?? 0.8) > 0.65 ? 'Non-luminous 🔵' : (item.airFlow ?? 0.8) < 0.35 ? 'Luminous 🟡' : 'Mixed 🔴'}
+                                                    </span>
+                                                </div>
+                                                <input type="range" min="0.0" max="1.0" step="0.05"
+                                                    className="w-full h-1.5 appearance-none cursor-pointer accent-blue-400"
+                                                    value={item.airFlow ?? 0.8}
+                                                    onChange={e => handleUpdateItem(item.id, { airFlow: parseFloat(e.target.value) })}
+                                                />
+                                                <div className="flex justify-between text-[10px] text-neutral-600">
+                                                    <span>🟡 Luminous</span><span>🔵 Clean</span>
+                                                </div>
+                                            </div>
+                                        </>)}
+                                    </div>
+                                )}
+
+                                {item.model === 'GasJar' && (
+                                    <div className="flex flex-col gap-2 mt-2 border-t border-white/10 pt-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs text-blue-300">Lid Attached</label>
+                                            <input type="checkbox" className="w-4 h-4 accent-orange-500 bg-black/40 border-white/10 rounded cursor-pointer" 
+                                                checked={item.hasLid !== false}
+                                                onChange={(e) => handleUpdateItem(item.id, { hasLid: e.target.checked })}
                                                 
                                             />
                                         </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {item.model === 'RubberCork' && (
-                                <div className="flex flex-col gap-1 mt-2">
-                                    <label className="text-xs text-orange-300">Holes: {item.holes || 1}</label>
-                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
-                                        min="1" max="3" step="1"
-                                        value={item.holes || 1}
-                                        onChange={(e) => handleUpdateItem(item.id, { holes: parseInt(e.target.value) })}
-                                        
-                                    />
-                                </div>
-                            )}
-
-                            {item.model === 'RetortStand' && (
-                                <div className="flex flex-col gap-1 mt-2">
-                                    <label className="text-xs text-blue-300">Rod Height: {item.height || 5}</label>
-                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
-                                        min="2" max="10" step="0.5"
-                                        value={item.height || 5}
-                                        onChange={(e) => handleUpdateItem(item.id, { height: parseFloat(e.target.value) })}
-                                        
-                                    />
-                                </div>
-                            )}
-
-                            {item.model === 'WaterTrough' && (
-                                <div className="mt-4 p-4 bg-[#161616] rounded-xl border border-gray-800">
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
-                                        Trough Height: {(item.customHeight || 1).toFixed(1)}x
-                                    </label>
-                                    <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner"  
-                                        value={item.customHeight || 1}
-                                        onChange={(e) => handleUpdateItem(item.id, { customHeight: parseFloat(e.target.value) })}
-                                    />
-                                    <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                                        <span>Small</span>
-                                        <span>Deep</span>
+                                        {(item.hasLid !== false) && (
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-xs text-blue-300">Holes in Lid: {item.holeCount || 0}</label>
+                                                <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                                    min="0" max="4" step="1"
+                                                    value={item.holeCount || 0}
+                                                    onChange={(e) => handleUpdateItem(item.id, { holeCount: parseInt(e.target.value) })}
+                                                    
+                                                />
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {item.model === 'TripodStand' && (
-                                <div className="flex flex-col gap-2 mt-2 border-t border-white/10 pt-2">
-                                    <div className="flex flex-col gap-1">
-                                        <label className="text-xs text-blue-300">Height: {item.height || 3.0}</label>
+                                {item.model === 'RubberCork' && (
+                                    <div className="flex flex-col gap-1 mt-2">
+                                        <label className="text-xs text-orange-300">Holes: {item.holes || 1}</label>
                                         <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
-                                            min="2.0" max="5.0" step="0.1"
-                                            value={item.height || 3.0}
+                                            min="1" max="3" step="1"
+                                            value={item.holes || 1}
+                                            onChange={(e) => handleUpdateItem(item.id, { holes: parseInt(e.target.value) })}
+                                            
+                                        />
+                                    </div>
+                                )}
+
+                                {item.model === 'RetortStand' && (
+                                    <div className="flex flex-col gap-1 mt-2">
+                                        <label className="text-xs text-blue-300">Rod Height: {item.height || 5}</label>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                            min="2" max="10" step="0.5"
+                                            value={item.height || 5}
                                             onChange={(e) => handleUpdateItem(item.id, { height: parseFloat(e.target.value) })}
                                             
                                         />
                                     </div>
-                                    <div className="flex flex-col gap-1">
-                                        <label className="text-xs text-blue-300">Leg Angle: {((item.legAngle || 0.15) * 180 / Math.PI).toFixed(0)}°</label>
-                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
-                                            min="0" max="0.5" step="0.01"
-                                            value={item.legAngle || 0.15}
-                                            onChange={(e) => handleUpdateItem(item.id, { legAngle: parseFloat(e.target.value) })}
-                                            
+                                )}
+
+                                {item.model === 'WaterTrough' && (
+                                    <div className="mt-4 p-4 bg-[#161616] rounded-xl border border-gray-800">
+                                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+                                            Trough Height: {(item.customHeight || 1).toFixed(1)}x
+                                        </label>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner"  
+                                            value={item.customHeight || 1}
+                                            onChange={(e) => handleUpdateItem(item.id, { customHeight: parseFloat(e.target.value) })}
                                         />
+                                        <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                                            <span>Small</span>
+                                            <span>Deep</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {item.model === 'WorkTable' && (
+                                    <div className="mt-4 p-4 bg-[#161616] rounded-xl border border-gray-800">
+                                        <div className="flex flex-col gap-3">
+                                            <div>
+                                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+                                                    Table Width: {(item.width || 6).toFixed(1)}m
+                                                </label>
+                                                <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner"  
+                                                    min="2" max="15" step="0.5"
+                                                    value={item.width || 6}
+                                                    onChange={(e) => handleUpdateItem(item.id, { width: parseFloat(e.target.value) })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+                                                    Table Depth: {(item.depth || 4).toFixed(1)}m
+                                                </label>
+                                                <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner"  
+                                                    min="2" max="10" step="0.5"
+                                                    value={item.depth || 4}
+                                                    onChange={(e) => handleUpdateItem(item.id, { depth: parseFloat(e.target.value) })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(item.model === 'GasSource' || item.model === 'WaterSource') && (
+                                    <div className="mt-4 p-4 bg-[#161616] rounded-xl border border-gray-800">
+                                        <div>
+                                            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+                                                Outlets/Nozzles: {item.outlets || (item.model === 'GasSource' ? 2 : 1)}
+                                            </label>
+                                            <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner"  
+                                                min="1" max="6" step="1"
+                                                value={item.outlets || (item.model === 'GasSource' ? 2 : 1)}
+                                                onChange={(e) => handleUpdateItem(item.id, { outlets: parseInt(e.target.value) })}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {item.model === 'TripodStand' && (
+                                    <div className="flex flex-col gap-2 mt-2 border-t border-white/10 pt-2">
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-xs text-blue-300">Height: {item.height || 3.0}</label>
+                                            <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                                min="2.0" max="5.0" step="0.1"
+                                                value={item.height || 3.0}
+                                                onChange={(e) => {
+                                                    const newHeight = parseFloat(e.target.value);
+                                                    const updates = [{ id: item.id, height: newHeight }];
+                                                    
+                                                    // Sync attached items like Flasks and Gauze
+                                                    currentStage.apparatus.forEach(child => {
+                                                        if (child.parentId === item.id) {
+                                                            if (child.model === 'RoundBottomFlask') {
+                                                                updates.push({ id: child.id, position: [0, newHeight - 0.3, 0] });
+                                                            } else if (child.model === 'WireGauze') {
+                                                                updates.push({ id: child.id, position: [0, newHeight + 0.05, 0] });
+                                                            }
+                                                        }
+                                                    });
+                                                    handleUpdateItems(updates);
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-xs text-blue-300">Leg Angle: {((item.legAngle || 0.15) * 180 / Math.PI).toFixed(0)}°</label>
+                                            <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
+                                                min="0" max="0.5" step="0.01"
+                                                value={item.legAngle || 0.15}
+                                                onChange={(e) => handleUpdateItem(item.id, { legAngle: parseFloat(e.target.value) })}
+                                                
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {item.model === 'DeliveryTube' && (
+                                    <div className="flex flex-col gap-2 mt-2 border-t border-white/10 pt-2">
+
+                                        {/* LOCK STRAIGHT / LENGTH CONTROLS */}
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs text-blue-300">Lock Straight</label>
+                                            <input type="checkbox" className="w-4 h-4 accent-orange-500 bg-black/40 border-white/10 rounded cursor-pointer" 
+                                                checked={item.isLockedStraight || false}
+                                                onChange={(e) => {
+                                                    const isLocked = e.target.checked;
+                                                    let newPoints = item.points || [[0, 0, 0], [0, 1, 0]];
+
+                                                    if (isLocked) {
+                                                        // Force 2 points (Start and End)
+                                                        if (newPoints.length > 2) {
+                                                            newPoints = [newPoints[0], newPoints[newPoints.length - 1]];
+                                                        }
+                                                        // Turn off point editing mode if locking
+                                                        handleUpdateItem(item.id, {
+                                                            isLockedStraight: isLocked,
+                                                            points: newPoints,
+                                                            isEditingPoints: false,
+                                                            selectedPointIndices: []
+                                                        });
+                                                    } else {
+                                                        handleUpdateItem(item.id, { isLockedStraight: isLocked });
+                                                    }
+                                                }}
+                                                
+                                            />
+                                        </div>
+
+                                        {item.isLockedStraight && (
+                                            <div className="flex flex-col gap-1 bg-white/5 p-2 rounded border border-white/10">
+                                                <p className="text-[10px] text-neutral-400 text-center mb-1">Length Adjustments</p>
+
+                                                {/* Helper Function for Extension */}
+                                                {(() => {
+                                                    const applyExtension = (side, amount) => {
+                                                        const points = item.points || [[0, 0, 0], [0, 1, 0]];
+                                                        if (points.length < 2) return;
+
+                                                        const p0 = new THREE.Vector3(...points[0]);
+                                                        const p1 = new THREE.Vector3(...points[points.length - 1]);
+                                                        const dir = new THREE.Vector3().subVectors(p1, p0).normalize();
+
+                                                        if (side === 'start') {
+                                                            // Extend start means moving P0 away from P1 (negative dir)
+                                                            // amount > 0 means extend (longer), so move -dir
+                                                            p0.addScaledVector(dir, -amount);
+                                                        } else {
+                                                            // Extend end means moving P1 away from P0 (positive dir)
+                                                            p1.addScaledVector(dir, amount);
+                                                        }
+
+                                                        const newPoints = [p0.toArray(), p1.toArray()];
+                                                        handleUpdateItem(item.id, { points: newPoints });
+                                                    };
+
+                                                    return (
+                                                        <div className="flex flex-col gap-1">
+                                                            <div className="flex justify-between items-center bg-black/20 p-1 rounded">
+                                                                <span className="text-[10px] text-cyan-300">Start</span>
+                                                                <div className="flex gap-1">
+                                                                    <button onClick={() => applyExtension('start', -0.05)} className="px-2 bg-white/10 hover:bg-white/20 rounded text-[10px]">Shorten</button>
+                                                                    <button onClick={() => applyExtension('start', 0.05)} className="px-2 bg-cyan-900/50 hover:bg-cyan-900/80 rounded text-[10px]">Extend</button>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex justify-between items-center bg-black/20 p-1 rounded">
+                                                                <span className="text-[10px] text-cyan-300">End</span>
+                                                                <div className="flex gap-1">
+                                                                    <button onClick={() => applyExtension('end', -0.05)} className="px-2 bg-white/10 hover:bg-white/20 rounded text-[10px]">Shorten</button>
+                                                                    <button onClick={() => applyExtension('end', 0.05)} className="px-2 bg-cyan-900/50 hover:bg-cyan-900/80 rounded text-[10px]">Extend</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        )}
+
+                                        {!item.isLockedStraight && (
+                                            <div className="flex items-center justify-between mt-1">
+                                                <label className="text-xs text-green-300">Edit Shape</label>
+                                                <button
+                                                    onClick={() => handleUpdateItem(item.id, { isEditingPoints: !item.isEditingPoints })}
+                                                    className={`px-2 py-1 text-[10px] rounded ${item.isEditingPoints ? 'bg-green-600 text-white' : 'bg-neutral-700'}`}
+                                                >
+                                                    {item.isEditingPoints ? 'Done' : 'Edit'}
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {item.isEditingPoints && (
+                                            <div className="flex flex-col gap-2">
+                                                <p className="text-[10px] text-neutral-400">
+                                                    {item.selectedPointIndex !== undefined && item.selectedPointIndex !== null
+                                                        ? `Selected Point: ${item.selectedPointIndex}`
+                                                        : "Select a point to edit/insert"}
+                                                </p>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            const currentPoints = item.points || [[0, 0, 0], [0, 1, 0], [0.5, 1.5, 0], [1.5, 1.5, 0], [1.5, 0.5, 0]];
+                                                            const idx = item.selectedPointIndex;
+
+                                                            // INSERT LOGIC
+                                                            if (idx !== undefined && idx !== null && idx < currentPoints.length - 1) {
+                                                                const p1 = currentPoints[idx];
+                                                                const p2 = currentPoints[idx + 1];
+                                                                // Midpoint
+                                                                const mid = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2, (p1[2] + p2[2]) / 2];
+                                                                const newPoints = [...currentPoints];
+                                                                newPoints.splice(idx + 1, 0, mid);
+                                                                handleUpdateItem(item.id, { points: newPoints, selectedPointIndex: idx + 1 });
+                                                            } else {
+                                                                // APPEND LOGIC
+                                                                const last = currentPoints[currentPoints.length - 1];
+                                                                const secondLast = currentPoints[currentPoints.length - 2] || [0, 0, 0];
+                                                                const dir = [last[0] - secondLast[0], last[1] - secondLast[1], last[2] - secondLast[2]];
+                                                                const newPoint = [last[0] + (dir[0] || 0.1), last[1] + (dir[1] || 0.1), last[2] + (dir[2] || 0)];
+                                                                handleUpdateItem(item.id, { points: [...currentPoints, newPoint], selectedPointIndex: currentPoints.length });
+                                                            }
+                                                        }}
+                                                        className="flex-1 bg-white/10 hover:bg-white/20 text-[10px] py-1 rounded"
+                                                    >
+                                                        {item.selectedPointIndex !== undefined && item.selectedPointIndex !== null && item.selectedPointIndex < (item.points?.length - 1)
+                                                            ? "+ Insert Point"
+                                                            : "+ Add Point"}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            const currentPoints = item.points || [[0, 0, 0], [0, 1, 0], [0.5, 1.5, 0], [1.5, 1.5, 0], [1.5, 0.5, 0]];
+                                                            if (currentPoints.length <= 2) return;
+
+                                                            const idx = item.selectedPointIndex;
+                                                            if (idx !== undefined && idx !== null) {
+                                                                // Remove selected
+                                                                const newPoints = currentPoints.filter((_, i) => i !== idx);
+                                                                handleUpdateItem(item.id, { points: newPoints, selectedPointIndex: null });
+                                                            } else {
+                                                                // Remove last
+                                                                const newPoints = currentPoints.slice(0, -1);
+                                                                handleUpdateItem(item.id, { points: newPoints });
+                                                            }
+                                                        }}
+                                                        className="flex-1 bg-red-900/30 hover:bg-red-900/50 text-[10px] py-1 rounded border border-red-900/50"
+                                                    >
+                                                        {item.selectedPointIndex !== undefined && item.selectedPointIndex !== null ? "- Remove Selected" : "- Remove Last"}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* No Parent Control anymore */}
+
+                                <div className="flex flex-col gap-3 mt-3 p-2 bg-black/20 rounded border border-white/5">
+                                    {/* Position */}
+                                    <div>
+                                        <label className="text-[10px] text-neutral-400 mb-1 block">Position (m)</label>
+                                        <div className="grid grid-cols-3 gap-1 text-center">
+                                            <span className="text-[10px] text-neutral-500">X</span>
+                                            <span className="text-[10px] text-neutral-500">Y</span>
+                                            <span className="text-[10px] text-neutral-500">Z</span>
+                                            {['x', 'y', 'z'].map((axis, i) => (
+                                                <input
+                                                    key={`pos-${axis}`}
+                                                    type="number"
+                                                    step="0.1"
+                                                    className="bg-black/40 border border-white/10 rounded px-1 py-0.5 text-xs w-full text-center outline-none focus:border-blue-500"
+                                                    value={item.position?.[i] ?? 0}
+                                                    onChange={(e) => {
+                                                        const newPos = [...(item.position || [0, 0, 0])];
+                                                        let val = parseFloat(e.target.value) || 0;
+                                                        if (i === 1 && val < 0) val = 0; // Prevent Y from going below 0
+                                                        newPos[i] = val;
+                                                        handleUpdateItem(item.id, { position: newPos });
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Rotation */}
+                                    <div>
+                                        <label className="text-[10px] text-neutral-400 mb-1 block">Rotation (°)</label>
+                                        <div className="grid grid-cols-3 gap-1 text-center">
+                                            <span className="text-[10px] text-neutral-500">X</span>
+                                            <span className="text-[10px] text-neutral-500">Y</span>
+                                            <span className="text-[10px] text-neutral-500">Z</span>
+                                            {['x', 'y', 'z'].map((axis, i) => (
+                                                <input
+                                                    key={`rot-${axis}`}
+                                                    type="number"
+                                                    step="15"
+                                                    className="bg-black/40 border border-white/10 rounded px-1 py-0.5 text-xs w-full text-center outline-none focus:border-blue-500"
+                                                    value={Math.round((item.rotation?.[i] || 0) * (180 / Math.PI))}
+                                                    onChange={(e) => {
+                                                        const newRot = [...(item.rotation || [0, 0, 0])];
+                                                        newRot[i] = (parseFloat(e.target.value) || 0) * (Math.PI / 180);
+                                                        handleUpdateItem(item.id, { rotation: newRot });
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Quick Actions */}
+                                    <div className="grid grid-cols-2 gap-1 mt-1">
+                                        <button 
+                                            onClick={() => handleUpdateItem(item.id, { position: [item.position?.[0] || 0, 0, item.position?.[2] || 0] })}
+                                            className="bg-white/5 hover:bg-white/10 text-[10px] py-1 rounded transition-colors"
+                                        >⬇️ Drop to Table</button>
+                                        <button 
+                                            onClick={() => handleUpdateItem(item.id, { rotation: [0, 0, 0] })}
+                                            className="bg-white/5 hover:bg-white/10 text-[10px] py-1 rounded transition-colors"
+                                        >🔄 Reset Rotation</button>
+                                    </div>
+                                    <div className="mt-1">
+                                        <button 
+                                            onClick={() => handleAddItem(item.model)}
+                                            className="w-full bg-white/5 hover:bg-white/10 text-[10px] py-1 rounded transition-colors text-blue-300"
+                                        >📋 Duplicate Component</button>
                                     </div>
                                 </div>
-                            )}
 
-                            {item.model === 'DeliveryTube' && (
-                                <div className="flex flex-col gap-2 mt-2 border-t border-white/10 pt-2">
-
-                                    {/* LOCK STRAIGHT / LENGTH CONTROLS */}
+                                <div className="flex flex-col gap-2 mt-4 border-t border-white/10 pt-2">
                                     <div className="flex items-center justify-between">
-                                        <label className="text-xs text-blue-300">Lock Straight</label>
-                                        <input type="checkbox" className="w-4 h-4 accent-orange-500 bg-black/40 border-white/10 rounded cursor-pointer" 
-                                            checked={item.isLockedStraight || false}
-                                            onChange={(e) => {
-                                                const isLocked = e.target.checked;
-                                                let newPoints = item.points || [[0, 0, 0], [0, 1, 0]];
-
-                                                if (isLocked) {
-                                                    // Force 2 points (Start and End)
-                                                    if (newPoints.length > 2) {
-                                                        newPoints = [newPoints[0], newPoints[newPoints.length - 1]];
-                                                    }
-                                                    // Turn off point editing mode if locking
-                                                    handleUpdateItem(item.id, {
-                                                        isLockedStraight: isLocked,
-                                                        points: newPoints,
-                                                        isEditingPoints: false,
-                                                        selectedPointIndices: []
-                                                    });
-                                                } else {
-                                                    handleUpdateItem(item.id, { isLockedStraight: isLocked });
-                                                }
-                                            }}
-                                            
-                                        />
-                                    </div>
-
-                                    {item.isLockedStraight && (
-                                        <div className="flex flex-col gap-1 bg-white/5 p-2 rounded border border-white/10">
-                                            <p className="text-[10px] text-neutral-400 text-center mb-1">Length Adjustments</p>
-
-                                            {/* Helper Function for Extension */}
-                                            {(() => {
-                                                const applyExtension = (side, amount) => {
-                                                    const points = item.points || [[0, 0, 0], [0, 1, 0]];
-                                                    if (points.length < 2) return;
-
-                                                    const p0 = new THREE.Vector3(...points[0]);
-                                                    const p1 = new THREE.Vector3(...points[points.length - 1]);
-                                                    const dir = new THREE.Vector3().subVectors(p1, p0).normalize();
-
-                                                    if (side === 'start') {
-                                                        // Extend start means moving P0 away from P1 (negative dir)
-                                                        // amount > 0 means extend (longer), so move -dir
-                                                        p0.addScaledVector(dir, -amount);
-                                                    } else {
-                                                        // Extend end means moving P1 away from P0 (positive dir)
-                                                        p1.addScaledVector(dir, amount);
-                                                    }
-
-                                                    const newPoints = [p0.toArray(), p1.toArray()];
-                                                    handleUpdateItem(item.id, { points: newPoints });
-                                                };
-
-                                                return (
-                                                    <div className="flex flex-col gap-1">
-                                                        <div className="flex justify-between items-center bg-black/20 p-1 rounded">
-                                                            <span className="text-[10px] text-cyan-300">Start</span>
-                                                            <div className="flex gap-1">
-                                                                <button onClick={() => applyExtension('start', -0.05)} className="px-2 bg-white/10 hover:bg-white/20 rounded text-[10px]">Shorten</button>
-                                                                <button onClick={() => applyExtension('start', 0.05)} className="px-2 bg-cyan-900/50 hover:bg-cyan-900/80 rounded text-[10px]">Extend</button>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex justify-between items-center bg-black/20 p-1 rounded">
-                                                            <span className="text-[10px] text-cyan-300">End</span>
-                                                            <div className="flex gap-1">
-                                                                <button onClick={() => applyExtension('end', -0.05)} className="px-2 bg-white/10 hover:bg-white/20 rounded text-[10px]">Shorten</button>
-                                                                <button onClick={() => applyExtension('end', 0.05)} className="px-2 bg-cyan-900/50 hover:bg-cyan-900/80 rounded text-[10px]">Extend</button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })()}
-                                        </div>
-                                    )}
-
-                                    {!item.isLockedStraight && (
-                                        <div className="flex items-center justify-between mt-1">
-                                            <label className="text-xs text-green-300">Edit Shape</label>
+                                        <label className="text-xs text-purple-300">Anchors</label>
+                                        <div className="flex gap-2">
                                             <button
-                                                onClick={() => handleUpdateItem(item.id, { isEditingPoints: !item.isEditingPoints })}
-                                                className={`px-2 py-1 text-[10px] rounded ${item.isEditingPoints ? 'bg-green-600 text-white' : 'bg-neutral-700'}`}
+                                                onClick={() => {
+                                                    // Add Custom Anchor
+                                                    const newId = `custom-${Date.now()}`;
+                                                    // Default position slightly offset
+                                                    const newAnchor = { id: newId, position: [0, 0.5, 0] };
+                                                    const currentCustoms = item.customAnchors || [];
+                                                    handleUpdateItem(item.id, { customAnchors: [...currentCustoms, newAnchor], isEditingAnchors: true });
+                                                }}
+                                                className="px-2 py-1 text-[10px] bg-purple-900/30 hover:bg-purple-900/50 rounded border border-purple-500/30"
                                             >
-                                                {item.isEditingPoints ? 'Done' : 'Edit'}
+                                                + Add
+                                            </button>
+                                            <button
+                                                onClick={() => handleUpdateItem(item.id, { isEditingAnchors: !item.isEditingAnchors })}
+                                                className={`px-2 py-1 text-[10px] rounded ${item.isEditingAnchors ? 'bg-purple-600 text-white' : 'bg-neutral-700'}`}
+                                            >
+                                                {item.isEditingAnchors ? 'Done' : 'Edit'}
                                             </button>
                                         </div>
-                                    )}
-
-                                    {item.isEditingPoints && (
-                                        <div className="flex flex-col gap-2">
-                                            <p className="text-[10px] text-neutral-400">
-                                                {item.selectedPointIndex !== undefined && item.selectedPointIndex !== null
-                                                    ? `Selected Point: ${item.selectedPointIndex}`
-                                                    : "Select a point to edit/insert"}
-                                            </p>
+                                    </div>
+                                    {item.isEditingAnchors && (
+                                        <div className="flex flex-col gap-1">
+                                            <p className="text-[10px] text-neutral-400">Drag yellow spheres to move anchors.</p>
                                             <div className="flex gap-2">
                                                 <button
-                                                    onClick={() => {
-                                                        const currentPoints = item.points || [[0, 0, 0], [0, 1, 0], [0.5, 1.5, 0], [1.5, 1.5, 0], [1.5, 0.5, 0]];
-                                                        const idx = item.selectedPointIndex;
-
-                                                        // INSERT LOGIC
-                                                        if (idx !== undefined && idx !== null && idx < currentPoints.length - 1) {
-                                                            const p1 = currentPoints[idx];
-                                                            const p2 = currentPoints[idx + 1];
-                                                            // Midpoint
-                                                            const mid = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2, (p1[2] + p2[2]) / 2];
-                                                            const newPoints = [...currentPoints];
-                                                            newPoints.splice(idx + 1, 0, mid);
-                                                            handleUpdateItem(item.id, { points: newPoints, selectedPointIndex: idx + 1 });
-                                                        } else {
-                                                            // APPEND LOGIC
-                                                            const last = currentPoints[currentPoints.length - 1];
-                                                            const secondLast = currentPoints[currentPoints.length - 2] || [0, 0, 0];
-                                                            const dir = [last[0] - secondLast[0], last[1] - secondLast[1], last[2] - secondLast[2]];
-                                                            const newPoint = [last[0] + (dir[0] || 0.1), last[1] + (dir[1] || 0.1), last[2] + (dir[2] || 0)];
-                                                            handleUpdateItem(item.id, { points: [...currentPoints, newPoint], selectedPointIndex: currentPoints.length });
-                                                        }
-                                                    }}
-                                                    className="flex-1 bg-white/10 hover:bg-white/20 text-[10px] py-1 rounded"
+                                                    onClick={() => handleUpdateItem(item.id, { anchorOverrides: {}, customAnchors: [] })}
+                                                    className="text-[10px] text-red-400 hover:text-red-300"
                                                 >
-                                                    {item.selectedPointIndex !== undefined && item.selectedPointIndex !== null && item.selectedPointIndex < (item.points?.length - 1)
-                                                        ? "+ Insert Point"
-                                                        : "+ Add Point"}
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        const currentPoints = item.points || [[0, 0, 0], [0, 1, 0], [0.5, 1.5, 0], [1.5, 1.5, 0], [1.5, 0.5, 0]];
-                                                        if (currentPoints.length <= 2) return;
-
-                                                        const idx = item.selectedPointIndex;
-                                                        if (idx !== undefined && idx !== null) {
-                                                            // Remove selected
-                                                            const newPoints = currentPoints.filter((_, i) => i !== idx);
-                                                            handleUpdateItem(item.id, { points: newPoints, selectedPointIndex: null });
-                                                        } else {
-                                                            // Remove last
-                                                            const newPoints = currentPoints.slice(0, -1);
-                                                            handleUpdateItem(item.id, { points: newPoints });
-                                                        }
-                                                    }}
-                                                    className="flex-1 bg-red-900/30 hover:bg-red-900/50 text-[10px] py-1 rounded border border-red-900/50"
-                                                >
-                                                    {item.selectedPointIndex !== undefined && item.selectedPointIndex !== null ? "- Remove Selected" : "- Remove Last"}
+                                                    Reset All Anchors
                                                 </button>
                                             </div>
                                         </div>
                                     )}
                                 </div>
-                            )}
-
-                            {/* No Parent Control anymore */}
-
-                            <div className="grid grid-cols-3 gap-1 text-center mt-2">
-                                <span className="text-[10px]">X</span>
-                                <span className="text-[10px]">Y</span>
-                                <span className="text-[10px]">Z</span>
-
-                                {/* Manual Input for Precise control */}
-                                {['x', 'y', 'z'].map((axis, i) => (
-                                    <input
-                                        key={axis}
-                                        type="number"
-                                        step="0.1"
-                                        className="bg-black/20 rounded px-1 text-xs w-full"
-                                        value={item.position?.[i] || 0}
-                                        onChange={(e) => {
-                                            const newPos = [...(item.position || [0, 0, 0])];
-                                            newPos[i] = parseFloat(e.target.value);
-                                            handleUpdateItem(item.id, { position: newPos });
-                                        }}
-                                    />
-                                ))}
                             </div>
-                            <div className="flex flex-col gap-2 mt-4 border-t border-white/10 pt-2">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-xs text-purple-300">Anchors</label>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => {
-                                                // Add Custom Anchor
-                                                const newId = `custom-${Date.now()}`;
-                                                // Default position slightly offset
-                                                const newAnchor = { id: newId, position: [0, 0.5, 0] };
-                                                const currentCustoms = item.customAnchors || [];
-                                                handleUpdateItem(item.id, { customAnchors: [...currentCustoms, newAnchor], isEditingAnchors: true });
-                                            }}
-                                            className="px-2 py-1 text-[10px] bg-purple-900/30 hover:bg-purple-900/50 rounded border border-purple-500/30"
-                                        >
-                                            + Add
-                                        </button>
-                                        <button
-                                            onClick={() => handleUpdateItem(item.id, { isEditingAnchors: !item.isEditingAnchors })}
-                                            className={`px-2 py-1 text-[10px] rounded ${item.isEditingAnchors ? 'bg-purple-600 text-white' : 'bg-neutral-700'}`}
-                                        >
-                                            {item.isEditingAnchors ? 'Done' : 'Edit'}
-                                        </button>
+                        );
+                    })() : (
+                        <div className="flex flex-col gap-6 animate-in slide-in-from-right-4 duration-300">
+                            {/* Environment Dimensions Fallback */}
+                            <div className="flex flex-col gap-2 p-4 bg-[#161616] border border-white/5 rounded-xl mt-4">
+                                <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest border-b border-white/5 pb-2 mb-2">Global Environment</h3>
+                                <div className="flex flex-col gap-3">
+                                    <div>
+                                        <div className="flex justify-between items-center text-xs text-blue-300 mb-1">
+                                            <label>Table Width (m)</label>
+                                            <span className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5">{globalTableWidth.toFixed(1)}</span>
+                                        </div>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-blue-500 shadow-inner"  
+                                            min="8" max="25" step="0.5"
+                                            value={globalTableWidth}
+                                            onChange={(e) => setGlobalTableWidth(parseFloat(e.target.value))}
+                                        />
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between items-center text-xs text-blue-300 mb-1">
+                                            <label>Table Depth (m)</label>
+                                            <span className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5">{globalTableDepth.toFixed(1)}</span>
+                                        </div>
+                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-blue-500 shadow-inner"  
+                                            min="6" max="18" step="0.5"
+                                            value={globalTableDepth}
+                                            onChange={(e) => setGlobalTableDepth(parseFloat(e.target.value))}
+                                        />
                                     </div>
                                 </div>
-                                {item.isEditingAnchors && (
-                                    <div className="flex flex-col gap-1">
-                                        <p className="text-[10px] text-neutral-400">Drag yellow spheres to move anchors.</p>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => handleUpdateItem(item.id, { anchorOverrides: {}, customAnchors: [] })}
-                                                className="text-[10px] text-red-400 hover:text-red-300"
-                                            >
-                                                Reset All Anchors
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
-                    );
-                })()}
-
-
+                    )}
+                        </div>
+                    )}
                 </div> {/* End Scrollable Content */}
 
                 {/* Bottom Actions - Fixed to Bottom */}
@@ -1817,18 +3085,18 @@ export default function ApparatusEditorPage() {
                     <OrbitControls makeDefault />
                     <CameraController /> {/* Add Keyboard Navigation */}
 
-                    <Grid infiniteGrid sectionColor="white" cellColor="#333" fadeDistance={30} position={[0, -0.01, 0]} />
+                    <Grid infiniteGrid sectionColor="white" cellColor="#333" fadeDistance={30} position={[0, -4.05, 0]} />
                     <ambientLight intensity={0.5} />
                     <pointLight position={[10, 10, 10]} intensity={1} />
                     <Environment preset="city" />
 
                     {/* Simple Floor */}
-                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
-                        <planeGeometry args={[50, 50]} />
+                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -4.06, 0]} receiveShadow>
+                        <planeGeometry args={[100, 100]} />
                         <meshBasicMaterial color="#222" transparent opacity={0.5} />
                     </mesh>
 
-                    {currentReaction && currentReaction.apparatus && currentReaction.apparatus.map(item => (
+                    {currentStage?.apparatus?.filter(i => !i.parentId).map(item => (
                         <ApparatusEditorItem
                             key={item.id}
                             item={item}
@@ -1837,15 +3105,27 @@ export default function ApparatusEditorPage() {
                             updateItem={handleUpdateItem}
                             onUpdateItems={handleUpdateItems}
                             transformMode={selectedApparatusId === item.id && !builderState.active ? transformMode : 'none'}
-                            allItems={currentReaction.apparatus}
+                            allItems={currentStage.apparatus}
                             isBuilding={builderState.active}
+                            gridSnap={gridSnap}
+                            isGhost={false}
+                            basinBounds={showTable ? {
+                                xMin: globalTableWidth  / 2 - 2.2 - 2.5,
+                                xMax: globalTableWidth  / 2 - 2.2 + 2.5,
+                                zMin: -globalTableDepth / 2 + 2.2 - 2.2,
+                                zMax: -globalTableDepth / 2 + 2.2 + 2.2,
+                                yMax: 0.64
+                            } : null}
                         />
                     ))}
 
+                    {/* Environment Default Table */}
+                    {showTable && <LabTable width={globalTableWidth} depth={globalTableDepth} />}
+
                     {/* Smart Tube Builder Overlay */}
-                    {builderState.active && currentReaction && (
+                    {builderState.active && currentStage && (
                         <TubeBuilderTool
-                            allItems={currentReaction.apparatus}
+                            allItems={currentStage.apparatus}
                             builderState={builderState}
                             setBuilderState={setTubeBuilderState}
                             onCreateTube={handleCreateSmartTube}
@@ -1866,6 +3146,43 @@ export default function ApparatusEditorPage() {
                     )}
                 </div>
             </div>
+
+            {/* New Stage Modal */}
+            {showNewStageModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
+                    <div className="bg-[#111] border border-white/10 p-6 rounded-xl w-[400px] shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                        <h2 className="text-lg font-bold text-white mb-2">Create New Stage</h2>
+                        <p className="text-sm text-neutral-400 mb-6">How would you like to build the apparatus setup for this new stage?</p>
+                        
+                        <div className="flex flex-col gap-3">
+                            <button 
+                                onClick={() => handleAddStage(true)}
+                                className="w-full text-left p-4 rounded-lg bg-blue-600/10 border border-blue-500/30 hover:bg-blue-600/20 transition-colors group"
+                            >
+                                <span className="block text-sm font-bold text-blue-400 group-hover:text-blue-300">Copy Previous Setup</span>
+                                <span className="block text-xs text-neutral-500 mt-1">Start with all the equipment currently on the table.</span>
+                            </button>
+                            
+                            <button 
+                                onClick={() => handleAddStage(false)}
+                                className="w-full text-left p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors group"
+                            >
+                                <span className="block text-sm font-bold text-neutral-300 group-hover:text-white">Start Blank</span>
+                                <span className="block text-xs text-neutral-500 mt-1">Start with an empty lab table.</span>
+                            </button>
+                        </div>
+
+                        <div className="flex justify-end mt-6 pt-4 border-t border-white/10">
+                            <button 
+                                onClick={() => setShowNewStageModal(false)}
+                                className="text-sm text-neutral-400 hover:text-white px-4 py-2"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
