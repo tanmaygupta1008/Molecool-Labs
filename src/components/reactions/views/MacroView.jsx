@@ -156,7 +156,8 @@ const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRule
 const useDerivedApparatus = (reaction, progress) => {
     // 1. Initial State
     // Deep clone to avoid mutating original
-    let currentApparatus = JSON.parse(JSON.stringify(reaction.apparatus || []));
+    const baseApparatus = reaction.stages?.[0]?.apparatus || reaction.apparatus || [];
+    let currentApparatus = JSON.parse(JSON.stringify(baseApparatus));
     const timeline = reaction.macroView?.visualRules?.timeline || {};
     const totalSteps = Object.keys(timeline).length;
 
@@ -287,15 +288,117 @@ const useDerivedApparatus = (reaction, progress) => {
     return { apparatus: currentApparatus, currentStepIndex, stepProgress, reactantState, currentTime };
 };
 
+const LabTable = () => (
+    <group position={[0, -0.05, 0]}>
+        {/* Table Top (Dark Epoxy Resin) */}
+        <mesh receiveShadow position={[0, 0, 0]}>
+            <boxGeometry args={[14, 0.1, 10]} />
+            <meshStandardMaterial color="#1f2022" roughness={0.7} metalness={0.1} />
+        </mesh>
+
+        {/* Anti-Spill Lip / Rim */}
+        <mesh receiveShadow position={[0, 0.08, -4.95]}>
+            <boxGeometry args={[14.2, 0.05, 0.1]} />
+            <meshStandardMaterial color="#141517" roughness={0.8} />
+        </mesh>
+        <mesh receiveShadow position={[0, 0.08, 4.95]}>
+            <boxGeometry args={[14.2, 0.05, 0.1]} />
+            <meshStandardMaterial color="#141517" roughness={0.8} />
+        </mesh>
+        <mesh receiveShadow position={[-6.95, 0.08, 0]}>
+            <boxGeometry args={[0.1, 0.05, 10]} />
+            <meshStandardMaterial color="#141517" roughness={0.8} />
+        </mesh>
+        <mesh receiveShadow position={[6.95, 0.08, 0]}>
+            <boxGeometry args={[0.1, 0.05, 10]} />
+            <meshStandardMaterial color="#141517" roughness={0.8} />
+        </mesh>
+
+        {/* Small Lab Sink (Cutout representation) */}
+        <group position={[5.5, 0.02, -3]}>
+            {/* Sink Rim */}
+            <mesh position={[0, 0, 0]}>
+                <boxGeometry args={[1.5, 0.05, 1.5]} />
+                <meshStandardMaterial color="#c0c0c0" roughness={0.4} metalness={0.8} />
+            </mesh>
+            {/* Sink Basin */}
+            <mesh position={[0, -0.2, 0]}>
+                <boxGeometry args={[1.3, 0.4, 1.3]} />
+                <meshStandardMaterial color="#0f0f0f" roughness={0.9} />
+            </mesh>
+            {/* Tap/Faucet */}
+            <mesh position={[0, 0.5, -0.6]}>
+                <cylinderGeometry args={[0.04, 0.04, 1]} />
+                <meshStandardMaterial color="#a0a0a0" roughness={0.3} metalness={0.8} />
+            </mesh>
+            <mesh position={[0, 1, -0.45]} rotation={[Math.PI/2, 0, 0]}>
+                <cylinderGeometry args={[0.04, 0.04, 0.3]} />
+                <meshStandardMaterial color="#a0a0a0" roughness={0.3} metalness={0.8} />
+            </mesh>
+        </group>
+
+        {/* Chemical Stains / Wear & Tear */}
+        <mesh position={[-3, 0.06, 1]} rotation={[-Math.PI/2, 0, 2]}>
+            <planeGeometry args={[1.5, 1.2]} />
+            <meshBasicMaterial color="#3a3c2a" transparent opacity={0.3} depthWrite={false} />
+        </mesh>
+        <mesh position={[2, 0.06, 2]} rotation={[-Math.PI/2, 0, 1]}>
+            <planeGeometry args={[0.8, 1.5]} />
+            <meshBasicMaterial color="#2d1c1c" transparent opacity={0.2} depthWrite={false} />
+        </mesh>
+        <mesh position={[-4, 0.06, -2]} rotation={[-Math.PI/2, 0, 0.5]}>
+            <planeGeometry args={[2, 2]} />
+            <meshBasicMaterial color="#1c2d2d" transparent opacity={0.25} depthWrite={false} />
+        </mesh>
+        <mesh position={[3, 0.06, -1]} rotation={[-Math.PI/2, 0, Math.random()]}>
+            <planeGeometry args={[1, 0.8]} />
+            <meshBasicMaterial color="#666666" transparent opacity={0.15} depthWrite={false} />
+        </mesh>
+
+        {/* Legs / Framing */}
+        {[-6.5, 6.5].map(x => 
+            [-4.5, 4.5].map(z => (
+                <group key={`${x}-${z}`} position={[x, -2, z]}>
+                    {/* Main Leg */}
+                    <mesh receiveShadow castShadow>
+                        <boxGeometry args={[0.3, 4, 0.3]} />
+                        <meshStandardMaterial color="#333333" roughness={0.6} />
+                    </mesh>
+                    {/* Metal Foot Pad */}
+                    <mesh receiveShadow position={[0, -2.02, 0]}>
+                        <cylinderGeometry args={[0.2, 0.2, 0.04, 16]} />
+                        <meshStandardMaterial color="#555555" roughness={0.4} metalness={0.8} />
+                    </mesh>
+                </group>
+            ))
+        )}
+        
+        {/* Support Crossbars */}
+        <mesh position={[0, -1, 0]}>
+            <boxGeometry args={[13.3, 0.15, 0.15]} />
+            <meshStandardMaterial color="#333333" roughness={0.6} />
+        </mesh>
+        <mesh position={[-6.5, -1, 0]}>
+            <boxGeometry args={[0.15, 0.15, 9.3]} />
+            <meshStandardMaterial color="#333333" roughness={0.6} />
+        </mesh>
+        <mesh position={[6.5, -1, 0]}>
+            <boxGeometry args={[0.15, 0.15, 9.3]} />
+            <meshStandardMaterial color="#333333" roughness={0.6} />
+        </mesh>
+    </group>
+);
+
 // --- MAIN MACRO VIEW MANAGER ---
-const MacroView = ({ reaction, progress, isPlaying }) => {
-    if (reaction.apparatus && reaction.apparatus.length > 0) {
-        return <DynamicSetup reaction={reaction} progress={progress} isPlaying={isPlaying} />;
+const MacroView = ({ reaction, progress, isPlaying, showTable = true }) => {
+    const list = reaction.stages?.[0]?.apparatus || reaction.apparatus || [];
+    if (list.length > 0) {
+        return <DynamicSetup reaction={reaction} progress={progress} isPlaying={isPlaying} showTable={showTable} />;
     }
     return null;
 };
 
-const DynamicSetup = ({ reaction, progress, isPlaying }) => {
+const DynamicSetup = ({ reaction, progress, isPlaying, showTable }) => {
     // 1. Get List of Apparatus & Current Step from Helper
     const { apparatus: apparatusList, currentStepIndex, stepProgress, currentTime, reactantState } = useDerivedApparatus(reaction, progress);
 
@@ -340,11 +443,13 @@ const DynamicSetup = ({ reaction, progress, isPlaying }) => {
                 </group>
             </Center>
 
-            <mesh position={[0, -5, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-                <planeGeometry args={[50, 50]} />
+            {showTable && <LabTable />}
+
+            <mesh position={[0, -4.07, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+                <planeGeometry args={[100, 100]} />
                 <meshStandardMaterial color="#1a1a1a" roughness={0.8} metalness={0.2} />
             </mesh>
-            <gridHelper args={[50, 50, '#333', '#111']} position={[0, -4.99, 0]} />
+            <gridHelper args={[50, 50, '#333', '#111']} position={[0, -4.06, 0]} />
         </group >
     );
 };

@@ -10,8 +10,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className="bg-black">
+    <html lang="en" suppressHydrationWarning>
+      <body className="bg-black" suppressHydrationWarning>
         <AuthProvider>
           <ReactionEditorProvider>
             <NavbarWrapper />

@@ -80,7 +80,9 @@ const NavBar = () => {
             {/* Discover */}
             <NavDropdown title="Discover 🔍" name="discover" activeDropdown={activeDropdown} toggleDropdown={toggleDropdown}>
               <NavLinkItem href="/periodic-table" onClick={closeDropdown}>Periodic Table</NavLinkItem>
-              <NavLinkItem href="/compounds" onClick={closeDropdown}>Compounds 🧬</NavLinkItem>
+              <NavLinkItem href="/compounds" onClick={closeDropdown}>Compounds Viewer 🧬</NavLinkItem>
+              <NavLinkItem href="/compounds/builder" onClick={closeDropdown}>Molecule Builder 🏗️</NavLinkItem>
+              <NavLinkItem href="/compounds/isomer-challenge" onClick={closeDropdown}>Isomer Challenge 🧩</NavLinkItem>
               <NavLinkItem href="/dna" onClick={closeDropdown}>DNA 🧬</NavLinkItem>
             </NavDropdown>
 
@@ -95,6 +97,7 @@ const NavBar = () => {
             <NavDropdown title="Tools 🛠️" name="tools" activeDropdown={activeDropdown} toggleDropdown={toggleDropdown}>
               <NavLinkItem href="/apparatus" onClick={closeDropdown}>Apparatus 🧪</NavLinkItem>
               <NavLinkItem href="/apparatus-editor" onClick={closeDropdown}>Apparatus Editor 🛠️</NavLinkItem>
+              <NavLinkItem href="/apparatus-compat" onClick={closeDropdown}>Snap Compatibility 🔗</NavLinkItem>
               <NavLinkItem href="/compound-editor" onClick={closeDropdown}>Edit Angles 📐</NavLinkItem>
               <NavLinkItem href="/reactant-config" onClick={closeDropdown}>Reactant Config 🧪</NavLinkItem>
               <NavLinkItem href="/reaction-refiner" onClick={closeDropdown}>Reaction Refiner 🎨</NavLinkItem>

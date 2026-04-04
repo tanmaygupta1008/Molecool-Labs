@@ -1,9 +1,8 @@
 import React from 'react';
 import { Cylinder, Torus } from '@react-three/drei';
 
-const TripodStand = ({ height = 3.0, legAngle = 0.15, ...props }) => {
-    // Ring radius
-    const ringRadius = 1.2;
+const TripodStand = ({ height = 3.0, legAngle = 0.15, ringRadius = 1.2, ...props }) => {
+    // Ring radius is now a prop
     // Leg cylinder radius
     const legRadius = 0.08;
 

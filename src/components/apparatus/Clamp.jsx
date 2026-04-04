@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Cylinder, Sphere, Torus } from '@react-three/drei';
 
-const Clamp = ({ angle = 0, headAngle = 0, size = 1, ...props }) => {
+const Clamp = ({ angle = 0, headAngle = 0, size = 1, extendLength = 0, ...props }) => {
     // === MATERIALS ===
     const chrome = <meshStandardMaterial color="#eeeeee" metalness={0.9} roughness={0.1} />;
     const blackPlastic = <meshStandardMaterial color="#222222" metalness={0.2} roughness={0.5} />;
@@ -15,15 +15,15 @@ const Clamp = ({ angle = 0, headAngle = 0, size = 1, ...props }) => {
     return (
         <group {...props}>
             {/* === 1. EXTENSION ROD === */}
-            <group position={[-0.8, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-                <Cylinder args={[0.04, 0.04, 1.6, 32]}>
+            <group position={[-0.8 - (extendLength / 2), 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+                <Cylinder args={[0.04, 0.04, 1.6 + extendLength, 32]}>
                     {chrome}
                 </Cylinder>
             </group>
 
             {/* === 1.5 ATTACHMENT LOOP (The "Loop like structure") === */}
             {/* Positioned at the back end of the rod (x ~ -1.6) */}
-            <group position={[-1.65, 0, 0]}>
+            <group position={[-1.65 - extendLength, 0, 0]}>
 
                 {/* Vertical Sleeve/Ring for Retort Stand - Vertical Alignment (Y-axis) */}
                 <group>
