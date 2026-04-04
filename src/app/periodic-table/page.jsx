@@ -5,12 +5,16 @@ import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import ElementCell from "@/components/ElementCell";
 import ElementModal from "@/components/ElementModal";
+import ElementComparisonModal from "@/components/ElementComparisonModal";
+import { Scale } from "lucide-react";
 import { TRENDS, getTrendColor } from "@/utils/periodic-trends";
 
 const PeriodicTablePage = () => {
   const [elements, setElements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedElement, setSelectedElement] = useState(null);
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedElementsToCompare, setSelectedElementsToCompare] = useState([]);
   const [highlightedCategory, setHighlightedCategory] = useState(null);
   const [activeTrend, setActiveTrend] = useState(null); // 'atomic_radius' | 'ionization_energy' | ...
 
@@ -71,6 +75,33 @@ const PeriodicTablePage = () => {
     setActiveTrend((prev) => (prev === trendId ? null : trendId));
   };
 
+  const toggleCompareMode = () => {
+    setCompareMode(!compareMode);
+    setSelectedElementsToCompare([]);
+    if (!compareMode) {
+      setActiveTrend(null);
+      setHighlightedCategory(null);
+    }
+  };
+
+  const handleElementClick = (element) => {
+    if (compareMode) {
+      setSelectedElementsToCompare(prev => {
+        // If already selected, remove
+        if (prev.find(e => e.atomic_number === element.atomic_number)) {
+          return prev.filter(e => e.atomic_number !== element.atomic_number);
+        }
+        // If 2 already selected, replace the first
+        if (prev.length >= 2) {
+          return [prev[1], element];
+        }
+        return [...prev, element];
+      });
+    } else {
+      setSelectedElement(element);
+    }
+  };
+
   const mainElements = elements.filter((e) => e.ypos <= 7);
   const lanthActinides = elements.filter((e) => e.ypos >= 9);
 
@@ -87,6 +118,28 @@ const PeriodicTablePage = () => {
 
       {/* Controls Container */}
       <div className="mb-8 flex flex-col gap-6">
+
+        {/* Compare Mode Toggle */}
+        <div className="flex flex-col items-center gap-2">
+            <button
+                onClick={toggleCompareMode}
+                className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-xl ${
+                    compareMode 
+                    ? 'bg-cyan-600 text-white shadow-cyan-900/50 scale-105 border-2 border-cyan-400' 
+                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white border border-gray-700'
+                }`}
+            >
+                <Scale size={20} />
+                {compareMode ? 'Compare Mode Active' : 'Enable Compare Mode'}
+            </button>
+            {compareMode && (
+                <div className="text-sm text-cyan-300 animate-pulse bg-cyan-900/40 px-4 py-1.5 rounded-full border border-cyan-800">
+                    {selectedElementsToCompare.length === 0 && 'Select 1st element...'}
+                    {selectedElementsToCompare.length === 1 && `Selected ${selectedElementsToCompare[0].symbol}. Select 2nd element...`}
+                    {selectedElementsToCompare.length === 2 && 'Comparing...'}
+                </div>
+            )}
+        </div>
 
         {/* Periodic Trends Controls */}
         <div className="text-center">
@@ -179,10 +232,12 @@ const PeriodicTablePage = () => {
             <ElementCell
               key={el.atomic_number}
               element={el}
-              onClick={setSelectedElement}
+              onClick={handleElementClick}
               highlightedCategory={highlightedCategory}
               trendColor={trendColor}
               trendValue={trendValue}
+              isComparisonSelected={selectedElementsToCompare.some(e => e.atomic_number === el.atomic_number)}
+              isCompareMode={compareMode}
             />
           );
         })}
@@ -209,10 +264,12 @@ const PeriodicTablePage = () => {
                 <ElementCell
                   key={el.atomic_number}
                   element={el}
-                  onClick={setSelectedElement}
+                  onClick={handleElementClick}
                   highlightedCategory={highlightedCategory}
                   trendColor={trendColor}
                   trendValue={trendValue}
+                  isComparisonSelected={selectedElementsToCompare.some(e => e.atomic_number === el.atomic_number)}
+                  isCompareMode={compareMode}
                 />
               );
             })}
@@ -236,10 +293,12 @@ const PeriodicTablePage = () => {
                 <ElementCell
                   key={el.atomic_number}
                   element={el}
-                  onClick={setSelectedElement}
+                  onClick={handleElementClick}
                   highlightedCategory={highlightedCategory}
                   trendColor={trendColor}
                   trendValue={trendValue}
+                  isComparisonSelected={selectedElementsToCompare.some(e => e.atomic_number === el.atomic_number)}
+                  isCompareMode={compareMode}
                 />
               );
             })}
@@ -250,6 +309,12 @@ const PeriodicTablePage = () => {
         element={selectedElement}
         onClose={() => setSelectedElement(null)}
       />
+      {selectedElementsToCompare.length === 2 && (
+         <ElementComparisonModal 
+            elements={selectedElementsToCompare} 
+            onClose={() => setSelectedElementsToCompare([])} 
+         />
+      )}
     </div>
   );
 };
