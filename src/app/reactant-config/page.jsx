@@ -89,8 +89,8 @@ const FullSetupPreview = ({ reaction }) => {
                     </group>
                 </group>
                 <GlobalLabTable 
-                    width={window?.localStorage ? (JSON.parse(localStorage.getItem('env_globalTableWidth')) || 14) : 14} 
-                    depth={window?.localStorage ? (JSON.parse(localStorage.getItem('env_globalTableDepth')) || 10) : 10} 
+                    width={reaction.tableWidth || 14} 
+                    depth={reaction.tableDepth || 10} 
                 />
                 <ContactShadows position={[0, -0.05, 0]} opacity={0.4} scale={20} blur={2.5} far={4} />
                 <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 1.8} />

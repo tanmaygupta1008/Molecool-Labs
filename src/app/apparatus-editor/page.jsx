@@ -1626,28 +1626,33 @@ export default function ApparatusEditorPage() {
     const [selectedModelToAdd, setSelectedModelToAdd] = useState(Object.keys(APPARATUS_MAP)[0]);
     const [gridSnap, setGridSnap] = useState(false);
 
-    // Global Environment State with LocalStorage
+    // Global Environment State
     const [showTable, setShowTable] = useState(true);
     const [globalTableWidth, setGlobalTableWidth] = useState(14);
     const [globalTableDepth, setGlobalTableDepth] = useState(10);
-    const [envLoaded, setEnvLoaded] = useState(false);
 
+    // When selected reaction changes, load its stored table dimensions
     useEffect(() => {
-        const _st = localStorage.getItem('env_showTable');
-        const _gw = localStorage.getItem('env_globalTableWidth');
-        const _gd = localStorage.getItem('env_globalTableDepth');
-        if (_st !== null) setShowTable(JSON.parse(_st));
-        if (_gw !== null) setGlobalTableWidth(JSON.parse(_gw));
-        if (_gd !== null) setGlobalTableDepth(JSON.parse(_gd));
-        setEnvLoaded(true);
-    }, []);
+        const reaction = reactions.find(r => r.id === selectedReactionId);
+        if (reaction) {
+            setGlobalTableWidth(reaction.tableWidth || 14);
+            setGlobalTableDepth(reaction.tableDepth || 10);
+        }
+    }, [selectedReactionId, reactions.length]);
 
-    useEffect(() => {
-        if (!envLoaded) return;
-        localStorage.setItem('env_showTable', JSON.stringify(showTable));
-        localStorage.setItem('env_globalTableWidth', JSON.stringify(globalTableWidth));
-        localStorage.setItem('env_globalTableDepth', JSON.stringify(globalTableDepth));
-    }, [showTable, globalTableWidth, globalTableDepth, envLoaded]);
+    // Helper: save table dimensions into the current reaction object
+    const handleTableWidthChange = (newWidth) => {
+        setGlobalTableWidth(newWidth);
+        setReactions(prev => prev.map(r =>
+            r.id === selectedReactionId ? { ...r, tableWidth: newWidth } : r
+        ));
+    };
+    const handleTableDepthChange = (newDepth) => {
+        setGlobalTableDepth(newDepth);
+        setReactions(prev => prev.map(r =>
+            r.id === selectedReactionId ? { ...r, tableDepth: newDepth } : r
+        ));
+    };
 
 
     const currentReaction = reactions.find(r => r.id === selectedReactionId);
@@ -2016,6 +2021,45 @@ export default function ApparatusEditorPage() {
                                 <option key={r.id} value={r.id}>{r.name}</option>
                             ))}
                         </select>
+                    </div>
+
+                    {/* ── Global Table Environment (always visible) ── */}
+                    <div className="flex flex-col gap-2 p-4 bg-[#161616] border border-white/5 rounded-xl">
+                        <div className="flex items-center justify-between mb-1">
+                            <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Table Environment</h3>
+                            <button
+                                onClick={() => setShowTable(v => !v)}
+                                className={`text-[9px] px-2 py-0.5 rounded border transition-colors ${
+                                    showTable ? 'bg-green-600/20 text-green-400 border-green-500/30' : 'bg-white/5 text-neutral-500 border-white/10'
+                                }`}
+                            >
+                                {showTable ? '✓ Visible' : 'Hidden'}
+                            </button>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            <div>
+                                <div className="flex justify-between items-center text-xs text-blue-300 mb-1">
+                                    <label>Table Width (m)</label>
+                                    <span className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5">{globalTableWidth.toFixed(1)}</span>
+                                </div>
+                                <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-blue-500 shadow-inner"
+                                    min="8" max="25" step="0.5"
+                                    value={globalTableWidth}
+                                    onChange={(e) => handleTableWidthChange(parseFloat(e.target.value))}
+                                />
+                            </div>
+                            <div>
+                                <div className="flex justify-between items-center text-xs text-blue-300 mb-1">
+                                    <label>Table Depth (m)</label>
+                                    <span className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5">{globalTableDepth.toFixed(1)}</span>
+                                </div>
+                                <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-blue-500 shadow-inner"
+                                    min="6" max="18" step="0.5"
+                                    value={globalTableDepth}
+                                    onChange={(e) => handleTableDepthChange(parseFloat(e.target.value))}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Stage Manager */}
@@ -3013,35 +3057,9 @@ export default function ApparatusEditorPage() {
                             </div>
                         );
                     })() : (
-                        <div className="flex flex-col gap-6 animate-in slide-in-from-right-4 duration-300">
-                            {/* Environment Dimensions Fallback */}
-                            <div className="flex flex-col gap-2 p-4 bg-[#161616] border border-white/5 rounded-xl mt-4">
-                                <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest border-b border-white/5 pb-2 mb-2">Global Environment</h3>
-                                <div className="flex flex-col gap-3">
-                                    <div>
-                                        <div className="flex justify-between items-center text-xs text-blue-300 mb-1">
-                                            <label>Table Width (m)</label>
-                                            <span className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5">{globalTableWidth.toFixed(1)}</span>
-                                        </div>
-                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-blue-500 shadow-inner"  
-                                            min="8" max="25" step="0.5"
-                                            value={globalTableWidth}
-                                            onChange={(e) => setGlobalTableWidth(parseFloat(e.target.value))}
-                                        />
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between items-center text-xs text-blue-300 mb-1">
-                                            <label>Table Depth (m)</label>
-                                            <span className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5">{globalTableDepth.toFixed(1)}</span>
-                                        </div>
-                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-blue-500 shadow-inner"  
-                                            min="6" max="18" step="0.5"
-                                            value={globalTableDepth}
-                                            onChange={(e) => setGlobalTableDepth(parseFloat(e.target.value))}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="flex flex-col items-center justify-center py-10 text-center text-neutral-600 gap-2">
+                            <span className="text-3xl opacity-30">🎯</span>
+                            <p className="text-xs">Click an apparatus in the 3D view to edit its properties</p>
                         </div>
                     )}
                         </div>
