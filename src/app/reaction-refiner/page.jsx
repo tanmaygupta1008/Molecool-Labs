@@ -55,6 +55,22 @@ const ReactionRefinerPage = () => {
         fetch('/api/reactions', { cache: 'no-store' })
             .then(res => res.json())
             .then(data => {
+                // Recover autosaved state from local storage first to prevent losing work and stay synced with editor
+                const autosaved = localStorage.getItem('molecool_reactions_autosave');
+                if (autosaved) {
+                    try {
+                        const parsed = JSON.parse(autosaved);
+                        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                            setReactions(parsed);
+                            let sel = localStorage.getItem('molecool_selected_reaction') || parsed[0].id;
+                            setSelectedReactionId(sel);
+                            return;
+                        }
+                    } catch (e) {
+                        console.error('Corrupted autosave', e);
+                    }
+                }
+
                 setReactions(data);
                 if (data.length > 0) {
                     setSelectedReactionId(data[0].id);
@@ -62,6 +78,19 @@ const ReactionRefinerPage = () => {
             })
             .catch(err => console.error("Failed to load reactions", err));
     }, []);
+
+    // Autosave syncing logic
+    useEffect(() => {
+        if (reactions.length > 0) {
+            localStorage.setItem('molecool_reactions_autosave', JSON.stringify(reactions));
+        }
+    }, [reactions]);
+    
+    useEffect(() => {
+        if (selectedReactionId) {
+            localStorage.setItem('molecool_selected_reaction', selectedReactionId);
+        }
+    }, [selectedReactionId]);
 
     // Load Selected Reaction
     useEffect(() => {
@@ -97,7 +126,8 @@ const ReactionRefinerPage = () => {
                 }
             };
 
-            // Sync JSON view using the updated state, not stale currentReaction
+            // Update main list
+            setReactions(prevList => prevList.map(r => r.id === updatedReaction.id ? updatedReaction : r));
             setJsonInput(JSON.stringify(updatedReaction.macroView.visualRules, null, 4));
 
             return updatedReaction;
