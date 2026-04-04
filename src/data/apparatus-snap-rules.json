@@ -1,0 +1,193 @@
+{
+  "rules": {
+    "Clamp": {
+      "canAttachTo": ["RetortStand"],
+      "snapOffset": {
+        "RetortStand": { "position": [1.65, 4, 0], "rotation": [0, 0, 0], "note": "Clamp attaches to shaft of RetortStand. X offset includes extendLength." }
+      }
+    },
+    "WireGauze": {
+      "canAttachTo": ["TripodStand"],
+      "snapOffset": {
+        "TripodStand": { "position": [0, 2.5, 0], "rotation": [0, 0, 0], "note": "Wire gauze rests on top of tripod stand." }
+      }
+    },
+    "Beaker": {
+      "canAttachTo": ["TripodStand", "WireGauze", "HeatproofMat"],
+      "snapOffset": {
+        "TripodStand": { "position": [0, 2.6, 0], "rotation": [0, 0, 0], "note": "Beaker sits on tripod." },
+        "WireGauze": { "position": [0, 0.1, 0], "rotation": [0, 0, 0], "note": "Beaker sits on wire gauze." },
+        "HeatproofMat": { "position": [0, 0.05, 0], "rotation": [0, 0, 0], "note": "Beaker sits on mat." }
+      }
+    },
+    "ConicalFlask": {
+      "canAttachTo": ["TripodStand", "WireGauze", "Clamp", "HeatproofMat"],
+      "snapOffset": {
+        "TripodStand": { "position": [0, 2.6, 0], "rotation": [0, 0, 0], "note": "Flask on tripod." },
+        "WireGauze": { "position": [0, 0.1, 0], "rotation": [0, 0, 0], "note": "Flask on gauze." },
+        "Clamp": { "position": [0.4, 0, 0], "rotation": [0, 0, 0], "note": "Flask gripped by clamp head." },
+        "HeatproofMat": { "position": [0, 0.05, 0], "rotation": [0, 0, 0], "note": "Flask on mat." }
+      }
+    },
+    "RoundBottomFlask": {
+      "canAttachTo": ["TripodStand", "WireGauze", "Clamp"],
+      "snapOffset": {
+        "TripodStand": { "position": [0, 2.6, 0], "rotation": [0, 0, 0], "note": "Round bottom flask on tripod (with clay support)." },
+        "WireGauze": { "position": [0, 0.1, 0], "rotation": [0, 0, 0], "note": "Round bottom on gauze." },
+        "Clamp": { "position": [0.4, 0, 0], "rotation": [0, 0, 0], "note": "Round bottom gripped by clamp." }
+      }
+    },
+    "TestTube": {
+      "canAttachTo": ["Clamp"],
+      "snapOffset": {
+        "Clamp": { "position": [0.3, 0, 0], "rotation": [0, 0, 0], "note": "Test tube held by clamp." }
+      }
+    },
+    "BoilingTube": {
+      "canAttachTo": ["Clamp"],
+      "snapOffset": {
+        "Clamp": { "position": [0.3, 0, 0], "rotation": [0, 0, 0], "note": "Boiling tube held by clamp." }
+      }
+    },
+    "Crucible": {
+      "canAttachTo": ["TripodStand", "WireGauze", "ClayTriangle"],
+      "snapOffset": {
+        "TripodStand": { "position": [0, 2.6, 0], "rotation": [0, 0, 0], "note": "Crucible on tripod." },
+        "WireGauze": { "position": [0, 0.1, 0], "rotation": [0, 0, 0], "note": "Crucible on gauze." },
+        "ClayTriangle": { "position": [0, 0.1, 0], "rotation": [0, 0, 0], "note": "Crucible on clay triangle." }
+      }
+    },
+    "BunsenBurner": {
+      "canAttachTo": ["HeatproofMat"],
+      "snapOffset": {
+        "HeatproofMat": { "position": [0, 0.05, 0], "rotation": [0, 0, 0], "note": "Bunsen burner placed on heatproof mat." }
+      }
+    },
+    "HeatproofMat": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    },
+    "TripodStand": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    },
+    "RetortStand": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    },
+    "Burette": {
+      "canAttachTo": ["RetortStand", "Clamp"],
+      "snapOffset": {
+        "RetortStand": { "position": [0.5, 5, 0], "rotation": [0, 0, 0], "note": "Burette attached to retort stand via ring." },
+        "Clamp": { "position": [0.3, 0, 0], "rotation": [0, 0, 0], "note": "Burette held by clamp." }
+      }
+    },
+    "MeasuringCylinder": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    },
+    "WaterTrough": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    },
+    "GasJar": {
+      "canAttachTo": ["WaterTrough"],
+      "snapOffset": {
+        "WaterTrough": { "position": [0, 0.2, 0], "rotation": [0, 0, 0], "note": "Gas jar inverted or sitting in water trough." }
+      }
+    },
+    "DeliveryTube": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    },
+    "Wire": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    },
+    "RubberCork": {
+      "canAttachTo": ["ConicalFlask", "RoundBottomFlask", "TestTube", "BoilingTube", "Beaker"],
+      "snapOffset": {
+        "ConicalFlask": { "position": [0, 1.0, 0], "rotation": [0, 0, 0], "note": "Cork plugs the top of the flask." },
+        "RoundBottomFlask": { "position": [0, 1.0, 0], "rotation": [0, 0, 0], "note": "Cork plugs the round bottom flask." },
+        "TestTube": { "position": [0, 0.9, 0], "rotation": [0, 0, 0], "note": "Cork seals test tube." },
+        "BoilingTube": { "position": [0, 0.9, 0], "rotation": [0, 0, 0], "note": "Cork seals boiling tube." },
+        "Beaker": { "position": [0, 0.6, 0], "rotation": [0, 0, 0], "note": "Cork loosely covers beaker." }
+      }
+    },
+    "PowerSupply": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    },
+    "ElectrolysisSetup": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    },
+    "Tongs": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    },
+    "Dropper": {
+      "canAttachTo": ["Beaker", "ConicalFlask"],
+      "snapOffset": {
+        "Beaker": { "position": [0, 0.7, 0], "rotation": [0, 0, 0], "note": "Dropper rests inside/over beaker." },
+        "ConicalFlask": { "position": [0, 0.8, 0], "rotation": [0, 0, 0], "note": "Dropper over flask mouth." }
+      }
+    },
+    "StirringRod": {
+      "canAttachTo": ["Beaker", "ConicalFlask"],
+      "snapOffset": {
+        "Beaker": { "position": [0.3, 0.5, 0], "rotation": [0, 0.2, 0.2], "note": "Stirring rod resting in beaker." },
+        "ConicalFlask": { "position": [0.2, 0.7, 0], "rotation": [0, 0.2, 0.2], "note": "Stirring rod resting in flask." }
+      }
+    },
+    "SafetyShield": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    },
+    "MagnesiumRibbon": {
+      "canAttachTo": ["Tongs", "Crucible"],
+      "snapOffset": {
+        "Tongs": { "position": [0.2, 0, 0], "rotation": [0, 0, 0], "note": "Ribbon held in tongs." },
+        "Crucible": { "position": [0, 0.1, 0], "rotation": [0, 0, 0], "note": "Ribbon placed in crucible." }
+      }
+    },
+    "ZincGranules": {
+      "canAttachTo": ["Beaker", "ConicalFlask", "TestTube"],
+      "snapOffset": {
+        "Beaker": { "position": [0, 0.1, 0], "rotation": [0, 0, 0], "note": "Zinc granules inside beaker." },
+        "ConicalFlask": { "position": [0, 0.1, 0], "rotation": [0, 0, 0], "note": "Zinc granules inside flask." },
+        "TestTube": { "position": [0, 0.1, 0], "rotation": [0, 0, 0], "note": "Zinc granules inside test tube." }
+      }
+    },
+    "LitmusPaper": {
+      "canAttachTo": ["Tongs"],
+      "snapOffset": {
+        "Tongs": { "position": [0.15, 0, 0], "rotation": [0, 0, 0], "note": "Litmus paper held in tongs." }
+      }
+    },
+    "GasTap": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    },
+    "DropperBottle": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    },
+    "IronNail": {
+      "canAttachTo": ["Beaker", "Tongs"],
+      "snapOffset": {
+        "Beaker": { "position": [0.2, 0.1, 0.2], "rotation": [0, 0, 0.3], "note": "Nail leaning in beaker." },
+        "Tongs": { "position": [0.2, 0, 0], "rotation": [0, 0, 0], "note": "Nail held in tongs." }
+      }
+    },
+    "Forceps": {
+      "canAttachTo": [],
+      "snapOffset": {}
+    }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2026-03-30",
+    "description": "Apparatus snap compatibility rules. 'canAttachTo' lists valid parent apparatus. 'snapOffset' defines the local position and rotation relative to the parent."
+  }
+}

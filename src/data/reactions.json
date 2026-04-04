@@ -309,7 +309,181 @@
                     }
                 ]
             }
-        }
+        },
+        "stages": [
+            {
+                "id": "stage-1775041466943",
+                "name": "Stage 1",
+                "apparatus": [
+                    {
+                        "id": "bunsen-burner",
+                        "model": "BunsenBurner",
+                        "position": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "isOn": true
+                    },
+                    {
+                        "id": "tongs",
+                        "model": "Tongs",
+                        "position": [
+                            -1.113,
+                            4.136,
+                            0.023
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            -0.5
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    {
+                        "id": "magnesium",
+                        "model": "MagnesiumRibbon",
+                        "position": [
+                            0.034,
+                            3.493,
+                            0.568
+                        ],
+                        "rotation": [
+                            1.665,
+                            -0.444,
+                            -0.118
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    {
+                        "id": "mat",
+                        "model": "HeatproofMat",
+                        "position": [
+                            0,
+                            -0.05,
+                            0
+                        ]
+                    }
+                ],
+                "macroView": {
+                    "visuals": [
+                        "Bright white flame animation",
+                        "Formation of white powder (MgO)",
+                        "Heat haze effect"
+                    ],
+                    "steps": [
+                        "Hold Magnesium Ribbon with Tongs",
+                        "Place over Bunsen Burner flame",
+                        "Observe bright white flash",
+                        "Collect white ash in crucible (optional)"
+                    ],
+                    "visualRules": {
+                        "initialState": {
+                            "magnesium": {
+                                "color": "#c0c0c0",
+                                "model": "MagnesiumRibbon",
+                                "scale": [
+                                    1,
+                                    1,
+                                    1
+                                ]
+                            },
+                            "burner": {
+                                "flameColor": "#3b82f6",
+                                "intensity": 0.6,
+                                "isOn": true
+                            }
+                        },
+                        "timeline": {
+                            "0": {
+                                "description": "User picks up Magnesium with Tongs",
+                                "animations": [
+                                    {
+                                        "target": "tongs",
+                                        "type": "move",
+                                        "position": [
+                                            -0.5,
+                                            3.5,
+                                            0
+                                        ],
+                                        "duration": 1
+                                    },
+                                    {
+                                        "target": "magnesium",
+                                        "type": "attach_to",
+                                        "parent": "tongs",
+                                        "offset": [
+                                            0.1,
+                                            -0.6,
+                                            0
+                                        ]
+                                    }
+                                ]
+                            },
+                            "1": {
+                                "description": "Place Magnesium in flame",
+                                "animations": [
+                                    {
+                                        "target": "tongs",
+                                        "type": "move_to_object",
+                                        "destinationId": "bunsen-burner",
+                                        "offset": [
+                                            0,
+                                            3.8,
+                                            0
+                                        ],
+                                        "duration": 1.5
+                                    }
+                                ],
+                                "effects": [
+                                    {
+                                        "type": "flame_interaction",
+                                        "intensity": 1.2,
+                                        "colorShift": "#ffffff"
+                                    }
+                                ]
+                            },
+                            "2": {
+                                "description": "Reaction occurs - Bright Flash",
+                                "effects": [
+                                    {
+                                        "type": "flash",
+                                        "color": "#ffffff",
+                                        "intensity": 5,
+                                        "duration": 0.3,
+                                        "delay": 0.5
+                                    },
+                                    {
+                                        "type": "smoke",
+                                        "color": "#eeeeee",
+                                        "density": 0.8,
+                                        "duration": 3
+                                    }
+                                ],
+                                "transformations": [
+                                    {
+                                        "target": "magnesium",
+                                        "newModel": "MagnesiumOxideAsh",
+                                        "delay": 0.8
+                                    }
+                                ],
+                                "sounds": [
+                                    "magnesium_burn"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        ]
     },
     {
         "id": "zinc-hcl",
@@ -716,7 +890,295 @@
                     }
                 ]
             }
-        }
+        },
+        "stages": [
+            {
+                "id": "stage-1775041466943",
+                "name": "Stage 1",
+                "apparatus": [
+                    {
+                        "id": "flask",
+                        "model": "ConicalFlask",
+                        "position": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "reactants": [
+                            {
+                                "id": "1771486704863",
+                                "chemicalId": "hcl",
+                                "state": "aq",
+                                "amount": 150,
+                                "unit": "mL",
+                                "concentration": 10,
+                                "temperature": 25,
+                                "pressure": 1
+                            },
+                            {
+                                "id": "1772260759031",
+                                "chemicalId": "zinc",
+                                "state": "s",
+                                "amount": 150,
+                                "unit": "g",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "trough",
+                        "model": "WaterTrough",
+                        "position": [
+                            2.878,
+                            0,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "reactants": [
+                            {
+                                "id": "1771489813961",
+                                "chemicalId": "water",
+                                "state": "l",
+                                "amount": 500,
+                                "unit": "g",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ],
+                        "customHeight": 2.1
+                    },
+                    {
+                        "id": "gas-jar",
+                        "model": "GasJar",
+                        "position": [
+                            3.364,
+                            1.815,
+                            -0.152
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            2.866
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "hasLid": false,
+                        "customAnchors": [
+                            {
+                                "id": "custom-1770911702870",
+                                "position": [
+                                    0,
+                                    0.5,
+                                    0
+                                ]
+                            }
+                        ],
+                        "isEditingAnchors": false,
+                        "reactants": [
+                            {
+                                "id": "1771488520696",
+                                "chemicalId": "water",
+                                "state": "l",
+                                "amount": 104,
+                                "unit": "mL",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "rubbercork-1267",
+                        "model": "RubberCork",
+                        "position": [
+                            0,
+                            2.5,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1.7499999999999998,
+                            1.7499999999999998,
+                            1.7499999999999998
+                        ]
+                    },
+                    {
+                        "id": "delivery-tube-8018",
+                        "model": "DeliveryTube",
+                        "position": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "points": [
+                            [
+                                0,
+                                3.2,
+                                0
+                            ],
+                            [
+                                0.2246989317402725,
+                                3.637557656650103,
+                                0
+                            ],
+                            [
+                                0.8979747085017911,
+                                3.6377891692677653,
+                                0
+                            ],
+                            [
+                                2.016442351781275,
+                                0.796731367087532,
+                                0
+                            ],
+                            [
+                                2.3385393132610024,
+                                0.2519104697807222,
+                                0
+                            ],
+                            [
+                                2.913398964816176,
+                                0.2759348141871304,
+                                0
+                            ],
+                            [
+                                3.2279413630089167,
+                                1.3338679523248023,
+                                -0.152
+                            ]
+                        ],
+                        "tubeMode": "curved",
+                        "isEditingPoints": false
+                    }
+                ],
+                "macroView": {
+                    "visuals": [
+                        "Effervescence/Bubbling in flask",
+                        "Zinc solid dissolving",
+                        "Bubbles moving through tube to gas jar"
+                    ],
+                    "steps": [
+                        "Add Zinc granules to flask",
+                        "Pour HCl acid",
+                        "Observe bubbling",
+                        "Collect H2 gas over water"
+                    ],
+                    "visualRules": {
+                        "timeline": {
+                            "0": {
+                                "description": "New Step",
+                                "duration": 9,
+                                "delay": 0,
+                                "trigger": "auto",
+                                "disabled": false,
+                                "animations": [],
+                                "effects": [],
+                                "gas": {
+                                    "enabled": false,
+                                    "source": "flask",
+                                    "rate": 118,
+                                    "size": 1.4
+                                }
+                            },
+                            "1": {
+                                "description": "New Step",
+                                "duration": 11,
+                                "delay": 0,
+                                "trigger": "auto",
+                                "disabled": false,
+                                "animations": [],
+                                "effects": [],
+                                "gas": {
+                                    "enabled": false,
+                                    "source": "flask",
+                                    "rate": 50
+                                }
+                            }
+                        },
+                        "reactantTimeline": [
+                            {
+                                "id": "r_step_1772262542512",
+                                "name": "Reactant Stage 1",
+                                "startTime": 0,
+                                "duration": 20,
+                                "effects": [
+                                    {
+                                        "id": "eff_1772262554398",
+                                        "type": "VOLUME_CHANGE",
+                                        "disabled": false,
+                                        "targetId": "1771486704863",
+                                        "initialVolume": 150,
+                                        "finalVolume": 100
+                                    },
+                                    {
+                                        "id": "eff_1772262575790",
+                                        "type": "VOLUME_CHANGE",
+                                        "disabled": false,
+                                        "targetId": "1771489813961",
+                                        "initialVolume": 500,
+                                        "finalVolume": 600
+                                    },
+                                    {
+                                        "id": "eff_1772262613479",
+                                        "type": "VOLUME_CHANGE",
+                                        "disabled": false,
+                                        "targetId": "1772260759031",
+                                        "initialVolume": 150,
+                                        "finalVolume": 20
+                                    },
+                                    {
+                                        "id": "eff_1772272336205",
+                                        "type": "GAS_EVOLUTION",
+                                        "disabled": false,
+                                        "targetId": "1771486704863",
+                                        "bubbleRate": 1,
+                                        "color": "#ffffff",
+                                        "particleSize": 1.1
+                                    },
+                                    {
+                                        "id": "eff_1772283372786",
+                                        "type": "VOLUME_CHANGE",
+                                        "disabled": false,
+                                        "targetId": "1771488520696",
+                                        "initialVolume": 104,
+                                        "finalVolume": 0
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
     },
     {
         "id": "sodium-water",
@@ -759,7 +1221,50 @@
                 "Possible yellow flame",
                 "Water turns pink with Phenolphthalein"
             ]
-        }
+        },
+        "stages": [
+            {
+                "id": "stage-1775041466943",
+                "name": "Stage 1",
+                "apparatus": [
+                    {
+                        "id": "trough",
+                        "model": "WaterTrough",
+                        "position": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "id": "safety-shield",
+                        "model": "SafetyShield",
+                        "position": [
+                            0,
+                            0,
+                            1.5
+                        ]
+                    },
+                    {
+                        "id": "forceps",
+                        "model": "Forceps",
+                        "position": [
+                            1,
+                            1,
+                            0
+                        ]
+                    }
+                ],
+                "macroView": {
+                    "visuals": [
+                        "Silver sodium pellet darting on water surface",
+                        "Fizzing pathway",
+                        "Possible yellow flame",
+                        "Water turns pink with Phenolphthalein"
+                    ]
+                }
+            }
+        ]
     },
     {
         "id": "precipitation-agcl",
@@ -969,7 +1474,63 @@
                     }
                 ]
             }
-        }
+        },
+        "stages": [
+            {
+                "id": "stage-1775041466943",
+                "name": "Stage 1",
+                "apparatus": [
+                    {
+                        "id": "test-tube-1",
+                        "model": "TestTube",
+                        "position": [
+                            -0.5,
+                            1,
+                            0
+                        ],
+                        "reactants": [
+                            {
+                                "id": "1771506041187",
+                                "chemicalId": "nacl",
+                                "state": "aq",
+                                "amount": 3,
+                                "unit": "mL",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "test-tube-2",
+                        "model": "TestTube",
+                        "position": [
+                            0.5,
+                            1,
+                            0
+                        ],
+                        "reactants": [
+                            {
+                                "id": "1771510466831",
+                                "chemicalId": "agno3",
+                                "state": "aq",
+                                "amount": 21,
+                                "unit": "mL",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ]
+                    }
+                ],
+                "macroView": {
+                    "visuals": [
+                        "Clear liquids mixing",
+                        "Immediate formation of cloudy white precipitate"
+                    ]
+                }
+            }
+        ]
     },
     {
         "id": "neutralization",
@@ -1195,7 +1756,153 @@
                 ],
                 "actions": []
             }
-        }
+        },
+        "stages": [
+            {
+                "id": "stage-1775041466943",
+                "name": "Stage 1",
+                "apparatus": [
+                    {
+                        "id": "retort-stand",
+                        "model": "RetortStand",
+                        "position": [
+                            0,
+                            0,
+                            -0.5
+                        ],
+                        "height": 7.5
+                    },
+                    {
+                        "id": "burette",
+                        "model": "Burette",
+                        "position": [
+                            0.063,
+                            4.019,
+                            1.399
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "reactants": [
+                            {
+                                "id": "1771510019262",
+                                "chemicalId": "hcl",
+                                "state": "aq",
+                                "amount": "24",
+                                "unit": "mL",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "clamp",
+                        "model": "Clamp",
+                        "position": [
+                            0.04817921179713158,
+                            6.1,
+                            0.7492964450184838
+                        ],
+                        "rotation": [
+                            0,
+                            -1.54159265358979,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "headAngle": 1.55840734641021
+                    },
+                    {
+                        "id": "flask",
+                        "model": "ConicalFlask",
+                        "position": [
+                            0.151,
+                            -0.027,
+                            1.546
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "reactants": [
+                            {
+                                "id": "1771510057725",
+                                "chemicalId": "naoh",
+                                "state": "aq",
+                                "amount": "30",
+                                "unit": "mL",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "indicator",
+                        "model": "DropperBottle",
+                        "position": [
+                            2.534,
+                            -0.044,
+                            -0.633
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
+                    }
+                ],
+                "macroView": {
+                    "visuals": [
+                        "Slow drip from burette",
+                        "Color change in flask (e.g., Pink to Colorless if using Phenolphthalein)"
+                    ],
+                    "visualRules": {
+                        "reactantTimeline": [
+                            {
+                                "id": "r_step_1772382940195",
+                                "name": "Reactant Stage 1",
+                                "startTime": 0,
+                                "duration": 5,
+                                "effects": [
+                                    {
+                                        "id": "eff_1772382945196",
+                                        "type": "LIQUID_DRIPPING",
+                                        "disabled": false,
+                                        "targetId": "burette",
+                                        "dripRate": 0.45,
+                                        "rippleIntensity": 1.6,
+                                        "rippleSpeed": 2
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
     },
     {
         "id": "decomposition-caco3",
@@ -1301,7 +2008,113 @@
                     }
                 }
             }
-        }
+        },
+        "stages": [
+            {
+                "id": "stage-1775041466943",
+                "name": "Stage 1",
+                "apparatus": [
+                    {
+                        "id": "bunsen-burner",
+                        "model": "BunsenBurner",
+                        "position": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "isOn": true
+                    },
+                    {
+                        "id": "retortstand-3840",
+                        "model": "RetortStand",
+                        "position": [
+                            -1.889,
+                            0.034,
+                            0.05
+                        ],
+                        "rotation": [
+                            -3.142,
+                            1.565,
+                            -3.139
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "height": 7
+                    },
+                    {
+                        "id": "testtube-2238",
+                        "model": "TestTube",
+                        "position": [
+                            -0.038993280537950814,
+                            4.300000000000001,
+                            0.05231851754285445
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "reactants": [
+                            {
+                                "id": "1773129629125",
+                                "chemicalId": "caco3",
+                                "state": "l",
+                                "amount": 20,
+                                "unit": "mL",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "clamp-1271",
+                        "model": "Clamp",
+                        "position": [
+                            -0.6389932805379508,
+                            4.9,
+                            0.05231851754285445
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "headAngle": -1.54159265358979,
+                        "size": 1,
+                        "angle": 0.3
+                    }
+                ],
+                "macroView": {
+                    "visuals": [
+                        "Heating solid powder",
+                        "Bubbling in limewater",
+                        "Limewater turning milky"
+                    ],
+                    "visualRules": {
+                        "initialState": {
+                            "burner": {
+                                "intensity": 1.1,
+                                "flameColor": "#144ed7"
+                            }
+                        }
+                    }
+                }
+            }
+        ]
     },
     {
         "id": "iron-cuso4",
@@ -1374,7 +2187,80 @@
                 "Blue solution slowly turning pale green",
                 "Reddish-brown copper depositing on nail"
             ]
-        }
+        },
+        "stages": [
+            {
+                "id": "stage-1775041466943",
+                "name": "Stage 1",
+                "apparatus": [
+                    {
+                        "id": "beaker",
+                        "model": "Beaker",
+                        "position": [
+                            0,
+                            0.027,
+                            -0.001
+                        ],
+                        "reactants": [
+                            {
+                                "id": "1771488703680",
+                                "chemicalId": "cuso4",
+                                "state": "aq",
+                                "amount": 100,
+                                "unit": "mL",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    {
+                        "id": "iron-nail",
+                        "model": "IronNail",
+                        "position": [
+                            0.114,
+                            0.083,
+                            0.022
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0.785
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    {
+                        "id": "rod",
+                        "model": "StirringRod",
+                        "position": [
+                            0.2,
+                            1,
+                            0
+                        ]
+                    }
+                ],
+                "macroView": {
+                    "visuals": [
+                        "Blue solution slowly turning pale green",
+                        "Reddish-brown copper depositing on nail"
+                    ]
+                }
+            }
+        ]
     },
     {
         "id": "methane-combustion",
@@ -1419,7 +2305,52 @@
                 "Clean blue flame (complete combustion)",
                 "Water vapor condensing on cold surface (optional)"
             ]
-        }
+        },
+        "stages": [
+            {
+                "id": "stage-1775041466943",
+                "name": "Stage 1",
+                "apparatus": [
+                    {
+                        "id": "gas-tap",
+                        "model": "GasTap",
+                        "position": [
+                            -1,
+                            0,
+                            0
+                        ],
+                        "reactants": [
+                            {
+                                "id": "1771508012517",
+                                "chemicalId": "ch4",
+                                "state": "g",
+                                "amount": 19,
+                                "unit": "mol",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "burner",
+                        "model": "BunsenBurner",
+                        "position": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "isOn": true
+                    }
+                ],
+                "macroView": {
+                    "visuals": [
+                        "Clean blue flame (complete combustion)",
+                        "Water vapor condensing on cold surface (optional)"
+                    ]
+                }
+            }
+        ]
     },
     {
         "id": "electrolysis-water",
@@ -1616,7 +2547,204 @@
                     }
                 ]
             }
-        }
+        },
+        "stages": [
+            {
+                "id": "stage-1775041466943",
+                "name": "Stage 1",
+                "apparatus": [
+                    {
+                        "id": "setup",
+                        "model": "ElectrolysisSetup",
+                        "position": [
+                            0,
+                            0,
+                            0.709
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "reactants": [
+                            {
+                                "id": "1771500459471",
+                                "chemicalId": "water",
+                                "state": "l",
+                                "amount": 250,
+                                "unit": "mL",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "power",
+                        "model": "PowerSupply",
+                        "position": [
+                            -1.079,
+                            -0.003,
+                            -3.746
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    {
+                        "id": "wire-3582",
+                        "model": "Wire",
+                        "position": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "points": [
+                            [
+                                -1.879,
+                                0.297,
+                                -2.9210000000000003
+                            ],
+                            [
+                                -1.48425,
+                                1.890266932156694,
+                                -2.0135
+                            ],
+                            [
+                                -1.0895000000000001,
+                                3.0651948869278236,
+                                -1.106
+                            ],
+                            [
+                                -0.69475,
+                                2.5667669321566944,
+                                -0.19850000000000012
+                            ],
+                            [
+                                -0.3,
+                                1.65,
+                                0.709
+                            ]
+                        ],
+                        "tubeMode": "wire",
+                        "isEditingPoints": false,
+                        "color": "red"
+                    },
+                    {
+                        "id": "wire-5342",
+                        "model": "Wire",
+                        "position": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "points": [
+                            [
+                                -0.2789999999999999,
+                                0.297,
+                                -2.9210000000000003
+                            ],
+                            [
+                                -0.13424999999999992,
+                                1.810344677036706,
+                                -2.0135
+                            ],
+                            [
+                                0.010500000000000065,
+                                2.93199112839451,
+                                -1.106
+                            ],
+                            [
+                                0.15525000000000005,
+                                2.486844677036706,
+                                -0.19850000000000012
+                            ],
+                            [
+                                0.3,
+                                1.65,
+                                0.709
+                            ]
+                        ],
+                        "tubeMode": "wire",
+                        "isEditingPoints": false,
+                        "color": "black"
+                    }
+                ],
+                "macroView": {
+                    "visuals": [
+                        "Bubbles forming at electrodes",
+                        "Volume difference (2x Hydrogen vs Oxygen)",
+                        "Power supply indicator on"
+                    ],
+                    "visualRules": {
+                        "reactantTimeline": [
+                            {
+                                "id": "r_step_1772273659469",
+                                "name": "Reactant Stage 1",
+                                "startTime": 0,
+                                "duration": 20,
+                                "effects": [
+                                    {
+                                        "id": "eff_1772273669005",
+                                        "type": "VOLUME_CHANGE",
+                                        "disabled": false,
+                                        "targetId": "1771500459471",
+                                        "initialVolume": 250,
+                                        "finalVolume": 200
+                                    },
+                                    {
+                                        "id": "eff_1772273715484",
+                                        "type": "GAS_EVOLUTION",
+                                        "disabled": false,
+                                        "targetId": "setup",
+                                        "bubbleRate": 0.4,
+                                        "particleSize": 0.9,
+                                        "color": "#d5c8c8",
+                                        "electrode": "both",
+                                        "emissionRate": 0.6,
+                                        "emissionSize": 1.9,
+                                        "bubbleType": "bubble",
+                                        "emissionType": "bubble"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
     },
     {
         "id": "nh4cl-naoh",
@@ -1752,14 +2880,211 @@
                 "Heating mixture",
                 "Red litmus turning blue at mouth of tube due to ammonia gas"
             ]
-        }
+        },
+        "stages": [
+            {
+                "id": "stage-1775041466943",
+                "name": "Stage 1",
+                "apparatus": [
+                    {
+                        "id": "bunsen-burner",
+                        "model": "BunsenBurner",
+                        "position": [
+                            0.18,
+                            0,
+                            -1.728
+                        ],
+                        "isOn": true,
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    {
+                        "id": "test-tube",
+                        "model": "TestTube",
+                        "position": [
+                            0.10969892517790836,
+                            4.699999999999999,
+                            -1.7179593931566144
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "reactants": [
+                            {
+                                "id": "1771506998752",
+                                "chemicalId": "nh4cl",
+                                "state": "s",
+                                "amount": "19.3",
+                                "unit": "g",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            },
+                            {
+                                "id": "1771507104516",
+                                "chemicalId": "naoh",
+                                "state": "aq",
+                                "amount": "21",
+                                "unit": "mL",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "litmus",
+                        "model": "LitmusPaper",
+                        "position": [
+                            0.018,
+                            6.888,
+                            -1.835
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    {
+                        "id": "retortstand-0769",
+                        "model": "RetortStand",
+                        "position": [
+                            0.044,
+                            0.112,
+                            -3.567
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "height": 8.5
+                    },
+                    {
+                        "id": "clamp-5801",
+                        "model": "Clamp",
+                        "position": [
+                            0.09217921179713318,
+                            6.1,
+                            -2.3177035549815175
+                        ],
+                        "rotation": [
+                            0,
+                            -1.54159265358979,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "headAngle": -1.54159265358979,
+                        "size": 1,
+                        "angle": 0.3
+                    }
+                ],
+                "macroView": {
+                    "visuals": [
+                        "Heating mixture",
+                        "Red litmus turning blue at mouth of tube due to ammonia gas"
+                    ]
+                }
+            }
+        ]
     },
     {
         "id": "habers-process",
         "name": "Habers Process",
         "type": "Custom Built",
         "equation": "N₂ + 3H₂ → 2NH₃",
-        "apparatus": [],
+        "apparatus": [
+            {
+                "id": "retortstand-9235",
+                "model": "RetortStand",
+                "position": [
+                    -0.095,
+                    0,
+                    -2.777
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ]
+            },
+            {
+                "id": "clamp-7384",
+                "model": "Clamp",
+                "position": [
+                    -0.5363730672305642,
+                    4.3,
+                    -1.5871289940616302
+                ],
+                "rotation": [
+                    0,
+                    -1.84159265358979,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ],
+                "headAngle": 1.45840734641021,
+                "size": 1,
+                "angle": 0.3
+            },
+            {
+                "id": "testtube-9669",
+                "model": "TestTube",
+                "position": [
+                    0.677,
+                    3.082,
+                    -2.026
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    1,
+                    1,
+                    1
+                ]
+            }
+        ],
         "macroView": {
             "visuals": [
                 "Custom reaction loaded"
@@ -1960,6 +3285,1077 @@
                     }
                 ]
             }
-        }
+        },
+        "stages": [
+            {
+                "id": "stage-1775041466943",
+                "name": "Stage 1",
+                "apparatus": [
+                    {
+                        "id": "retortstand-9235",
+                        "model": "RetortStand",
+                        "position": [
+                            -8.491,
+                            0,
+                            -6.102
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "height": 7
+                    },
+                    {
+                        "id": "clamp-7384",
+                        "model": "Clamp",
+                        "position": [
+                            0,
+                            4,
+                            1.25
+                        ],
+                        "rotation": [
+                            0,
+                            -1.571,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "headAngle": 1.5707963267948966,
+                        "size": 1,
+                        "angle": 0.3,
+                        "parentId": "retortstand-9235"
+                    },
+                    {
+                        "id": "testtube-9669",
+                        "model": "TestTube",
+                        "position": [
+                            0.6,
+                            -1.4,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "clamp-7384"
+                    },
+                    {
+                        "id": "tripodstand-8279",
+                        "model": "TripodStand",
+                        "position": [
+                            -8.494,
+                            0,
+                            5.779
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "ringRadius": 0.7,
+                        "height": 2.1,
+                        "legAngle": 0.23
+                    },
+                    {
+                        "id": "roundbottomflask-5932",
+                        "model": "RoundBottomFlask",
+                        "position": [
+                            0,
+                            1.8,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "tripodstand-8279"
+                    },
+                    {
+                        "id": "tripodstand-8779",
+                        "model": "TripodStand",
+                        "position": [
+                            -5.752,
+                            0,
+                            2.24
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "ringRadius": 0.8,
+                        "height": 4
+                    },
+                    {
+                        "id": "wiregauze-0634",
+                        "model": "WireGauze",
+                        "position": [
+                            0,
+                            4.05,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "tripodstand-8779"
+                    },
+                    {
+                        "id": "bunsenburner-8167",
+                        "model": "BunsenBurner",
+                        "position": [
+                            -5.78,
+                            0.076,
+                            2.293
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "isOn": true
+                    },
+                    {
+                        "id": "beaker-2276",
+                        "model": "Beaker",
+                        "position": [
+                            0,
+                            0.05,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "wiregauze-0634"
+                    },
+                    {
+                        "id": "retortstand-5433",
+                        "model": "RetortStand",
+                        "position": [
+                            -5.178,
+                            0,
+                            -6.013
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    {
+                        "id": "clamp-7845",
+                        "model": "Clamp",
+                        "position": [
+                            0,
+                            3.5,
+                            1.2499999999999998
+                        ],
+                        "rotation": [
+                            0,
+                            4.71238898038469,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "retortstand-5433",
+                        "headAngle": 1.5707963267948966,
+                        "size": 1.2,
+                        "angle": 0.5
+                    },
+                    {
+                        "id": "clamp-8246",
+                        "model": "Clamp",
+                        "position": [
+                            2.220446049250313e-16,
+                            4.6,
+                            -2.05
+                        ],
+                        "rotation": [
+                            0,
+                            1.5707963267948966,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "retortstand-5433",
+                        "headAngle": 1.5707963267948966,
+                        "size": 1.2,
+                        "angle": 0.5
+                    },
+                    {
+                        "id": "conicalflask-8619",
+                        "model": "ConicalFlask",
+                        "position": [
+                            0.6,
+                            -2.2,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "clamp-7845"
+                    },
+                    {
+                        "id": "roundbottomflask-2074",
+                        "model": "RoundBottomFlask",
+                        "position": [
+                            0.6,
+                            -2,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "clamp-8246"
+                    },
+                    {
+                        "id": "burette-5594",
+                        "model": "Burette",
+                        "position": [
+                            0.372,
+                            -2.8,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "clamp-7554"
+                    },
+                    {
+                        "id": "clamp-7554",
+                        "model": "Clamp",
+                        "position": [
+                            2.220446049250313e-16,
+                            5.7,
+                            -2.05
+                        ],
+                        "rotation": [
+                            0,
+                            1.5707963267948966,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "retortstand-9235",
+                        "headAngle": 1.5707963267948966,
+                        "size": 0.6,
+                        "angle": 0.1
+                    },
+                    {
+                        "id": "rubbercork-3054",
+                        "model": "RubberCork",
+                        "position": [
+                            0,
+                            2.5,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1.7499999999999998,
+                            1.7499999999999998,
+                            1.7499999999999998
+                        ],
+                        "parentId": "conicalflask-8619"
+                    },
+                    {
+                        "id": "rubbercork-3851",
+                        "model": "RubberCork",
+                        "position": [
+                            0,
+                            1.7,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "testtube-9669"
+                    },
+                    {
+                        "id": "rubbercork-4863",
+                        "model": "RubberCork",
+                        "position": [
+                            0,
+                            3.1,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1.6,
+                            1.6,
+                            1.6
+                        ],
+                        "parentId": "roundbottomflask-2074"
+                    },
+                    {
+                        "id": "rubbercork-2862",
+                        "model": "RubberCork",
+                        "position": [
+                            0,
+                            3.1,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1.6,
+                            1.6,
+                            1.6
+                        ],
+                        "parentId": "roundbottomflask-5932"
+                    },
+                    {
+                        "id": "tripodstand-0695",
+                        "model": "TripodStand",
+                        "position": [
+                            7.891,
+                            0,
+                            2.455
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "ringRadius": 0.8,
+                        "height": 4.4,
+                        "legAngle": 0.24
+                    },
+                    {
+                        "id": "tripodstand-1692",
+                        "model": "TripodStand",
+                        "position": [
+                            0,
+                            0,
+                            2.198
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "ringRadius": 0.7,
+                        "height": 4.3,
+                        "legAngle": 0.21
+                    },
+                    {
+                        "id": "retortstand-9429",
+                        "model": "RetortStand",
+                        "position": [
+                            3.582,
+                            0,
+                            2.289
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "height": 7.5
+                    },
+                    {
+                        "id": "roundbottomflask-3856",
+                        "model": "RoundBottomFlask",
+                        "position": [
+                            0,
+                            4,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "tripodstand-1692"
+                    },
+                    {
+                        "id": "wiregauze-3533",
+                        "model": "WireGauze",
+                        "position": [
+                            0,
+                            4.45,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "tripodstand-0695"
+                    },
+                    {
+                        "id": "clamp-7774",
+                        "model": "Clamp",
+                        "position": [
+                            2.220446049250313e-16,
+                            6.2,
+                            1.55
+                        ],
+                        "rotation": [
+                            0,
+                            -1.5707963267948966,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "retortstand-9429",
+                        "headAngle": 1.5707963267948966,
+                        "size": 1,
+                        "angle": 0.3,
+                        "extendLength": 0.3
+                    },
+                    {
+                        "id": "conicalflask-1373",
+                        "model": "ConicalFlask",
+                        "position": [
+                            0,
+                            0.05,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "wiregauze-3533"
+                    },
+                    {
+                        "id": "testtube-5010",
+                        "model": "TestTube",
+                        "position": [
+                            0.62,
+                            -1.4,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "clamp-7774"
+                    },
+                    {
+                        "id": "bunsenburner-0221",
+                        "model": "BunsenBurner",
+                        "position": [
+                            3.492,
+                            0,
+                            4.371
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "isOn": true
+                    },
+                    {
+                        "id": "bunsenburner-1128",
+                        "model": "BunsenBurner",
+                        "position": [
+                            0.033,
+                            0,
+                            2.335
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "isOn": true
+                    },
+                    {
+                        "id": "bunsenburner-2009",
+                        "model": "BunsenBurner",
+                        "position": [
+                            8.086,
+                            0,
+                            2.149
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "isOn": true,
+                        "gasFlow": 0.9,
+                        "airFlow": 0.6
+                    },
+                    {
+                        "id": "bunsenburner-0459",
+                        "model": "BunsenBurner",
+                        "position": [
+                            -2.325,
+                            0,
+                            5.908
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "isOn": true,
+                        "airFlow": 0.6,
+                        "gasFlow": 0.75
+                    },
+                    {
+                        "id": "twoneckflask-1227",
+                        "model": "TwoNeckFlask",
+                        "position": [
+                            0,
+                            2.7,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "tripodstand-6726"
+                    },
+                    {
+                        "id": "threeneckflask-5867",
+                        "model": "ThreeNeckFlask",
+                        "position": [
+                            0,
+                            2.7,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "tripodstand-6949"
+                    },
+                    {
+                        "id": "separatoryfunnel-9962",
+                        "model": "SeparatoryFunnel",
+                        "position": [
+                            0,
+                            -1.2,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "ringclamp-7429"
+                    },
+                    {
+                        "id": "ringclamp-7429",
+                        "model": "RingClamp",
+                        "position": [
+                            0,
+                            3.916,
+                            2.6
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "retortstand-8252",
+                        "ringRadius": 0.8
+                    },
+                    {
+                        "id": "tripodstand-6726",
+                        "model": "TripodStand",
+                        "position": [
+                            -3.341,
+                            0,
+                            13.314
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "ringRadius": 0.7
+                    },
+                    {
+                        "id": "tripodstand-6949",
+                        "model": "TripodStand",
+                        "position": [
+                            7.871,
+                            0,
+                            12.419
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "ringRadius": 0.7
+                    },
+                    {
+                        "id": "worktable-5087",
+                        "model": "WorkTable",
+                        "position": [
+                            7.455,
+                            0,
+                            12.331
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    {
+                        "id": "worktable-6895",
+                        "model": "WorkTable",
+                        "position": [
+                            -2.98,
+                            0,
+                            13.023
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    {
+                        "id": "retortstand-8252",
+                        "model": "RetortStand",
+                        "position": [
+                            1.211,
+                            0,
+                            -5.841
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "height": 9
+                    },
+                    {
+                        "id": "volumetricflask-3208",
+                        "model": "VolumetricFlask",
+                        "position": [
+                            0,
+                            3.13,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "tripodstand-9796"
+                    },
+                    {
+                        "id": "tripodstand-9796",
+                        "model": "TripodStand",
+                        "position": [
+                            4.95,
+                            0,
+                            -6.183
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "ringRadius": 0.55
+                    },
+                    {
+                        "id": "worktable-3658",
+                        "model": "WorkTable",
+                        "position": [
+                            15.689,
+                            0,
+                            4.419
+                        ],
+                        "rotation": [
+                            3.142,
+                            3.141592653589793,
+                            3.142
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "depth": 6.5,
+                        "width": 4.5
+                    },
+                    {
+                        "id": "worktable-3850",
+                        "model": "WorkTable",
+                        "position": [
+                            15.589,
+                            0,
+                            -4.446
+                        ],
+                        "rotation": [
+                            0,
+                            1.571,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    {
+                        "id": "distillationflask-1515",
+                        "model": "DistillationFlask",
+                        "position": [
+                            0,
+                            2.7,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "tripodstand-3304"
+                    },
+                    {
+                        "id": "vacuumflask-2494",
+                        "model": "VacuumFlask",
+                        "position": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            1.421,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "wiregauze-2657"
+                    },
+                    {
+                        "id": "tripodstand-2931",
+                        "model": "TripodStand",
+                        "position": [
+                            15.871,
+                            0,
+                            -5.031
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "ringRadius": 0.8
+                    },
+                    {
+                        "id": "tripodstand-3304",
+                        "model": "TripodStand",
+                        "position": [
+                            15.688,
+                            0,
+                            4.035
+                        ],
+                        "rotation": [
+                            0,
+                            1.5707963267948966,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "ringRadius": 0.7
+                    },
+                    {
+                        "id": "wiregauze-2657",
+                        "model": "WireGauze",
+                        "position": [
+                            0,
+                            3.05,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "tripodstand-2931"
+                    },
+                    {
+                        "id": "wiregauze-4935",
+                        "model": "WireGauze",
+                        "position": [
+                            0,
+                            3.05,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "tripodstand-9796"
+                    }
+                ],
+                "macroView": {
+                    "visuals": [
+                        "Custom reaction loaded"
+                    ],
+                    "steps": [
+                        "Add reactants",
+                        "Observe reaction"
+                    ],
+                    "visualRules": {
+                        "timeline": {}
+                    }
+                }
+            },
+            {
+                "id": "stage-1775200431708",
+                "name": "Stage 2",
+                "apparatus": [],
+                "macroView": {}
+            }
+        ]
     }
 ]

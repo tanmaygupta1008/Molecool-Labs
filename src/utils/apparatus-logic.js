@@ -2,54 +2,77 @@
  * Detects which apparatus is strictly above the burner to determine flame shape and height.
  * @param {Object} burner The burner item (with position).
  * @param {Array} allItems List of all apparatus items.
- * @returns {Object} { type: 'beaker' | 'conical' | 'round' | 'standard', distY: number }
+ * @param {number} gasFlow 0-1 gas flow (controls flame height for proximity calc).
+ * @returns {Object} { type, distY, baseRadius, isHeating, proximity }
  */
-export const detectApparatusTypeAbove = (burner, allItems) => {
-    if (!burner || !allItems) return { type: 'standard', distY: 3.9 };
+export const detectApparatusTypeAbove = (burner, allItems, gasFlow = 0.6) => {
+    if (!burner || !allItems) return { isHeating: false, type: 'standard', distY: 3.9, baseRadius: 0.8, proximity: 0 };
 
-    const burnerPos = burner.position || [0, 0, 0];
-    const DETECTION_RADIUS = 1.5; // Increased significantly to catch angled tubes
+    // ── Flame geometry constants (must match BunsenBurner.jsx) ──────────────
+    const BURNER_TIP = 3.35;          // local Y of flame start
+    const gfH = (0.4 + 0.6 * gasFlow); // height scale factor
+    const freeH = 2.1 * gfH;           // free-burning flame height
+    const flameTipY = BURNER_TIP + freeH; // free-burning flame tip in burner-local Y
+    // Interaction begins this many units above the flame tip
+    const INTERACT_ZONE = freeH * 1.5;
+    // ──────────────────────────────────────────────────────────────────────
+
+    // Helper: recursively compute world position (translation only)
+    const getWorldPos = (item) => {
+        let pos = [...(item.position || [0, 0, 0])];
+        let curr = item;
+        while (curr.parentId) {
+            const parent = allItems.find(i => i.id === curr.parentId);
+            if (!parent) break;
+            const pPos = parent.position || [0, 0, 0];
+            pos[0] += pPos[0];
+            pos[1] += pPos[1];
+            pos[2] += pPos[2];
+            curr = parent;
+        }
+        return pos;
+    };
+
+    const burnerWPos = getWorldPos(burner);
+    const DETECTION_RADIUSSQ = 1.0 * 1.0; 
     const MIN_HEIGHT = 0.5;
-    const MAX_HEIGHT = 10.0; // Increased to 10 for very high setups
+    const MAX_HEIGHT = 10.0;
 
     let closestItem = null;
     let closestDist = Infinity;
 
     const FLAME_SHAPING_TYPES = {
-        'Beaker': 'beaker',
-        'ConicalFlask': 'conical',
-        'RoundBottomFlask': 'round',
-        'TestTube': 'round',
-        'BoilingTube': 'round',
-        'Crucible': 'round',
-        'EvaporatingDish': 'round'
-    };
-
-    // Approximate half-heights to find bottom of object
-    // (Assuming pivots are roughly center or bottom - tuning for visuals)
-    const BOTTOM_OFFSETS = {
-        'Beaker': 0.6,
-        'ConicalFlask': 0.8,
-        'RoundBottomFlask': 0.7,
-        'TestTube': 0.8,
-        'BoilingTube': 0.8,
-        'Crucible': 0.3,
-        'EvaporatingDish': 0.2
+        'Beaker': { type: 'beaker', offset: 0.6, radius: 0.8 },
+        'ConicalFlask': { type: 'conical', offset: 0.8, radius: 0.9 },
+        'VacuumFlask': { type: 'conical', offset: 0.8, radius: 0.9 },
+        'RoundBottomFlask': { type: 'round', offset: 0.7, radius: 0.8 },
+        'TwoNeckFlask': { type: 'round', offset: 0.7, radius: 0.8 },
+        'ThreeNeckFlask': { type: 'round', offset: 0.7, radius: 0.8 },
+        'DistillationFlask': { type: 'round', offset: 0.7, radius: 0.8 },
+        'SeparatoryFunnel': { type: 'round', offset: 0.4, radius: 0.5 },
+        'VolumetricFlask': { type: 'round', offset: 0.6, radius: 0.9 },
+        'TestTube': { type: 'round', offset: 0.8, radius: 0.2 },
+        'BoilingTube': { type: 'round', offset: 0.8, radius: 0.3 },
+        'Crucible': { type: 'round', offset: 0.3, radius: 0.4 },
+        'EvaporatingDish': { type: 'round', offset: 0.2, radius: 0.5 }
     };
 
     allItems.forEach(item => {
         if (item.id === burner.id) return;
-        if (!FLAME_SHAPING_TYPES[item.model]) return;
+        const info = FLAME_SHAPING_TYPES[item.model];
+        if (!info) return;
 
-        const itemPos = item.position || [0, 0, 0];
+        const itemWPos = getWorldPos(item);
+        
+        // Horizontal distance squared
+        const dx = itemWPos[0] - burnerWPos[0];
+        const dz = itemWPos[2] - burnerWPos[2];
+        const distSq = dx * dx + dz * dz;
+        
+        // Vertical distance from burner base to apparatus center
+        const distY = itemWPos[1] - burnerWPos[1];
 
-        // Horizontal Distance (XZ)
-        const distXZ = Math.sqrt(Math.pow(itemPos[0] - burnerPos[0], 2) + Math.pow(itemPos[2] - burnerPos[2], 2));
-
-        // Vertical Distance (Y) - relative to burner base
-        const distY = itemPos[1] - burnerPos[1];
-
-        if (distXZ < DETECTION_RADIUS && distY > MIN_HEIGHT && distY < MAX_HEIGHT) {
+        if (distSq < DETECTION_RADIUSSQ && distY > MIN_HEIGHT && distY < MAX_HEIGHT) {
             if (distY < closestDist) {
                 closestDist = distY;
                 closestItem = item;
@@ -58,27 +81,34 @@ export const detectApparatusTypeAbove = (burner, allItems) => {
     });
 
     if (closestItem) {
-        const type = FLAME_SHAPING_TYPES[closestItem.model];
-        // Calculate relative height from burner base to object bottom
-        // distY is center-to-center (approx). Subtract offset to get bottom.
-        let offset = BOTTOM_OFFSETS[closestItem.model] || 0.5;
+        const info = FLAME_SHAPING_TYPES[closestItem.model];
+        let offset = info.offset;
 
-        // Compensation for rotation (e.g., angled test tube)
-        // If rotated, the "bottom" relative to center changes. 
-        // We reduce offset to let flame penetrate slightly or hit the side.
+        // Compensate for rotation (approximate)
         const rot = closestItem.rotation || [0, 0, 0];
-        if (Math.abs(rot[0]) > 0.5 || Math.abs(rot[2]) > 0.5) {
-            offset *= 0.5;
-        }
+        if (Math.abs(rot[0]) > 0.5 || Math.abs(rot[2]) > 0.5) offset *= 0.5;
 
         let estimatedBottom = closestDist - offset;
+        // The burner tip in local space is at ~3.35 from base
+        if (estimatedBottom < 3.35) estimatedBottom = 3.35;
 
-        // Clamp minimum flame height to be just above burner tip (3.35)
-        // If object is LOWER than tip (impossible physically if solid, but graphically possible), clamp it.
-        if (estimatedBottom < 3.5) estimatedBottom = 3.5;
+        // ── Proximity: how deep into the flame is the apparatus? ──────────
+        // 0 = apparatus just entered interaction zone (no deformation yet)
+        // 1 = apparatus bottom is at/below flame tip (fully deformed)
+        // Uses smooth-start curve for a natural feel
+        const interactStart = flameTipY + INTERACT_ZONE;
+        const rawProximity = (interactStart - estimatedBottom) / (interactStart - BURNER_TIP);
+        const proximity = Math.max(0, Math.min(1, rawProximity));
+        // ─────────────────────────────────────────────────────────────────
 
-        return { type, distY: estimatedBottom };
+        return { 
+            isHeating: true, 
+            type: info.type, 
+            distY: estimatedBottom,
+            baseRadius: info.radius,
+            proximity
+        };
     }
 
-    return { type: 'standard', distY: 3.9 }; // Default standard flame height
+    return { isHeating: false, type: 'standard', distY: 5.5, baseRadius: 0.8, proximity: 0 };
 };
