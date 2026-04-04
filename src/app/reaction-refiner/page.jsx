@@ -4,11 +4,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, PerspectiveCamera, Grid } from '@react-three/drei';
 import MacroView from '@/components/reactions/views/MacroView';
-import { Save, Play, Pause, RefreshCw, Code, LayoutTemplate } from 'lucide-react';
+import { Save, Play, Pause, RefreshCw, Code, LayoutTemplate, MessageSquareText } from 'lucide-react';
 import InitialStateEditor from './components/InitialStateEditor';
-import TimelineEditor from './components/TimelineEditor';
+import ExplanationEditor from './components/ExplanationEditor';
 import StepDetailEditor from './components/StepDetailEditor';
-import ReactantTimelineEditor from './components/ReactantTimelineEditor';
+import GlobalTimelineEditor from './components/ReactantTimelineEditor';
 import ReactantBlockEditor from './components/ReactantBlockEditor';
 
 
@@ -20,9 +20,16 @@ const ReactionRefinerPage = () => {
     // Editor State
     const [viewMode, setViewMode] = useState('VISUAL'); // 'VISUAL' or 'JSON'
     const [jsonInput, setJsonInput] = useState('');
-    const [selectedStepIndex, setSelectedStepIndex] = useState(null);
+    const [selectedExplanationId, setSelectedExplanationId] = useState(null);
     const [selectedReactantBlockId, setSelectedReactantBlockId] = useState(null);
     const [saveStatus, setSaveStatus] = useState(null); // 'saving', 'success', 'error'
+    const [timelineHeight, setTimelineHeight] = useState(250); // Default timeline height in pixels
+    const [isDraggingTimeline, setIsDraggingTimeline] = useState(false);
+    const [leftSidebarWidth, setLeftSidebarWidth] = useState(320);
+    const [rightSidebarWidth, setRightSidebarWidth] = useState(384);
+    const [isDraggingLeft, setIsDraggingLeft] = useState(false);
+    const [isDraggingRight, setIsDraggingRight] = useState(false);
+
     // Playback State
     const [progress, setProgress] = useState(0); // 0 to 1
     const [isPlaying, setIsPlaying] = useState(false);
@@ -106,6 +113,64 @@ const ReactionRefinerPage = () => {
         }
     }, [selectedReactionId, reactions]);
 
+    // Handle Timeline Resizer
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isDraggingTimeline) return;
+            // Calculate height from bottom of window
+            const newHeight = window.innerHeight - e.clientY;
+            // Clamp between 100px and 80vh
+            const clamped = Math.max(100, Math.min(newHeight, window.innerHeight * 0.8));
+            setTimelineHeight(clamped);
+        };
+        const handleMouseUp = () => setIsDraggingTimeline(false);
+
+        if (isDraggingTimeline) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+            // Disable page text selection while dragging
+            document.body.style.userSelect = 'none';
+        } else {
+            document.body.style.userSelect = '';
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDraggingTimeline]);
+
+    // Handle Sidebar Resizing
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (isDraggingLeft) {
+                const newWidth = e.clientX;
+                setLeftSidebarWidth(Math.max(200, Math.min(newWidth, window.innerWidth / 2.5)));
+            } else if (isDraggingRight) {
+                const newWidth = window.innerWidth - e.clientX;
+                setRightSidebarWidth(Math.max(200, Math.min(newWidth, window.innerWidth / 2.5)));
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsDraggingLeft(false);
+            setIsDraggingRight(false);
+        };
+
+        if (isDraggingLeft || isDraggingRight) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = 'none';
+        } else if (!isDraggingTimeline) {
+            document.body.style.userSelect = '';
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDraggingLeft, isDraggingRight, isDraggingTimeline]);
+
     const handleVisualChange = (category, newData) => {
         setCurrentReaction(prev => {
             const newRules = { ...(prev.macroView?.visualRules || {}) };
@@ -116,6 +181,8 @@ const ReactionRefinerPage = () => {
                 newRules.timeline = newData;
             } else if (category === 'reactantTimeline') {
                 newRules.reactantTimeline = newData;
+            } else if (category === 'explanationTimeline') {
+                newRules.explanationTimeline = newData;
             }
 
             const updatedReaction = {
@@ -202,7 +269,15 @@ const ReactionRefinerPage = () => {
             {/* 3-Column Layout */}
 
             {/* --- LEFT PANEL: TIMELINE (20-25%) --- */}
-            <div className="w-80 flex-shrink-0 flex flex-col border-r border-white/10 bg-[#1a1a1a]">
+            <div className="flex-shrink-0 flex flex-col border-r border-white/10 bg-[#1a1a1a] relative group/left-sidebar" style={{ width: leftSidebarWidth }}>
+                {/* Resizer Handle */}
+                <div 
+                    className="absolute top-0 right-0 bottom-0 w-[6px] translate-x-1/2 bg-transparent cursor-col-resize z-50 flex justify-center items-center group-hover/left-sidebar:bg-cyan-500/10 active:bg-cyan-500/30 transition-colors"
+                    onMouseDown={(e) => { e.preventDefault(); setIsDraggingLeft(true); }}
+                >
+                    <div className={`w-[2px] h-12 rounded-full transition-colors ${isDraggingLeft ? 'bg-cyan-400' : 'bg-white/10 group-hover/left-sidebar:bg-cyan-500/50'}`} />
+                </div>
+
                 <div className="p-3 border-b border-white/10 bg-[#222] flex justify-between items-center">
                     <h2 className="font-bold text-cyan-400 text-sm flex items-center gap-2">
                         ⏱️ Timeline
@@ -221,27 +296,17 @@ const ReactionRefinerPage = () => {
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-0 flex flex-col">
                     {viewMode === 'JSON' ? (
                         <div className="p-4 text-xs text-gray-500 text-center mt-10">
-                            Switch to Visual Mode to edit Timeline
+                            Switch to Visual Mode to edit Explanations
                         </div>
                     ) : (
-                        <TimelineEditor
-                            timeline={currentReaction.macroView?.visualRules?.timeline}
-                            selectedStepIndex={selectedStepIndex}
-                            onSelectStep={(idx) => {
-                                setSelectedStepIndex(idx);
-                                if (idx !== null) setSelectedReactantBlockId(null);
+                        <ExplanationEditor
+                            explanationTimeline={currentReaction.macroView?.visualRules?.explanationTimeline || []}
+                            selectedBlockId={selectedExplanationId}
+                            onSelectBlock={(id) => {
+                                setSelectedExplanationId(id);
+                                if (id !== null) setSelectedReactantBlockId(null);
                             }}
-                            onChange={(data) => handleVisualChange('timeline', data)}
-                            // Playback Props
-                            isPlaying={isPlaying}
-                            onPlayPause={() => setIsPlaying(!isPlaying)}
-                            progress={progress}
-                            onSeek={setProgress}
-                            playbackSpeed={playbackSpeed}
-                            setPlaybackSpeed={setPlaybackSpeed}
-                            isLooping={isLooping}
-                            setIsLooping={setIsLooping}
-                            totalDuration={totalDuration}
+                            onChange={(data) => handleVisualChange('explanationTimeline', data)}
                         />
                     )}
                 </div>
@@ -278,29 +343,73 @@ const ReactionRefinerPage = () => {
                             spellCheck={false}
                         />
                     ) : (
-                        <Canvas dpr={[1, 2]} gl={{ antialias: true }}>
-                            <PerspectiveCamera makeDefault position={[0, 2, 8]} fov={50} />
-                            <OrbitControls makeDefault />
-                            <Environment preset="city" />
-                            <ambientLight intensity={0.5} />
-                            <directionalLight position={[5, 10, 5]} intensity={1} />
-                            <MacroView
-                                reaction={currentReaction}
-                                progress={progress}
-                            />
-                        </Canvas>
+                        <div className="relative w-full h-full">
+                            <Canvas dpr={[1, 2]} gl={{ antialias: true }}>
+                                <PerspectiveCamera makeDefault position={[0, 2, 8]} fov={50} />
+                                <OrbitControls makeDefault />
+                                <Environment preset="city" />
+                                <ambientLight intensity={0.5} />
+                                <directionalLight position={[5, 10, 5]} intensity={1} />
+                                <MacroView
+                                    reaction={currentReaction}
+                                    progress={progress}
+                                />
+                            </Canvas>
+                            
+                            {/* Explanation Overlay Logic */}
+                            {currentReaction.macroView?.visualRules?.explanationTimeline && (() => {
+                                const activeExplanation = currentReaction.macroView.visualRules.explanationTimeline.find(block => {
+                                    const currentTime = progress * totalDuration;
+                                    return currentTime >= block.startTime && currentTime <= (block.startTime + block.duration);
+                                });
+                                
+                                if (activeExplanation) {
+                                    return (
+                                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-4/5 max-w-xl pointer-events-none animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                            <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-4 shadow-2xl flex items-start gap-4">
+                                                <div className="mt-1 bg-purple-500/20 p-2 rounded-lg border border-purple-500/30">
+                                                    <MessageSquareText size={16} className="text-purple-400" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-sm text-gray-200 font-medium leading-relaxed whitespace-pre-wrap">
+                                                        {activeExplanation.text || "..."}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            })()}
+                        </div>
                     )}
                 </div>
 
                 {viewMode === 'VISUAL' && (
-                    <div className="h-48 flex-shrink-0 border-t border-white/10">
-                        <ReactantTimelineEditor
+                    <>
+                        {/* Timeline Resizer Bar */}
+                        <div 
+                            className="w-full h-[6px] bg-[#222] border-t border-b border-white/10 cursor-ns-resize hover:bg-cyan-500/20 active:bg-cyan-500/40 relative flex items-center justify-center transition-colors shrink-0 z-50 group"
+                            onMouseDown={(e) => { e.preventDefault(); setIsDraggingTimeline(true); }}
+                        >
+                            <div className={`w-16 h-1 rounded-full pointer-events-none transition-colors ${isDraggingTimeline ? 'bg-cyan-400' : 'bg-gray-600 group-hover:bg-cyan-500/50'}`} />
+                        </div>
+
+                        <div className="flex-shrink-0" style={{ height: `${timelineHeight}px` }}>
+                            <GlobalTimelineEditor
                             reactantTimeline={currentReaction.macroView?.visualRules?.reactantTimeline}
-                            onChange={(data) => handleVisualChange('reactantTimeline', data)}
-                            selectedBlockId={selectedReactantBlockId}
-                            onSelectBlock={(id) => {
+                            explanationTimeline={currentReaction.macroView?.visualRules?.explanationTimeline}
+                            onChangeReactant={(data) => handleVisualChange('reactantTimeline', data)}
+                            onChangeExplanation={(data) => handleVisualChange('explanationTimeline', data)}
+                            selectedReactantBlockId={selectedReactantBlockId}
+                            selectedExplanationBlockId={selectedExplanationId}
+                            onSelectReactantBlock={(id) => {
                                 setSelectedReactantBlockId(id);
-                                if (id !== null) setSelectedStepIndex(null);
+                                if (id !== null) setSelectedExplanationId(null);
+                            }}
+                            onSelectExplanationBlock={(id) => {
+                                setSelectedExplanationId(id);
+                                if (id !== null) setSelectedReactantBlockId(null);
                             }}
                             progress={progress}
                             totalDuration={totalDuration}
@@ -313,12 +422,21 @@ const ReactionRefinerPage = () => {
                             onSeek={setProgress}
                         />
                     </div>
+                    </>
                 )}
             </div>
 
 
             {/* --- RIGHT PANEL: PROPERTIES (20-25%) --- */}
-            <div className="w-96 flex-shrink-0 flex flex-col border-l border-white/10 bg-[#1a1a1a]">
+            <div className="flex-shrink-0 flex flex-col border-l border-white/10 bg-[#1a1a1a] relative group/right-sidebar" style={{ width: rightSidebarWidth }}>
+                {/* Resizer Handle */}
+                <div 
+                    className="absolute top-0 left-0 bottom-0 w-[6px] -translate-x-1/2 bg-transparent cursor-col-resize z-50 flex justify-center items-center group-hover/right-sidebar:bg-cyan-500/10 active:bg-cyan-500/30 transition-colors"
+                    onMouseDown={(e) => { e.preventDefault(); setIsDraggingRight(true); }}
+                >
+                    <div className={`w-[2px] h-12 rounded-full transition-colors ${isDraggingRight ? 'bg-cyan-400' : 'bg-white/10 group-hover/right-sidebar:bg-cyan-500/50'}`} />
+                </div>
+
                 <div className="p-3 border-b border-white/10 bg-[#222] flex justify-between items-center">
                     <h2 className="font-bold text-cyan-400 text-sm flex items-center gap-2">
                         🛠️ Properties
@@ -352,38 +470,17 @@ const ReactionRefinerPage = () => {
                             />
 
                             {/* Section: Step Details (Visible only when a step is selected) */}
-                            {selectedStepIndex !== null ? (
-                                <div className="bg-[#111] rounded-lg border border-white/5 overflow-hidden flex flex-col min-h-[400px]">
-                                    <div className="bg-[#1f1f1f] px-3 py-2 border-b border-white/5 font-semibold text-xs text-cyan-300 flex justify-between">
-                                        <span>Step {parseInt(selectedStepIndex) + 1} Details</span>
-                                        <span className="text-white/30 font-mono">#{selectedStepIndex}</span>
+                            {selectedExplanationId !== null ? (
+                                <div className="bg-[#111] rounded-lg border border-white/5 overflow-hidden flex flex-col min-h-[200px]">
+                                    <div className="bg-[#1f1f1f] px-3 py-2 border-b border-white/5 font-semibold text-xs text-purple-400 flex justify-between">
+                                        <span>Explanation Block Properties</span>
+                                        <span className="text-white/30 font-mono">#{selectedExplanationId.split('_').pop()}</span>
                                     </div>
-                                    <div className="flex-1">
-                                        <StepDetailEditor
-                                            step={currentReaction.macroView?.visualRules?.timeline?.[selectedStepIndex]}
-                                            apparatusList={currentReaction.stages?.[0]?.apparatus || currentReaction.apparatus || []}
-                                            onChange={(updatedStep) => {
-                                                const newTimeline = { ...currentReaction.macroView?.visualRules?.timeline };
-                                                newTimeline[selectedStepIndex] = updatedStep;
-                                                handleVisualChange('timeline', newTimeline);
-                                            }}
-                                            onPreview={() => {
-                                                const timeline = currentReaction.macroView?.visualRules?.timeline || {};
-                                                let startTime = 0;
-                                                // Sum duration+delay of all previous steps
-                                                for (let i = 0; i < selectedStepIndex; i++) {
-                                                    const s = timeline[i];
-                                                    if (s && !s.disabled) {
-                                                        startTime += (parseFloat(s.duration) || 0) + (parseFloat(s.delay) || 0);
-                                                    }
-                                                }
-
-                                                if (totalDuration > 0) {
-                                                    setProgress(startTime / totalDuration);
-                                                    setIsPlaying(true);
-                                                }
-                                            }}
-                                        />
+                                    <div className="p-4 space-y-4">
+                                        <div className="text-gray-400 text-xs text-center border border-dashed border-white/5 p-4 rounded bg-white/[0.02]">
+                                            Explanations are pure visual overlays. 
+                                            Adjust their timing by dragging the track blocks in the timeline below.
+                                        </div>
                                     </div>
                                 </div>
                             ) : selectedReactantBlockId !== null ? (

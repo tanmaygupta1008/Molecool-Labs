@@ -88,7 +88,7 @@
                     },
                     "burner": {
                         "flameColor": "#3b82f6",
-                        "intensity": 0.6,
+                        "intensity": 1.1,
                         "isOn": true
                     }
                 },
@@ -169,7 +169,37 @@
                             "magnesium_burn"
                         ]
                     }
-                }
+                },
+                "reactantTimeline": [
+                    {
+                        "id": "r_step_1775323054369",
+                        "name": "Reactant Stage 1",
+                        "startTime": 0,
+                        "duration": 5,
+                        "effects": []
+                    },
+                    {
+                        "id": "r_step_1775323087000",
+                        "name": "Reactant Stage 2",
+                        "startTime": 5.25,
+                        "duration": 5,
+                        "effects": []
+                    }
+                ],
+                "explanationTimeline": [
+                    {
+                        "id": "exp_1775322880045",
+                        "text": "Good news!!!!! Good news!!!!!\nSale Sale Sale",
+                        "startTime": 0,
+                        "duration": 5
+                    },
+                    {
+                        "id": "exp_1775322937078",
+                        "text": "Second explanation",
+                        "startTime": 5,
+                        "duration": 5
+                    }
+                ]
             }
         },
         "microView": {
@@ -4358,6 +4388,166 @@
                             1,
                             1
                         ]
+                    },
+                    {
+                        "id": "rubbercork-6494",
+                        "model": "RubberCork",
+                        "position": [
+                            0,
+                            3.1,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1.6,
+                            1.6,
+                            1.6
+                        ],
+                        "parentId": "twoneckflask-1227"
+                    },
+                    {
+                        "id": "rubbercork-5677",
+                        "model": "RubberCork",
+                        "position": [
+                            0,
+                            4.35,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1.6,
+                            1.6,
+                            1.6
+                        ],
+                        "parentId": "distillationflask-1515"
+                    },
+                    {
+                        "id": "rubbercork-7413",
+                        "model": "RubberCork",
+                        "position": [
+                            0,
+                            2.5,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1.6,
+                            1.6,
+                            1.6
+                        ],
+                        "parentId": "vacuumflask-2494"
+                    },
+                    {
+                        "id": "rubbercork-5172",
+                        "model": "RubberCork",
+                        "position": [
+                            0,
+                            4.5,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            0.7,
+                            0.7,
+                            0.7
+                        ],
+                        "parentId": "volumetricflask-3208"
+                    },
+                    {
+                        "id": "rubbercork-8492",
+                        "model": "RubberCork",
+                        "position": [
+                            0,
+                            3.1,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1.6,
+                            1.6,
+                            1.6
+                        ],
+                        "parentId": "threeneckflask-5867"
+                    },
+                    {
+                        "id": "rubbercork-9180",
+                        "model": "RubberCork",
+                        "position": [
+                            1.05,
+                            2.819,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            -0.5236
+                        ],
+                        "scale": [
+                            1.15,
+                            1.15,
+                            1.15
+                        ],
+                        "parentId": "threeneckflask-5867"
+                    },
+                    {
+                        "id": "rubbercork-8668",
+                        "model": "RubberCork",
+                        "position": [
+                            -1.05,
+                            2.819,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0.5236
+                        ],
+                        "scale": [
+                            1.15,
+                            1.15,
+                            1.15
+                        ],
+                        "parentId": "threeneckflask-5867"
+                    },
+                    {
+                        "id": "rubbercork-7940",
+                        "model": "RubberCork",
+                        "position": [
+                            1.05,
+                            2.819,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            -0.5236
+                        ],
+                        "scale": [
+                            1.15,
+                            1.15,
+                            1.15
+                        ],
+                        "parentId": "twoneckflask-1227"
                     }
                 ],
                 "macroView": {
@@ -4379,6 +4569,8 @@
                 "apparatus": [],
                 "macroView": {}
             }
-        ]
+        ],
+        "tableWidth": 25,
+        "tableDepth": 16.5
     }
 ]

@@ -932,39 +932,72 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
                 let closestDist = Infinity;
                 let snapWorldPos = null;
                 let targetFlaskId = null;
-                let targetLocalY = 0;
+                let targetLocalPos = null;
                 let targetScale = 1.0;
+                let targetRotation = null; // [x, y, z] euler — null means keep current
 
-                const CORK_HEIGHTS = {
-                    'RoundBottomFlask': 3.1, // sits deep in neck (rim at 3.3)
-                    'ConicalFlask': 2.35,    // rim at 2.5
-                    'TestTube': 2.85,        // rim at 3.0
-                    'BoilingTube': 3.65,     // rim at 3.8
-                };
+                // Side neck geometry constants from RoundBottomFlask
+                // angle = ±PI/6 (±30°), rOff=0.9, length=1.2
+                // rimX = sin(angle)*(0.9+1.2), rimY = 1 + cos(angle)*(0.9+1.2)
+                const SN_RIM_X = Math.sin(Math.PI / 6) * 2.1;   // ≈ 1.05
+                const SN_RIM_Y = 1 + Math.cos(Math.PI / 6) * 2.1; // ≈ 2.818
 
-                const CORK_SCALES = {
-                    'RoundBottomFlask': 1.6, // radius 0.35
-                    'ConicalFlask': 1.35,    // radius 0.3
-                    'TestTube': 0.9,         // radius 0.2
-                    'BoilingTube': 1.25,     // radius 0.28
+                // Each entry is an array of snap targets per flask.
+                // localPos: where the cork bottom sits (relative to flask origin)
+                // scale: cork size factor (cork natural radius = 0.2)
+                // rotation: [rx, ry, rz] cork must be tilted to, or null for upright
+                const FLASK_SNAP_TARGETS = {
+                    'RoundBottomFlask': [
+                        { localPos: [0, 3.1, 0], scale: 1.6, rotation: null },
+                    ],
+                    'ConicalFlask': [
+                        { localPos: [0, 2.35, 0], scale: 1.35, rotation: null },
+                    ],
+                    'TestTube': [
+                        { localPos: [0, 2.85, 0], scale: 0.9, rotation: null },
+                    ],
+                    'BoilingTube': [
+                        { localPos: [0, 3.65, 0], scale: 1.25, rotation: null },
+                    ],
+                    'TwoNeckFlask': [
+                        { localPos: [0, 3.1, 0], scale: 1.6, rotation: null },              // center neck
+                        { localPos: [SN_RIM_X, SN_RIM_Y, 0], scale: 1.15, rotation: [0, 0, -Math.PI / 6] }, // right side neck (+30°)
+                    ],
+                    'ThreeNeckFlask': [
+                        { localPos: [0, 3.1, 0], scale: 1.6, rotation: null },              // center neck
+                        { localPos: [SN_RIM_X, SN_RIM_Y, 0], scale: 1.15, rotation: [0, 0, -Math.PI / 6] }, // right side neck
+                        { localPos: [-SN_RIM_X, SN_RIM_Y, 0], scale: 1.15, rotation: [0, 0, Math.PI / 6] }, // left side neck
+                    ],
+                    'VolumetricFlask': [
+                        { localPos: [0, 4.5, 0], scale: 0.7, rotation: null },
+                    ],
+                    'DistillationFlask': [
+                        { localPos: [0, 4.35, 0], scale: 1.6, rotation: null },
+                    ],
+                    'VacuumFlask': [
+                        { localPos: [0, 2.5, 0], scale: 1.6, rotation: null },
+                    ],
                 };
 
                 allItems.forEach(other => {
-                    const snapHeight = CORK_HEIGHTS[other.model];
-                    if (snapHeight !== undefined) {
-                        const otherObj = getWorldTransform(other.id);
-                        const topCenterLocal = new THREE.Vector3(0, snapHeight, 0);
-                        const targetWorldPos = otherObj.localToWorld(topCenterLocal);
-                        
+                    const snapTargets = FLASK_SNAP_TARGETS[other.model];
+                    if (!snapTargets) return;
+
+                    const otherObj = getWorldTransform(other.id);
+
+                    snapTargets.forEach(target => {
+                        const targetWorldPos = otherObj.localToWorld(new THREE.Vector3(...target.localPos));
                         const dist = myWorldPos.distanceTo(targetWorldPos);
+
                         if (dist < CORK_SNAP_THRESHOLD && dist < closestDist) {
                             closestDist = dist;
-                            snapWorldPos = targetWorldPos;
+                            snapWorldPos = targetWorldPos.clone();
                             targetFlaskId = other.id;
-                            targetLocalY = snapHeight;
-                            targetScale = CORK_SCALES[other.model] || 1.0;
+                            targetLocalPos = target.localPos;
+                            targetScale = target.scale;
+                            targetRotation = target.rotation;
                         }
-                    }
+                    });
                 });
 
                 if (snapWorldPos && !didSnap) {
@@ -972,13 +1005,21 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
                     finalParentId = targetFlaskId;
                     const parentObj = getWorldTransform(targetFlaskId);
                     const localSnap = parentObj.worldToLocal(snapWorldPos);
-                    
-                    localSnap.y = targetLocalY;
-                    localSnap.x = 0;
-                    localSnap.z = 0;
+
+                    // Override to the exact local position to avoid floating-point drift
+                    localSnap.x = targetLocalPos[0];
+                    localSnap.y = targetLocalPos[1];
+                    localSnap.z = targetLocalPos[2];
 
                     finalStatePos = [Number(localSnap.x.toFixed(3)), Number(localSnap.y.toFixed(3)), Number(localSnap.z.toFixed(3))];
                     newScale = [targetScale, targetScale, targetScale];
+                    if (targetRotation) {
+                        newRot = [
+                            Number(targetRotation[0].toFixed(4)),
+                            Number(targetRotation[1].toFixed(4)),
+                            Number(targetRotation[2].toFixed(4))
+                        ];
+                    }
                 }
             }
 
@@ -1249,20 +1290,54 @@ const TubeBuilderTool = ({ allItems, builderState, setBuilderState, onCreateTube
     const [phantomPos, setPhantomPos] = useState(null);
 
     // 1. Calculate all available anchors
+    // We need a scoped helper to compute full world transforms (incl. parent chain)
+    // because getApparatusAnchors only knows item.position (local space for parented items).
+    const getWorldMatrixForItem = (targetId) => {
+        const targetItem = allItems.find(x => x.id === targetId);
+        if (!targetItem) return new THREE.Matrix4();
+
+        const obj = new THREE.Object3D();
+        obj.position.set(...(targetItem.position || [0, 0, 0]));
+        obj.rotation.set(...(targetItem.rotation || [0, 0, 0]));
+        obj.scale.set(...(targetItem.scale || [1, 1, 1]));
+        obj.updateMatrix();
+
+        if (targetItem.parentId) {
+            const parentMatrix = getWorldMatrixForItem(targetItem.parentId);
+            const worldMatrix = new THREE.Matrix4().multiplyMatrices(parentMatrix, obj.matrix);
+            return worldMatrix;
+        }
+        return obj.matrix.clone();
+    };
+
     const anchors = useMemo(() => {
         const allAnchors = allItems.flatMap(item => {
-            // getApparatusAnchors returns World Space anchors relative to the item's current transform
-            const itemAnchors = getApparatusAnchors(item).map(a => ({
-                ...a,
-                parentId: item.id,
-                // Ensure position is an array for safety, though getApparatusAnchors returns arrays
-                position: Array.isArray(a.position) ? a.position : new THREE.Vector3(...a.position).toArray(),
-                normal: a.normal || [0, 1, 0]
-            }));
+            // Build the full world-space matrix for this item (handles parented items)
+            const worldMatrix = getWorldMatrixForItem(item.id);
 
-            // Power Supply Terminals & others are now handled in getApparatusAnchors utils
+            // Get LOCAL anchor definitions (positions relative to item origin)
+            // We pass a clone of item with position=[0,0,0] rotation=[0,0,0] scale=[1,1,1]
+            // so getApparatusAnchors returns pure LOCAL positions, then we apply worldMatrix.
+            const localItem = { ...item, position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] };
+            const localAnchors = getApparatusAnchors(localItem);
 
-            return itemAnchors;
+            return localAnchors.map(a => {
+                // Transform local anchor position to world space
+                const localPos = new THREE.Vector3(...a.position);
+                localPos.applyMatrix4(worldMatrix);
+
+                // Transform local normal to world space (no translation)
+                const localNormal = new THREE.Vector3(...(a.normal || [0, 1, 0]));
+                const normalMatrix = new THREE.Matrix3().getNormalMatrix(worldMatrix);
+                localNormal.applyMatrix3(normalMatrix).normalize();
+
+                return {
+                    ...a,
+                    parentId: item.id,
+                    position: localPos.toArray(),
+                    normal: localNormal.toArray(),
+                };
+            });
         });
         return allAnchors;
     }, [allItems]);
