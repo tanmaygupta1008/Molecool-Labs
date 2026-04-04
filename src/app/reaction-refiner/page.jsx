@@ -254,13 +254,10 @@ const ReactionRefinerPage = () => {
                             <Environment preset="city" />
                             <ambientLight intensity={0.5} />
                             <directionalLight position={[5, 10, 5]} intensity={1} />
-                            <Grid infiniteGrid sectionColor="#333" cellColor="#222" fadeDistance={30} />
-                            <group position={[0, -2, 0]}>
-                                <MacroView
-                                    reaction={currentReaction}
-                                    progress={progress}
-                                />
-                            </group>
+                            <MacroView
+                                reaction={currentReaction}
+                                progress={progress}
+                            />
                         </Canvas>
                     )}
                 </div>

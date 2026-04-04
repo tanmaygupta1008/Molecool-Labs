@@ -7,9 +7,15 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, ContactShadows, Center } from '@react-three/drei';
 import * as Apparatus from '@/components/apparatus';
 import { detectApparatusTypeAbove } from '@/utils/apparatus-logic';
+import GlobalLabTable from '@/components/apparatus/GlobalLabTable';
 
 const ApparatusPreview = ({ apparatus }) => {
-    const Component = Apparatus[apparatus.model] || Apparatus.Beaker; // Fallback
+    let modelName = apparatus.model;
+    if (modelName === 'BoilingTube') modelName = 'TestTube';
+    if (modelName === 'GlassRod') modelName = 'StirringRod';
+    if (modelName === 'Cork') modelName = 'RubberCork';
+    
+    const Component = Apparatus[modelName] || Apparatus.Beaker; // Fallback
 
     // Exclude 'id' from props passed to the Three.js component because Object3D.id is read-only
     const { id, ...apparatusProps } = apparatus;
@@ -33,6 +39,37 @@ const ApparatusPreview = ({ apparatus }) => {
     );
 };
 
+const ApparatusNode = ({ app, allApps }) => {
+    let modelName = app.model;
+    if (modelName === 'BoilingTube') modelName = 'TestTube';
+    if (modelName === 'GlassRod') modelName = 'StirringRod';
+    if (modelName === 'Cork') modelName = 'RubberCork';
+
+    const Component = Apparatus[modelName] || Apparatus.Beaker;
+    const { id, position, rotation, scale, ...props } = app;
+
+    if (app.model === 'BunsenBurner') {
+        const detection = detectApparatusTypeAbove(app, allApps);
+        props.apparatusType = detection.type;
+        props.flameTargetY = detection.distY;
+    }
+
+    const children = allApps.filter(child => child.parentId === app.id);
+
+    return (
+        <group
+            position={position || [0, 0, 0]}
+            rotation={rotation || [0, 0, 0]}
+            scale={scale || [1, 1, 1]}
+        >
+            <Component {...props} reactants={app.reactants || []} />
+            {children.map(child => (
+                <ApparatusNode key={child.id} app={child} allApps={allApps} />
+            ))}
+        </group>
+    );
+};
+
 const FullSetupPreview = ({ reaction }) => {
     const apparatusList = reaction.stages?.[0]?.apparatus || reaction.apparatus || [];
     return (
@@ -44,34 +81,18 @@ const FullSetupPreview = ({ reaction }) => {
                 <ambientLight intensity={0.5} />
                 <pointLight position={[10, 10, 10]} intensity={1} />
                 <Environment preset="city" />
-                <Center>
+                <group position={[0, 0, 0]}>
                     <group>
-                        {apparatusList.map(app => {
-                            const Component = Apparatus[app.model] || Apparatus.Beaker;
-                            // Destructure transforms to avoid double application
-                            const { id, position, rotation, scale, ...props } = app;
-
-                            // Inject flame logic
-                            if (app.model === 'BunsenBurner') {
-                                const detection = detectApparatusTypeAbove(app, apparatusList);
-                                props.apparatusType = detection.type;
-                                props.flameTargetY = detection.distY;
-                            }
-
-                            return (
-                                <group
-                                    key={app.id}
-                                    position={position || [0, 0, 0]}
-                                    rotation={rotation || [0, 0, 0]}
-                                    scale={scale || [1, 1, 1]}
-                                >
-                                    <Component {...props} reactants={app.reactants || []} />
-                                </group>
-                            );
-                        })}
+                        {apparatusList.filter(app => !app.parentId).map(app => (
+                            <ApparatusNode key={app.id} app={app} allApps={apparatusList} />
+                        ))}
                     </group>
-                </Center>
-                <ContactShadows position={[0, -0.5, 0]} opacity={0.4} scale={20} blur={2.5} far={4} />
+                </group>
+                <GlobalLabTable 
+                    width={window?.localStorage ? (JSON.parse(localStorage.getItem('env_globalTableWidth')) || 14) : 14} 
+                    depth={window?.localStorage ? (JSON.parse(localStorage.getItem('env_globalTableDepth')) || 10) : 10} 
+                />
+                <ContactShadows position={[0, -0.05, 0]} opacity={0.4} scale={20} blur={2.5} far={4} />
                 <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 1.8} />
             </Canvas>
         </div>
