@@ -9,12 +9,14 @@ export const detectApparatusTypeAbove = (burner, allItems, gasFlow = 0.6) => {
     if (!burner || !allItems) return { isHeating: false, type: 'standard', distY: 3.9, baseRadius: 0.8, proximity: 0 };
 
     // ── Flame geometry constants (must match BunsenBurner.jsx) ──────────────
-    const BURNER_TIP = 3.35;          // local Y of flame start
-    const gfH = (0.4 + 0.6 * gasFlow); // height scale factor
-    const freeH = 2.1 * gfH;           // free-burning flame height
-    const flameTipY = BURNER_TIP + freeH; // free-burning flame tip in burner-local Y
-    // Interaction begins this many units above the flame tip
-    const INTERACT_ZONE = freeH * 1.5;
+    const BURNER_TIP = 3.325;          // exact nozzle top: cap center 3.3 + half-height 0.025
+    const gfH = (0.4 + 0.6 * gasFlow); // height scale factor (matches Flame component)
+    const freeH = 2.1 * gfH;           // full geometric flame height
+    // The outer flame has rimFalloff=0.18, meaning the top 18% fades to transparent.
+    // The *visible* flame tip is therefore lower than the geometric top.
+    // Using 0.80 of freeH gives a visually accurate contact threshold.
+    const RIM_FALLOFF = 0.18;
+    const visualFlameTipY = BURNER_TIP + freeH * (1.0 - RIM_FALLOFF);
     // ──────────────────────────────────────────────────────────────────────
 
     // Helper: recursively compute world position (translation only)
@@ -92,12 +94,11 @@ export const detectApparatusTypeAbove = (burner, allItems, gasFlow = 0.6) => {
         // The burner tip in local space is at ~3.35 from base
         if (estimatedBottom < 3.35) estimatedBottom = 3.35;
 
-        // ── Proximity: how deep into the flame is the apparatus? ──────────
-        // 0 = apparatus just entered interaction zone (no deformation yet)
-        // 1 = apparatus bottom is at/below flame tip (fully deformed)
-        // Uses smooth-start curve for a natural feel
-        const interactStart = flameTipY + INTERACT_ZONE;
-        const rawProximity = (interactStart - estimatedBottom) / (interactStart - BURNER_TIP);
+        // ── Proximity: 0 = apparatus bottom just touching visible flame tip
+        // 1 = apparatus bottom compressed to burner nozzle
+        // Uses the visual flame tip (accounting for rimFalloff fade) so
+        // deformation starts exactly when the apparatus enters visible flame.
+        const rawProximity = (visualFlameTipY - estimatedBottom) / (visualFlameTipY - BURNER_TIP);
         const proximity = Math.max(0, Math.min(1, rawProximity));
         // ─────────────────────────────────────────────────────────────────
 

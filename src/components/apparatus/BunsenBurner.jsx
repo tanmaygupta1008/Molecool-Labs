@@ -150,7 +150,8 @@ const Flame = ({
   const spreadRef = useRef();
   const shimRef   = useRef();
 
-  const BURNER_TIP = 3.35;
+  // BURNER_TIP: exact top of the barrel nozzle cap (cap center 3.3, half-height 0.025 → top = 3.325)
+  const BURNER_TIP = 3.325;
 
   // Derived scalars
   const lum   = Math.max(0, Math.min(1, 1.0 - airFlow));
@@ -170,6 +171,11 @@ const Flame = ({
   // Secondary curve that ramps in later (spread appears after stem starts compressing)
   const sp2 = Math.max(0, (proximity - 0.2) / 0.8);
   const sp2s = sp2 * sp2 * (3 - 2 * sp2);
+
+  // Inner cone compresses with proximity too (but stays shorter than outer)
+  // At full proximity the inner cone is ~40% of free height
+  const innerHCompressed = innerH * (1 - sp * 0.6);
+  const innerHFinal = isHeating && sp > 0.01 ? innerHCompressed : innerH;
 
   // Gradient colours
   const colorB = new THREE.Color(0.1, 0.2, 1.0).lerp(new THREE.Color(0.15, 0.08, 0.7), lum);
@@ -290,9 +296,11 @@ const Flame = ({
       </Cylinder>
 
       {/* ── Inner premixed cone ── */}
-      <Cylinder args={[0.005*gfW, innerW, innerH, 24, 1, true]} position={[0, BURNER_TIP + innerH/2, 0]}>
+      <Cylinder args={[0.005*gfW, innerW, innerHFinal, 24, 1, true]} position={[0, BURNER_TIP + innerHFinal/2, 0]}>
         <flameMaterial ref={innerRef}
-          colorB={new THREE.Color(0.55, 0.75, 1.0)} colorT={new THREE.Color(0.75, 0.88, 1.0)} lum={0}
+          colorB={new THREE.Color(0.55, 0.75, 1.0).lerp(new THREE.Color(1.1, 0.9, 0.3), lum * 0.7)}
+          colorT={new THREE.Color(0.75, 0.88, 1.0).lerp(new THREE.Color(1.0, 1.0, 0.6), lum * 0.5)}
+          lum={lum * 0.4}
           opacity={1.0*gfOp} noiseScale={0.5} rimFalloff={0.12} edgeSoftness={0.28}
           transparent blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
       </Cylinder>
@@ -311,7 +319,7 @@ const Flame = ({
       {spreadGeom}
 
       {/* ── Hot base glow sphere (at burner nozzle) ── */}
-      <mesh position={[0, BURNER_TIP + 0.08*gfH, 0]}>
+      <mesh position={[0, BURNER_TIP, 0]}>
         <sphereGeometry args={[0.055*gfW, 12, 12]} />
         <meshBasicMaterial color="#cce8ff" transparent opacity={0.95*gfOp} blending={THREE.AdditiveBlending} depthWrite={false} />
       </mesh>

@@ -1,7 +1,7 @@
 // src/components/reactions/views/MacroView.jsx
 import { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF, MeshTransmissionMaterial, Html, Float, Center } from '@react-three/drei';
+import { useGLTF, MeshTransmissionMaterial, Html, Float } from '@react-three/drei';
 import * as THREE from 'three';
 
 // Import all apparatus
@@ -13,50 +13,19 @@ import VisualRuleEngine from '../../macro/VisualRuleEngine';
 
 import { detectApparatusTypeAbove } from '../../../utils/apparatus-logic';
 import { calculateFrameState, calculateReactantState } from '../../../utils/visual-engine';
-
-// Map model names from JSON to components
-const APPARATUS_MAP = {
-    'BunsenBurner': Apparatus.BunsenBurner,
-    'TripodStand': Apparatus.TripodStand,
-    'WireGauze': Apparatus.WireGauze,
-    'Crucible': Apparatus.Crucible,
-    'Tongs': Apparatus.Tongs,
-    'HeatproofMat': Apparatus.HeatproofMat,
-    'Beaker': Apparatus.Beaker,
-    'ConicalFlask': Apparatus.ConicalFlask,
-    'TestTube': Apparatus.TestTube,
-    'BoilingTube': Apparatus.BoilingTube || Apparatus.TestTube, // Fallback
-    'MeasuringCylinder': Apparatus.MeasuringCylinder,
-    'Dropper': Apparatus.Dropper,
-    'StirringRod': Apparatus.StirringRod,
-    'GlassRod': Apparatus.StirringRod, // Alias
-    'WaterTrough': Apparatus.WaterTrough,
-    'GasJar': Apparatus.GasJar,
-    'DeliveryTube': Apparatus.DeliveryTube,
-    'RubberCork': Apparatus.RubberCork,
-    'Cork': Apparatus.RubberCork, // Alias
-    'Burette': Apparatus.Burette,
-    'RetortStand': Apparatus.RetortStand,
-    'Clamp': Apparatus.Clamp,
-    'ElectrolysisSetup': Apparatus.ElectrolysisSetup,
-    'PowerSupply': Apparatus.PowerSupply,
-    'MagnesiumRibbon': Apparatus.MagnesiumRibbon,
-    'MagnesiumOxideAsh': Apparatus.MagnesiumOxideAsh,
-    'ZincGranules': Apparatus.ZincGranules,
-    'Forceps': Apparatus.Forceps,
-    'SafetyShield': Apparatus.SafetyShield,
-    'DropperBottle': Apparatus.DropperBottle,
-    'IronNail': Apparatus.IronNail,
-    'GasTap': Apparatus.GasTap,
-    'LitmusPaper': Apparatus.LitmusPaper,
-    'Wire': Apparatus.Wire,
-};
+import GlobalLabTable from '../../../components/apparatus/GlobalLabTable';
 
 // ReactionEffectManager replaced by VisualRuleEngine
 // const ReactionEffectManager = ... (Removed Stub)
 
 const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRules, currentStepIndex, stepProgress }) => {
-    const Component = APPARATUS_MAP[item.model];
+    // Alias resolution for legacy names
+    let modelName = item.model;
+    if (modelName === 'BoilingTube') modelName = 'TestTube';
+    if (modelName === 'GlassRod') modelName = 'StirringRod';
+    if (modelName === 'Cork') modelName = 'RubberCork';
+    
+    const Component = Apparatus[modelName] || Apparatus.Beaker;
     const groupRef = useRef();
 
     // Register ref updates
@@ -145,6 +114,18 @@ const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRule
             visible={item.visible !== false}
         >
             <Component {...finalProps} />
+            {allApparatus && allApparatus.filter(child => child.parentId === item.id).map(childItem => (
+                <ApparatusItem
+                    key={childItem.id}
+                    item={childItem}
+                    apparatusRefs={apparatusRefs}
+                    progress={progress}
+                    allApparatus={allApparatus}
+                    visualRules={visualRules}
+                    currentStepIndex={currentStepIndex}
+                    stepProgress={stepProgress}
+                />
+            ))}
         </group>
     );
 };
@@ -288,107 +269,6 @@ const useDerivedApparatus = (reaction, progress) => {
     return { apparatus: currentApparatus, currentStepIndex, stepProgress, reactantState, currentTime };
 };
 
-const LabTable = () => (
-    <group position={[0, -0.05, 0]}>
-        {/* Table Top (Dark Epoxy Resin) */}
-        <mesh receiveShadow position={[0, 0, 0]}>
-            <boxGeometry args={[14, 0.1, 10]} />
-            <meshStandardMaterial color="#1f2022" roughness={0.7} metalness={0.1} />
-        </mesh>
-
-        {/* Anti-Spill Lip / Rim */}
-        <mesh receiveShadow position={[0, 0.08, -4.95]}>
-            <boxGeometry args={[14.2, 0.05, 0.1]} />
-            <meshStandardMaterial color="#141517" roughness={0.8} />
-        </mesh>
-        <mesh receiveShadow position={[0, 0.08, 4.95]}>
-            <boxGeometry args={[14.2, 0.05, 0.1]} />
-            <meshStandardMaterial color="#141517" roughness={0.8} />
-        </mesh>
-        <mesh receiveShadow position={[-6.95, 0.08, 0]}>
-            <boxGeometry args={[0.1, 0.05, 10]} />
-            <meshStandardMaterial color="#141517" roughness={0.8} />
-        </mesh>
-        <mesh receiveShadow position={[6.95, 0.08, 0]}>
-            <boxGeometry args={[0.1, 0.05, 10]} />
-            <meshStandardMaterial color="#141517" roughness={0.8} />
-        </mesh>
-
-        {/* Small Lab Sink (Cutout representation) */}
-        <group position={[5.5, 0.02, -3]}>
-            {/* Sink Rim */}
-            <mesh position={[0, 0, 0]}>
-                <boxGeometry args={[1.5, 0.05, 1.5]} />
-                <meshStandardMaterial color="#c0c0c0" roughness={0.4} metalness={0.8} />
-            </mesh>
-            {/* Sink Basin */}
-            <mesh position={[0, -0.2, 0]}>
-                <boxGeometry args={[1.3, 0.4, 1.3]} />
-                <meshStandardMaterial color="#0f0f0f" roughness={0.9} />
-            </mesh>
-            {/* Tap/Faucet */}
-            <mesh position={[0, 0.5, -0.6]}>
-                <cylinderGeometry args={[0.04, 0.04, 1]} />
-                <meshStandardMaterial color="#a0a0a0" roughness={0.3} metalness={0.8} />
-            </mesh>
-            <mesh position={[0, 1, -0.45]} rotation={[Math.PI/2, 0, 0]}>
-                <cylinderGeometry args={[0.04, 0.04, 0.3]} />
-                <meshStandardMaterial color="#a0a0a0" roughness={0.3} metalness={0.8} />
-            </mesh>
-        </group>
-
-        {/* Chemical Stains / Wear & Tear */}
-        <mesh position={[-3, 0.06, 1]} rotation={[-Math.PI/2, 0, 2]}>
-            <planeGeometry args={[1.5, 1.2]} />
-            <meshBasicMaterial color="#3a3c2a" transparent opacity={0.3} depthWrite={false} />
-        </mesh>
-        <mesh position={[2, 0.06, 2]} rotation={[-Math.PI/2, 0, 1]}>
-            <planeGeometry args={[0.8, 1.5]} />
-            <meshBasicMaterial color="#2d1c1c" transparent opacity={0.2} depthWrite={false} />
-        </mesh>
-        <mesh position={[-4, 0.06, -2]} rotation={[-Math.PI/2, 0, 0.5]}>
-            <planeGeometry args={[2, 2]} />
-            <meshBasicMaterial color="#1c2d2d" transparent opacity={0.25} depthWrite={false} />
-        </mesh>
-        <mesh position={[3, 0.06, -1]} rotation={[-Math.PI/2, 0, Math.random()]}>
-            <planeGeometry args={[1, 0.8]} />
-            <meshBasicMaterial color="#666666" transparent opacity={0.15} depthWrite={false} />
-        </mesh>
-
-        {/* Legs / Framing */}
-        {[-6.5, 6.5].map(x => 
-            [-4.5, 4.5].map(z => (
-                <group key={`${x}-${z}`} position={[x, -2, z]}>
-                    {/* Main Leg */}
-                    <mesh receiveShadow castShadow>
-                        <boxGeometry args={[0.3, 4, 0.3]} />
-                        <meshStandardMaterial color="#333333" roughness={0.6} />
-                    </mesh>
-                    {/* Metal Foot Pad */}
-                    <mesh receiveShadow position={[0, -2.02, 0]}>
-                        <cylinderGeometry args={[0.2, 0.2, 0.04, 16]} />
-                        <meshStandardMaterial color="#555555" roughness={0.4} metalness={0.8} />
-                    </mesh>
-                </group>
-            ))
-        )}
-        
-        {/* Support Crossbars */}
-        <mesh position={[0, -1, 0]}>
-            <boxGeometry args={[13.3, 0.15, 0.15]} />
-            <meshStandardMaterial color="#333333" roughness={0.6} />
-        </mesh>
-        <mesh position={[-6.5, -1, 0]}>
-            <boxGeometry args={[0.15, 0.15, 9.3]} />
-            <meshStandardMaterial color="#333333" roughness={0.6} />
-        </mesh>
-        <mesh position={[6.5, -1, 0]}>
-            <boxGeometry args={[0.15, 0.15, 9.3]} />
-            <meshStandardMaterial color="#333333" roughness={0.6} />
-        </mesh>
-    </group>
-);
-
 // --- MAIN MACRO VIEW MANAGER ---
 const MacroView = ({ reaction, progress, isPlaying, showTable = true }) => {
     const list = reaction.stages?.[0]?.apparatus || reaction.apparatus || [];
@@ -413,10 +293,10 @@ const DynamicSetup = ({ reaction, progress, isPlaying, showTable }) => {
                 <rectAreaLight width={5} height={20} color="white" intensity={2} position={[5, 5, 5]} lookAt={[0, 0, 0]} />
             </group>
 
-            <Center top>
+            <group>
                 <group>
-                    {/* Render List Flat */}
-                    {apparatusList.map(item => (
+                    {/* Render List Hierarchically */}
+                    {apparatusList.filter(item => !item.parentId).map(item => (
                         <ApparatusItem
                             key={item.id}
                             item={item}
@@ -441,9 +321,9 @@ const DynamicSetup = ({ reaction, progress, isPlaying, showTable }) => {
                     />
 
                 </group>
-            </Center>
+            </group>
 
-            {showTable && <LabTable />}
+            {showTable && <GlobalLabTable width={reaction.tableWidth || 14} depth={reaction.tableDepth || 10} />}
 
             <mesh position={[0, -4.07, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
                 <planeGeometry args={[100, 100]} />
