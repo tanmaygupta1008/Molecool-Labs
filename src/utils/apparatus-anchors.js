@@ -30,6 +30,26 @@ export const getApparatusAnchors = (item) => {
             case 'ConicalFlask':
                 standard.push({ id: 'mouth', localPos: [0, 2.5, 0], localNormal: [0, 1, 0] });
                 break;
+            case 'VacuumFlask':
+                standard.push({ id: 'mouth', localPos: [0, 2.5, 0], localNormal: [0, 1, 0] });
+                
+                // Side arm calculation
+                if (item.sideArmType === 'glass') {
+                    standard.push({ id: 'sidearm', localPos: [1.13, 2.12, 0], localNormal: [0.866, 0.5, 0] });
+                } else {
+                    // Plastic rugged nozzle tips right and down
+                    const bendAngle = -Math.PI / 1.5; // -120 deg
+                    const dirX = -Math.sin(bendAngle); // ~0.866
+                    const dirY = Math.cos(bendAngle);  // -0.5
+                    
+                    const startX = 0.35;
+                    const startY = 2.15;
+                    const tipX = startX + 0.8 + 0.4 * dirX; // ~ 1.496
+                    const tipY = startY + 0.4 * dirY;       // ~ 1.95
+                    
+                    standard.push({ id: 'sidearm', localPos: [tipX, tipY, 0], localNormal: [dirX, dirY, 0] });
+                }
+                break;
             case 'Beaker':
                 standard.push({ id: 'mouth', localPos: [0, 1.5, 0], localNormal: [0, 1, 0] });
                 break;
@@ -58,6 +78,14 @@ export const getApparatusAnchors = (item) => {
                 // The tip is at local Z + half height = 0.75 + 0.075 = 0.825.
                 standard.push({ id: 'pos', localPos: [-0.8, 0.3, 0.825], localNormal: [0, 0, 1] });
                 standard.push({ id: 'neg', localPos: [0.8, 0.3, 0.825], localNormal: [0, 0, 1] });
+                break;
+            case 'WaterTrough_GasJar':
+                // Beehive shelf hole: [0.56, 0.20, 0]
+                standard.push({ id: 'beehive-inlet', localPos: [0.56, 0.20, 0], localNormal: [1, 0, 0] });
+                break;
+            case 'WaterTrough_TestTube':
+                // Beehive shelf hole: [0.28, 0.17, 0]
+                standard.push({ id: 'beehive-inlet', localPos: [0.28, 0.17, 0], localNormal: [1, 0, 0] });
                 break;
             case 'TestTubeStand':
                 const xs = [-1.5, -0.9, -0.3, 0.3, 0.9, 1.5];

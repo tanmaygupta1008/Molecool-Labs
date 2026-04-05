@@ -46,6 +46,8 @@ const APPARATUS_MAP = {
     'StirringRod': Apparatus.StirringRod,
     'GlassRod': Apparatus.StirringRod,
     'WaterTrough': Apparatus.WaterTrough,
+    'WaterTrough_GasJar': (props) => <Apparatus.WaterTrough {...props} invertedSetup="GasJar" />,
+    'WaterTrough_TestTube': (props) => <Apparatus.WaterTrough {...props} invertedSetup="TestTube" />,
     'GasJar': Apparatus.GasJar,
     'DeliveryTube': Apparatus.DeliveryTube,
     'RubberCork': RubberCork,
@@ -1169,6 +1171,11 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
         componentProps.baseRadius    = detection.baseRadius;
         componentProps.proximity     = detection.proximity ?? 0;
     }
+    if (item.model.startsWith('WaterTrough')) {
+        componentProps.customHeight = item.customHeight !== undefined ? item.customHeight : 1;
+        componentProps.baseRadiusScale = item.baseRadiusScale !== undefined ? item.baseRadiusScale : 1;
+        componentProps.wallTaper = item.wallTaper !== undefined ? item.wallTaper : 0.25;
+    }
     if (item.model === 'GasJar') { componentProps.hasLid = item.hasLid !== false; componentProps.holeCount = item.holeCount || 0; }
     if (item.model === 'RubberCork') componentProps.holes = item.holes || 1;
     if (item.model === 'DeliveryTube' && item.points?.length > 0) componentProps.points = item.points;
@@ -1586,6 +1593,8 @@ const APPARATUS_CATEGORIES = [
             { id: "MeasuringCylinder", name: "Cylinder", icon: "📏" },
             { id: "GasJar", name: "Gas Jar", icon: "🔋" },
             { id: "WaterTrough", name: "Water Trough", icon: "🚰" },
+            { id: "WaterTrough_GasJar", name: "Trough (Jar)", icon: "🚰" },
+            { id: "WaterTrough_TestTube", name: "Trough (Tube)", icon: "🚰" },
             { id: "Burette", name: "Burette", icon: "💉" }
         ]
     },
@@ -2782,18 +2791,37 @@ export default function ApparatusEditorPage() {
                                     </div>
                                 )}
 
-                                {item.model === 'WaterTrough' && (
-                                    <div className="mt-4 p-4 bg-[#161616] rounded-xl border border-gray-800">
-                                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">
-                                            Trough Height: {(item.customHeight || 1).toFixed(1)}x
-                                        </label>
-                                        <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner"  
-                                            value={item.customHeight || 1}
-                                            onChange={(e) => handleUpdateItem(item.id, { customHeight: parseFloat(e.target.value) })}
-                                        />
-                                        <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                                            <span>Small</span>
-                                            <span>Deep</span>
+                                {item.model.startsWith('WaterTrough') && (
+                                    <div className="mt-4 p-4 bg-[#161616] rounded-xl border border-gray-800 flex flex-col gap-3">
+                                        <div>
+                                            <label className="text-xs font-semibold text-cyan-400 uppercase tracking-wider block mb-2">
+                                                Trough Base Radius: {(item.baseRadiusScale || 1).toFixed(1)}x
+                                            </label>
+                                            <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-cyan-500 shadow-inner"  
+                                                min="0.5" max="2.0" step="0.1"
+                                                value={item.baseRadiusScale || 1}
+                                                onChange={(e) => handleUpdateItem(item.id, { baseRadiusScale: parseFloat(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-semibold text-cyan-400 uppercase tracking-wider block mb-2">
+                                                Trough Height: {(item.customHeight || 1).toFixed(1)}x
+                                            </label>
+                                            <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-cyan-500 shadow-inner"  
+                                                min="0.5" max="2.0" step="0.1"
+                                                value={item.customHeight || 1}
+                                                onChange={(e) => handleUpdateItem(item.id, { customHeight: parseFloat(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-semibold text-cyan-400 uppercase tracking-wider block mb-2">
+                                                Wall Angle (Taper): {((item.wallTaper !== undefined ? item.wallTaper : 0.25) * 100).toFixed(0)}%
+                                            </label>
+                                            <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-cyan-500 shadow-inner"  
+                                                min="0.0" max="0.8" step="0.05"
+                                                value={item.wallTaper !== undefined ? item.wallTaper : 0.25}
+                                                onChange={(e) => handleUpdateItem(item.id, { wallTaper: parseFloat(e.target.value) })}
+                                            />
                                         </div>
                                     </div>
                                 )}
