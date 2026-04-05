@@ -1466,27 +1466,40 @@ const TubeBuilderTool = ({ allItems, builderState, setBuilderState, onCreateTube
         }
     };
 
-    // Phantom Curve Logic (Polyline visualization)
+    // Chaikin corner-cutting smoothing (same algo used in DeliveryTube renderer)
+    const chaikinSmooth3D = (pts, iterations = 2) => {
+        let result = pts;
+        for (let iter = 0; iter < iterations; iter++) {
+            const next = [result[0]];
+            for (let i = 0; i < result.length - 1; i++) {
+                const a = result[i], b = result[i + 1];
+                next.push(new THREE.Vector3(a.x * 0.75 + b.x * 0.25, a.y * 0.75 + b.y * 0.25, a.z * 0.75 + b.z * 0.25));
+                next.push(new THREE.Vector3(a.x * 0.25 + b.x * 0.75, a.y * 0.25 + b.y * 0.75, a.z * 0.25 + b.z * 0.75));
+            }
+            next.push(result[result.length - 1]);
+            result = next;
+        }
+        return result;
+    };
+
+    // Phantom Curve Logic (smooth preview)
     const phantomCurve = useMemo(() => {
         if (!builderState.startAnchor) return null;
 
         const start = new THREE.Vector3(...builderState.startAnchor.position);
-        // Points so far
         const currentPoints = (builderState.points || []).map(p => new THREE.Vector3(...p));
-        // End is hovered anchor OR phantom pos
         const end = hoveredAnchor ? new THREE.Vector3(...hoveredAnchor.position) : (phantomPos || start.clone());
 
         const allPath = [start, ...currentPoints, end];
+        if (allPath.length < 2) return null;
 
-        if (allPath.length < 2) return null; // Should have at least start and end
+        if (allPath.length === 2) {
+            return new THREE.LineCurve3(allPath[0], allPath[1]);
+        }
 
-        // If mode is straight/polyline, use CatmullRom with zero tension? Or LineCurve?
-        // CatmullRom with tension 0 is jagged? No, tension 1 is jagged?
-        // Actually, for visual Preview, CatmullRom is easiest if we don't strict-line it.
-        // But for "Straight" mode we want lines.
-        // `DeliveryTube` handles array of points.
-        // Here we just want to visualize.
-        return new THREE.CatmullRomCurve3(allPath, false, 'catmullrom', 0.1); // 0.1 tension for straighter lines
+        // Apply Chaikin smoothing so preview matches the final delivered tube
+        const smoothed = chaikinSmooth3D(allPath, 2);
+        return new THREE.CatmullRomCurve3(smoothed, false, 'catmullrom', 0.5);
     }, [builderState.startAnchor, builderState.points, hoveredAnchor, phantomPos, builderState.mode]);
 
 
