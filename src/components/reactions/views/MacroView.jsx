@@ -323,7 +323,10 @@ const DynamicSetup = ({ reaction, progress, isPlaying, showTable }) => {
                 </group>
             </group>
 
-            {showTable && <GlobalLabTable width={reaction.tableWidth || 14} depth={reaction.tableDepth || 10} />}
+            {showTable && <GlobalLabTable 
+                width={reaction.macroView?.visualRules?.tableWidth || reaction.macroView?.visualRules?.globalEnvironment?.tableWidth || reaction.tableWidth || 14} 
+                depth={reaction.macroView?.visualRules?.tableDepth || reaction.macroView?.visualRules?.globalEnvironment?.tableDepth || reaction.tableDepth || 10} 
+            />}
 
             <mesh position={[0, -4.07, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
                 <planeGeometry args={[100, 100]} />

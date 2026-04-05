@@ -59,6 +59,12 @@ export const getApparatusAnchors = (item) => {
                 standard.push({ id: 'pos', localPos: [-0.8, 0.3, 0.825], localNormal: [0, 0, 1] });
                 standard.push({ id: 'neg', localPos: [0.8, 0.3, 0.825], localNormal: [0, 0, 1] });
                 break;
+            case 'TestTubeStand':
+                const xs = [-1.5, -0.9, -0.3, 0.3, 0.9, 1.5];
+                xs.forEach((x, i) => {
+                    standard.push({ id: `hole-${i}`, localPos: [x, 0.1, -0.3], localNormal: [0, 1, 0] });
+                });
+                break;
             case 'RubberCork':
                 const holes = item.holes || 1;
                 const topY = 0.4;

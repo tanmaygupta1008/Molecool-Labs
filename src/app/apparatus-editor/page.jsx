@@ -39,6 +39,7 @@ const APPARATUS_MAP = {
     'VacuumFlask': Apparatus.VacuumFlask,
     'Thermometer': Apparatus.Thermometer,
     'TestTube': Apparatus.TestTube,
+    'TestTubeStand': Apparatus.TestTubeStand,
     'BoilingTube': Apparatus.BoilingTube || Apparatus.TestTube,
     'MeasuringCylinder': Apparatus.MeasuringCylinder,
     'Dropper': Apparatus.Dropper,
@@ -1581,7 +1582,8 @@ const APPARATUS_CATEGORIES = [
             { id: "RetortStand", name: "Retort Stand", icon: "🏗️" },
             { id: "TripodStand", name: "Tripod Stand", icon: "🗼" },
             { id: "Clamp", name: "Clamp", icon: "🗜️" },
-            { id: "RingClamp", name: "Ring Clamp", icon: "⭕" }
+            { id: "RingClamp", name: "Ring Clamp", icon: "⭕" },
+            { id: "TestTubeStand", name: "Test Tube Rack", icon: "🍱" }
         ]
     },
     {

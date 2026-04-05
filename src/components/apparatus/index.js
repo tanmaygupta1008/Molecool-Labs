@@ -16,6 +16,7 @@ export { default as DistillationFlask } from './DistillationFlask';
 export { default as VacuumFlask } from './VacuumFlask';
 export { default as Thermometer } from './Thermometer';
 export { default as TestTube } from './TestTube';
+export { default as TestTubeStand } from './TestTubeStand';
 export { default as BoilingTube } from './BoilingTube';
 export { default as MeasuringCylinder } from './MeasuringCylinder';
 export { default as Dropper } from './Dropper';
