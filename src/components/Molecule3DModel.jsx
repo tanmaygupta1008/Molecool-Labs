@@ -1,6 +1,6 @@
 'use client'; 
 
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Sphere, Cylinder, Html } from '@react-three/drei';
 import { Vector3, Color, Quaternion, TorusGeometry, Euler } from 'three'; 
 import { useRef, useLayoutEffect, useState, useMemo } from 'react';
@@ -54,11 +54,53 @@ const Atom = ({ position, element, sphereRef, isHighlighted, isDimmed, onSelectA
   );
 };
 
-const LonePairSphere = ({ position }) => {
+/**
+ * Teardrop-shaped lone pair orbital — same visual style as the Builder page.
+ * `atomCenter` is the world position of the central atom.
+ * `lpPos`      is the target world position of the lone pair electron cloud.
+ * The lobe points from atomCenter → lpPos.
+ */
+const LonePairOrbital = ({ atomCenter, lpPos }) => {
+    const electronsRef = useRef(null);
+
+    // Compute orientation: align local +Y axis to the direction (atomCenter -> lpPos)
+    const quaternion = useMemo(() => {
+        const dir = new Vector3().subVectors(lpPos, atomCenter).normalize();
+        return new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), dir);
+    }, [atomCenter, lpPos]);
+
+    // Spin the two electrons slowly
+    useFrame(() => {
+        if (electronsRef.current) {
+            electronsRef.current.rotation.y += 0.03;
+        }
+    });
+
     return (
-        <Sphere position={position} args={[0.15, 16, 16]}>
-            <meshStandardMaterial color="#00ffcc" transparent={true} opacity={0.6} emissive="#00ffcc" emissiveIntensity={0.5} />
-        </Sphere>
+        // Placed at atom center; lobe extends outward via local +Y
+        <group position={atomCenter.toArray()} quaternion={quaternion}>
+            {/* The lobe — tapered cylinder */}
+            <mesh position={[0, 0.35, 0]}>
+                <cylinderGeometry args={[0.22, 0.04, 0.7, 16]} />
+                <meshStandardMaterial color="#88ddff" transparent opacity={0.28} roughness={0.1} />
+            </mesh>
+            {/* Tip sphere cap */}
+            <mesh position={[0, 0.72, 0]}>
+                <sphereGeometry args={[0.22, 16, 16]} />
+                <meshStandardMaterial color="#88ddff" transparent opacity={0.28} roughness={0.1} />
+            </mesh>
+            {/* Rotating electrons at the tip */}
+            <group ref={electronsRef} position={[0, 0.72, 0]}>
+                <mesh position={[-0.12, 0, 0]}>
+                    <sphereGeometry args={[0.065, 16, 16]} />
+                    <meshStandardMaterial color="#ffffff" emissive="#00ffff" emissiveIntensity={0.9} />
+                </mesh>
+                <mesh position={[0.12, 0, 0]}>
+                    <sphereGeometry args={[0.065, 16, 16]} />
+                    <meshStandardMaterial color="#ffffff" emissive="#00ffff" emissiveIntensity={0.9} />
+                </mesh>
+            </group>
+        </group>
     );
 };
 
@@ -367,9 +409,18 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
                     );
                 })}
 
-                {lonePairs.map((lp, index) => (
-                    <LonePairSphere key={`lp-${index}`} position={lp.pos} />
-                ))}
+                {lonePairs.map((lp, index) => {
+                    const atom = structure.atoms[lp.atomIndex];
+                    if (!atom) return null;
+                    const atomCenter = new Vector3(atom.x, atom.y, atom.z);
+                    return (
+                        <LonePairOrbital
+                            key={`lp-${index}`}
+                            atomCenter={atomCenter}
+                            lpPos={lp.pos}
+                        />
+                    );
+                })}
 
                 {bondAngleArcs} 
 
