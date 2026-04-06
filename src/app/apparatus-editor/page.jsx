@@ -67,7 +67,9 @@ const APPARATUS_MAP = {
     'DropperBottle': Apparatus.DropperBottle,
     'IronNail': Apparatus.IronNail,
     'GasTap': Apparatus.GasTap,
-    'LitmusPaper': Apparatus.LitmusPaper,
+    'RedLitmusPaper': Apparatus.RedLitmusPaper,
+    'BlueLitmusPaper': Apparatus.BlueLitmusPaper,
+    'LitmusPaper': Apparatus.LitmusPaper, // Keep backwards compatibility if existing saves use this
     'Wire': Wire,
     'WorkTable': WorkTable,
     'GasSource': GasSource,
@@ -1747,7 +1749,8 @@ const APPARATUS_CATEGORIES = [
             { id: "Forceps", name: "Forceps", icon: "🥢" },
             { id: "RubberCork", name: "Rubber Cork", icon: "🟫" },
             { id: "DeliveryTube", name: "Delivery Tube", icon: "🔀" },
-            { id: "LitmusPaper", name: "Litmus Paper", icon: "📄" },
+            { id: "RedLitmusPaper", name: "Red Litmus", icon: "🟥" },
+            { id: "BlueLitmusPaper", name: "Blue Litmus", icon: "🟦" },
             { id: "SafetyShield", name: "Safety Shield", icon: "🛡️" }
         ]
     },

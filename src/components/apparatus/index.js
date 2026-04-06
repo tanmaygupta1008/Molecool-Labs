@@ -45,6 +45,9 @@ export { default as SafetyShield } from './SafetyShield';
 export { default as DropperBottle } from './DropperBottle';
 export { default as IronNail } from './IronNail';
 export { default as GasTap } from './GasTap';
+import LitmusPaperBase from './LitmusPaper';
+export const RedLitmusPaper = (props) => <LitmusPaperBase color="red" {...props} />;
+export const BlueLitmusPaper = (props) => <LitmusPaperBase color="blue" {...props} />;
 export { default as LitmusPaper } from './LitmusPaper';
 
 // Furniture & Utilities
