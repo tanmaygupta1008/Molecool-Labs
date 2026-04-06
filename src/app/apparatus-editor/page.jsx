@@ -37,6 +37,8 @@ const APPARATUS_MAP = {
     'VolumetricFlask': Apparatus.VolumetricFlask,
     'DistillationFlask': Apparatus.DistillationFlask,
     'VacuumFlask': Apparatus.VacuumFlask,
+    'DroppingFunnel': Apparatus.DroppingFunnel,
+    'RefluxCondenser': Apparatus.RefluxCondenser,
     'Thermometer': Apparatus.Thermometer,
     'TestTube': Apparatus.TestTube,
     'TestTubeStand': Apparatus.TestTubeStand,
@@ -1026,6 +1028,108 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
                 }
             }
 
+            // --- AUTO-SNAP LOGIC FOR REFLUX & FUNNEL (TO FLASKS) ---
+            if (['RefluxCondenser', 'DroppingFunnel'].includes(item.model)) {
+                const GLASS_SNAP_THRESHOLD = 1.2;
+                let closestDist = Infinity;
+                let snapWorldPos = null;
+                let targetFlaskId = null;
+                let targetNeck = null; // { localPos, rotation, rimY }
+
+                // Exact flask neck rim positions from RoundBottomFlask.jsx geometry:
+                // Center neck: cylinder center y=2.5, height=1.5 → top = 3.25; rim torus at y=3.25
+                // Side neck: rOff=0.9, length=1.2, angle=±π/6
+                //   rimX = sin(angle)*(rOff+length) = sin(π/6)*2.1 ≈ 1.05
+                //   rimY = 1 + cos(π/6)*2.1 ≈ 2.818
+                const CENTER_RIM_Y = 3.25;
+                const SN_ANGLE = Math.PI / 6;
+                const SN_RIM_X = Math.sin(SN_ANGLE) * (0.9 + 1.2);   // ≈ 1.05
+                const SN_RIM_Y = 1 + Math.cos(SN_ANGLE) * (0.9 + 1.2); // ≈ 2.818
+
+                // Joint top local Y for each apparatus (top of the male glass plug):
+                //   RefluxCondenser: joint centre y=0.225, half-h=0.225 → top = +0.45
+                //   DroppingFunnel:  joint centre y=-0.625, half-h=0.225 → top = −0.40
+                const JOINT_TOP_Y = item.model === 'RefluxCondenser' ? 0.45 : -0.40;
+
+                // Apparatus origin Y relative to flask-local neck rim:
+                //   origin = rimY − jointTopY (so the joint top meets the rim)
+                const ORIGIN_OFFSET_Y = -JOINT_TOP_Y; // e.g. RC: -0.45, DF: +0.40
+
+                const FLASK_SNAP_TARGETS = {
+                    'RoundBottomFlask': [
+                        { neckRimLocal: [0, CENTER_RIM_Y, 0], rotation: null },
+                    ],
+                    'TwoNeckFlask': [
+                        { neckRimLocal: [0, CENTER_RIM_Y, 0], rotation: null },
+                        { neckRimLocal: [ SN_RIM_X, SN_RIM_Y, 0], rotation: [0, 0, -SN_ANGLE] },
+                    ],
+                    'ThreeNeckFlask': [
+                        { neckRimLocal: [0, CENTER_RIM_Y, 0], rotation: null },
+                        { neckRimLocal: [ SN_RIM_X, SN_RIM_Y, 0], rotation: [0, 0, -SN_ANGLE] },
+                        { neckRimLocal: [-SN_RIM_X, SN_RIM_Y, 0], rotation: [0, 0,  SN_ANGLE] },
+                    ]
+                };
+
+                allItems.forEach(other => {
+                    const snapTargets = FLASK_SNAP_TARGETS[other.model];
+                    if (!snapTargets) return;
+
+                    const otherObj = getWorldTransform(other.id);
+
+                    snapTargets.forEach(target => {
+                        // World position of this neck's rim
+                        const rimWorldPos = otherObj.localToWorld(new THREE.Vector3(...target.neckRimLocal));
+                        // Compare against the dragged item's current world position
+                        const dist = myWorldPos.distanceTo(rimWorldPos);
+
+                        if (dist < GLASS_SNAP_THRESHOLD && dist < closestDist) {
+                            closestDist = dist;
+                            snapWorldPos = rimWorldPos.clone();
+                            targetFlaskId = other.id;
+                            targetNeck = target;
+                        }
+                    });
+                });
+
+                if (snapWorldPos && !didSnap) {
+                    didSnap = true;
+                    finalParentId = targetFlaskId;
+                    const parentObj = getWorldTransform(targetFlaskId);
+
+                    // Apparatus origin in flask-local space: rim position + offset along neck axis
+                    const neck = targetNeck;
+                    const [nx, ny, nz] = neck.neckRimLocal;
+
+                    // For tilted side necks, the offset is along the neck direction, not pure Y.
+                    // Neck direction (local) = [sin(rot.z), cos(rot.z), 0]
+                    let offsetX = 0, offsetY = ORIGIN_OFFSET_Y;
+                    if (neck.rotation) {
+                        const rz = neck.rotation[2]; // e.g. ±π/6
+                        // Neck points in direction (sin(-rz), cos(-rz), 0) in flask local space
+                        offsetX = Math.sin(-rz) * Math.abs(ORIGIN_OFFSET_Y);
+                        offsetY = Math.cos(-rz) * Math.abs(ORIGIN_OFFSET_Y) * Math.sign(ORIGIN_OFFSET_Y);
+                    }
+
+                    finalStatePos = [
+                        Number((nx + offsetX).toFixed(3)),
+                        Number((ny + offsetY).toFixed(3)),
+                        Number(nz.toFixed(3))
+                    ];
+
+                    // Apply the neck's tilt rotation, preserving current Y spin
+                    const currentY = newRot[1] || 0;
+                    if (neck.rotation) {
+                        newRot = [
+                            Number(neck.rotation[0].toFixed(4)),
+                            Number(currentY.toFixed(4)),
+                            Number(neck.rotation[2].toFixed(4))
+                        ];
+                    } else {
+                        newRot = [0, Number(currentY.toFixed(4)), 0];
+                    }
+                }
+            }
+
             // --- AUTO-SNAP LOGIC FOR TRIPOD & WIRE GAUZE ---
             // VolumetricFlask has a flat base - sits ON the ring, not inside it
             // RoundBottom/Multi-neck/Distillation flasks sink into the ring
@@ -1124,13 +1228,26 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
 
             // --- DETACH LOGIC ---
             if (!didSnap && item.parentId) {
-                // Determine if we dragged it away far enough to detach
+                // Dragged away from parent — detach
                 finalParentId = null;
                 finalStatePos = [
                     Number(myWorldPos.x.toFixed(3)),
                     Math.max(0, Number(myWorldPos.y.toFixed(3))),
                     Number(myWorldPos.z.toFixed(3))
                 ];
+            }
+
+            // --- RESET TILT FOR FREE-STANDING APPARATUS ---
+            // Whenever these items are dropped WITHOUT snapping into a flask neck,
+            // clear any X/Z tilt (from side-neck connections) and return to upright.
+            // This fires both on fresh detach AND on any subsequent free-drag.
+            if (!didSnap && ['RefluxCondenser', 'DroppingFunnel'].includes(item.model)) {
+                newRot = [0, Number(newRot[1].toFixed(4)), 0]; // keep Y spin, clear X/Z tilt
+                // Immediately apply to the THREE.js group to bypass TransformControls' cached state.
+                // Without this, the visual update lags one full React render cycle (needs another drag).
+                if (group) {
+                    group.rotation.set(newRot[0], newRot[1], newRot[2]);
+                }
             }
 
             if (didSnap) {
@@ -1585,8 +1702,10 @@ const APPARATUS_CATEGORIES = [
             { id: "TwoNeckFlask", name: "2-Neck Flask", icon: "⚗️" },
             { id: "ThreeNeckFlask", name: "3-Neck Flask", icon: "⚗️" },
             { id: "SeparatoryFunnel", name: "Separatory Funnel", icon: "🌪️" },
+            { id: "DroppingFunnel", name: "Dropping Funnel", icon: "💧" },
             { id: "VolumetricFlask", name: "Volumetric Flask", icon: "🎈" },
             { id: "DistillationFlask", name: "Distillation Flask", icon: "⚗️" },
+            { id: "RefluxCondenser", name: "Reflux Condenser", icon: "🧬" },
             { id: "VacuumFlask", name: "Vacuum Flask", icon: "🧪" },
             { id: "TestTube", name: "Test Tube", icon: "🧪" },
             { id: "BoilingTube", name: "Boiling Tube", icon: "🧪" },

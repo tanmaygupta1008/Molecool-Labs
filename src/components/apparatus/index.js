@@ -21,6 +21,8 @@ export { default as BoilingTube } from './BoilingTube';
 export { default as MeasuringCylinder } from './MeasuringCylinder';
 export { default as Dropper } from './Dropper';
 export { default as StirringRod } from './StirringRod';
+export { default as RefluxCondenser } from './RefluxCondenser';
+export { default as DroppingFunnel } from './DroppingFunnel';
 
 export { default as WaterTrough } from './WaterTrough';
 export { default as GasJar } from './GasJar';

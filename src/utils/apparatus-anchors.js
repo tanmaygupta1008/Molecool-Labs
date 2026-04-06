@@ -59,6 +59,16 @@ export const getApparatusAnchors = (item) => {
             case 'BoilingTube':
                 standard.push({ id: 'mouth', localPos: [0, 0.9, 0], localNormal: [0, 1, 0] });
                 break;
+            case 'DroppingFunnel':
+                standard.push({ id: 'mouth', localPos: [0, 4.45, 0], localNormal: [0, 1, 0] });
+                standard.push({ id: 'bottom', localPos: [0, -1.0, 0], localNormal: [0, -1, 0] });
+                break;
+            case 'RefluxCondenser':
+                standard.push({ id: 'mouth', localPos: [0, 4.7, 0], localNormal: [0, 1, 0] });
+                standard.push({ id: 'waterIn', localPos: [0.65, 3.2, 0], localNormal: [1, 0, 0] });
+                standard.push({ id: 'waterOut', localPos: [0.65, 3.75, 0], localNormal: [1, 0, 0] });
+                standard.push({ id: 'bottom', localPos: [0, -0.15, 0], localNormal: [0, -1, 0] });
+                break;
             case 'GasJar':
                 standard.push({ id: 'mouth', localPos: [0, 2.5, 0], localNormal: [0, 1, 0] });
                 break;
