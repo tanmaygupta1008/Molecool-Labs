@@ -91,6 +91,11 @@ const ReactantBlockEditor = ({ block, onChange, apparatusList }) => {
             const burette = apparatusList?.find(a => a.model === 'Burette');
             newEffect.targetId = burette?.id || '';
             newEffect.dripRate = 0.5;
+        } else if (type === 'LITMUS_CHANGE') {
+            const litmus = apparatusList?.find(a => ['LitmusPaper', 'RedLitmusPaper', 'BlueLitmusPaper'].includes(a.model));
+            newEffect.targetId = litmus?.id || '';
+            newEffect.initialColor = '#ff6666'; // Default red
+            newEffect.finalColor = '#6688ff'; // Default blue
         }
         onChange({ ...block, effects: [...(block.effects || []), newEffect] });
     };
@@ -124,6 +129,7 @@ const ReactantBlockEditor = ({ block, onChange, apparatusList }) => {
 
     const hasElectrolysis = apparatusList?.some(a => a.model === 'ElectrolysisSetup');
     const hasBurette = apparatusList?.some(a => a.model === 'Burette');
+    const hasLitmus = apparatusList?.some(a => ['LitmusPaper', 'RedLitmusPaper', 'BlueLitmusPaper'].includes(a.model));
 
     return (
         <div className="flex flex-col h-full bg-[#111] overflow-hidden">
@@ -186,6 +192,12 @@ const ReactantBlockEditor = ({ block, onChange, apparatusList }) => {
                                     <button onClick={() => addEffect('LIQUID_DRIPPING')} className="w-full text-left px-3 py-2 text-xs text-blue-400 hover:bg-white/5 flex items-center gap-2"><Droplets size={12} /> Liquid Dripping</button>
                                 </>
                             )}
+                            {hasLitmus && (
+                                <>
+                                    <div className="h-px bg-white/10 my-1"></div>
+                                    <button onClick={() => addEffect('LITMUS_CHANGE')} className="w-full text-left px-3 py-2 text-xs text-pink-300 hover:bg-white/5 flex items-center gap-2"><Palette size={12} /> Litmus Color Change</button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -241,6 +253,27 @@ const ReactantBlockEditor = ({ block, onChange, apparatusList }) => {
                                 <input type="color" value={eff.initialColor} onChange={e => updateEffect(index, 'initialColor', e.target.value)} className="w-6 h-6 rounded bg-transparent border-none cursor-pointer p-0" />
                                 <ArrowRight size={12} className="text-gray-500" />
                                 <input type="color" value={eff.finalColor} onChange={e => updateEffect(index, 'finalColor', e.target.value)} className="w-6 h-6 rounded bg-transparent border-none cursor-pointer p-0" />
+                            </div>
+                        )}
+
+                        {eff.type === 'LITMUS_CHANGE' && (
+                            <div className="flex flex-col gap-2">
+                                <label className="text-[9px] text-gray-500">Target Litmus Paper</label>
+                                <select
+                                    className="w-full bg-black border border-white/10 rounded px-2 py-1 text-xs text-white"
+                                    value={eff.targetId || ''}
+                                    onChange={e => updateEffect(index, 'targetId', e.target.value)}
+                                >
+                                    {apparatusList.filter(a => ['LitmusPaper', 'RedLitmusPaper', 'BlueLitmusPaper'].includes(a.model)).map(app => (
+                                        <option key={app.id} value={app.id}>{app.id} ({app.model})</option>
+                                    ))}
+                                </select>
+                                <div className="flex items-center gap-2 mt-2 border-t border-white/5 pt-2">
+                                    <label className="text-[9px] text-gray-400">Color Transition:</label>
+                                    <input type="color" value={eff.initialColor} onChange={e => updateEffect(index, 'initialColor', e.target.value)} className="w-6 h-6 rounded bg-transparent border-none cursor-pointer p-0" />
+                                    <ArrowRight size={12} className="text-gray-500" />
+                                    <input type="color" value={eff.finalColor} onChange={e => updateEffect(index, 'finalColor', e.target.value)} className="w-6 h-6 rounded bg-transparent border-none cursor-pointer p-0" />
+                                </div>
                             </div>
                         )}
 

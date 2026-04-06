@@ -255,6 +255,11 @@ export const calculateReactantState = (reactantTimeline, currentTime, apparatusL
                             target.reactantColorOverrides[eff.targetId] = '#' + res.getHexString();
                         }
 
+                    } else if (eff.type === 'LITMUS_CHANGE') {
+                        const c1 = new THREE.Color(eff.initialColor || '#ff6666');
+                        const c2 = new THREE.Color(eff.finalColor || '#6688ff');
+                        const res = c1.lerp(c2, progress);
+                        target.paperColor = '#' + res.getHexString();
                     } else if (eff.type === 'VOLUME_CHANGE') {
                         const startVol = eff.initialVolume || 0;
                         const endVol = eff.finalVolume || 0;
