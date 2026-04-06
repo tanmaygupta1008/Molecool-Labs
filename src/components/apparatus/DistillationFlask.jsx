@@ -1,9 +1,10 @@
 import React from 'react';
 import * as THREE from 'three';
 import { Sphere, Cylinder, Torus } from '@react-three/drei';
+import SphericalContents from './SphericalContents';
 
 const DistillationFlask = (props) => {
-    const { precipitateActive, precipitateAmount, precipitateColor, isHeating, ...rest } = props;
+    const { precipitateActive, precipitateAmount, precipitateColor, isHeating, reactants, ...rest } = props;
 
     // Side arm: angles downwards
     const renderSideArm = () => {
@@ -90,6 +91,17 @@ const DistillationFlask = (props) => {
 
             {/* Side Arm */}
             {renderSideArm()}
+
+            {/* Reactant Contents */}
+            <SphericalContents 
+                reactants={reactants} 
+                radius={1.0} 
+                position={[0, 1, 0]} 
+                neckRadius={0.35}
+                neckBaseRelativeY={0.9} 
+                maxNeckHeight={2.8} 
+                {...props} 
+            />
         </group>
     );
 };

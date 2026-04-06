@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { Cylinder } from '@react-three/drei';
+import ConicalContents from './ConicalContents';
 
 const VacuumFlask = (props) => {
     // The sideArmType can be 'glass' (simple tube) or 'plastic' (red rugged nozzle)
-    const { sideArmType = 'plastic', isHeating, ...rest } = props;
+    const { sideArmType = 'plastic', isHeating, reactants, ...rest } = props;
 
     // Conical shape identical to ConicalFlask
     const points = useMemo(() => {
@@ -107,6 +108,18 @@ const VacuumFlask = (props) => {
             )}
 
             {renderSideArm()}
+
+            {/* Reactant Contents */}
+            <ConicalContents 
+                reactants={reactants}
+                maxVolume={250}
+                baseRadius={1.0}
+                neckRadius={0.35}
+                coneHeight={1.8}
+                maxVisibleHeight={2.2}
+                position={[0, 0, 0]}
+                {...props}
+            />
         </group>
     );
 };

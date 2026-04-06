@@ -21,7 +21,7 @@ const ApparatusPreview = ({ apparatus }) => {
     const { id, ...apparatusProps } = apparatus;
 
     return (
-        <div className="h-64 w-full bg-[#161616] rounded-xl border border-gray-800 mb-6 relative overflow-hidden">
+        <div className="h-[450px] w-full bg-[#161616] rounded-xl border border-gray-800 mb-6 relative overflow-hidden shadow-inner">
             <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur px-2 py-1 rounded text-xs font-mono text-cyan-400 border border-cyan-500/20 flex items-center gap-1">
                 <Eye size={12} /> Live Preview
             </div>
@@ -49,9 +49,13 @@ const ApparatusNode = ({ app, allApps }) => {
     const { id, position, rotation, scale, ...props } = app;
 
     if (app.model === 'BunsenBurner') {
-        const detection = detectApparatusTypeAbove(app, allApps);
+        const detection = detectApparatusTypeAbove(app, allApps, props.gasFlow ?? 0.6);
         props.apparatusType = detection.type;
         props.flameTargetY = detection.distY;
+        props.baseRadius = detection.baseRadius;
+        props.isHeating = detection.isHeating;
+        props.proximity = detection.proximity ?? 0;
+        if (props.isOn === undefined) props.isOn = false;
     }
 
     const children = allApps.filter(child => child.parentId === app.id);
@@ -73,7 +77,7 @@ const ApparatusNode = ({ app, allApps }) => {
 const FullSetupPreview = ({ reaction }) => {
     const apparatusList = reaction.stages?.[0]?.apparatus || reaction.apparatus || [];
     return (
-        <div className="h-64 w-full bg-[#161616] rounded-xl border border-gray-800 mb-6 relative overflow-hidden">
+        <div className="h-[450px] w-full bg-[#161616] rounded-xl border border-gray-800 mb-6 relative overflow-hidden shadow-inner">
             <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur px-2 py-1 rounded text-xs font-mono text-purple-400 border border-purple-500/20 flex items-center gap-1">
                 <Layers size={12} /> Full Setup
             </div>
@@ -206,7 +210,18 @@ const ReactantConfigPage = () => {
         }
     };
 
-    const getAppList = (r) => r?.stages?.[0]?.apparatus || r?.apparatus || [];
+    const CONTAINER_MODELS = [
+        'Beaker', 'ConicalFlask', 'RoundBottomFlask', 'TwoNeckFlask', 'ThreeNeckFlask',
+        'SeparatoryFunnel', 'VolumetricFlask', 'DistillationFlask', 'VacuumFlask',
+        'TestTube', 'BoilingTube', 'MeasuringCylinder', 'GasJar', 'WaterTrough',
+        'WaterTrough_GasJar', 'WaterTrough_TestTube',
+        'Crucible', 'ElectrolysisSetup', 'Burette', 'DropperBottle'
+    ];
+
+    const getAppList = (r) => {
+        const fullList = r?.stages?.[0]?.apparatus || r?.apparatus || [];
+        return fullList.filter(app => CONTAINER_MODELS.includes(app.model));
+    };
 
     const updateReactants = (apparatusId, newReactants) => {
         const updatedReaction = { ...currentReaction };
@@ -224,6 +239,20 @@ const ReactantConfigPage = () => {
         setCurrentReaction(updatedReaction);
 
         // Update main list
+        setReactions(prev => prev.map(r => r.id === updatedReaction.id ? updatedReaction : r));
+    };
+
+    const updateApparatusField = (apparatusId, field, value) => {
+        const updatedReaction = { ...currentReaction };
+        const updateList = (list) => list.map(app => app.id === apparatusId ? { ...app, [field]: value } : app);
+
+        if (updatedReaction.stages && updatedReaction.stages.length > 0) {
+            updatedReaction.stages[0].apparatus = updateList(updatedReaction.stages[0].apparatus || []);
+        } else {
+            updatedReaction.apparatus = updateList(updatedReaction.apparatus || []);
+        }
+
+        setCurrentReaction(updatedReaction);
         setReactions(prev => prev.map(r => r.id === updatedReaction.id ? updatedReaction : r));
     };
 
@@ -535,6 +564,40 @@ const ReactantConfigPage = () => {
                                                 </div>
                                             ))}
                                         </div>
+
+                                        {/* Apparatus Specific Configs */}
+                                        {selectedApp.model.startsWith('WaterTrough') && (
+                                            <div className="mt-8 pt-6 border-t border-gray-800">
+                                                <h4 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider mb-4">Water Trough Global Settings</h4>
+                                                <div className="bg-[#1a1a1a] rounded-xl p-5 border border-gray-700/50 shadow-sm">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                                            Manually Override Water Level
+                                                        </label>
+                                                        <span className="text-xs font-mono text-cyan-500">
+                                                            {selectedApp.liquidLevelOverride !== undefined ? `${selectedApp.liquidLevelOverride} mL` : 'Auto-calculated'}
+                                                        </span>
+                                                    </div>
+                                                    <input 
+                                                        type="range" 
+                                                        className="w-full h-2 bg-black border border-gray-800 rounded-lg appearance-none cursor-pointer accent-cyan-500 shadow-inner"
+                                                        min={0} max={1000} step={10}
+                                                        value={selectedApp.liquidLevelOverride !== undefined ? selectedApp.liquidLevelOverride : 500}
+                                                        onChange={(e) => updateApparatusField(selectedApp.id, 'liquidLevelOverride', parseFloat(e.target.value))}
+                                                    />
+                                                    <div className="flex justify-between text-[10px] text-gray-500 mt-2">
+                                                        <span>Empty</span>
+                                                        <button 
+                                                            onClick={() => updateApparatusField(selectedApp.id, 'liquidLevelOverride', undefined)}
+                                                            className="text-cyan-600 hover:text-cyan-400 cursor-pointer px-2"
+                                                        >
+                                                            Reset to Auto
+                                                        </button>
+                                                        <span>Full (1000 mL)</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })()

@@ -59,9 +59,11 @@ const ApparatusItem = ({ item, apparatusRefs, progress, allApparatus, visualRule
         const currentIntensity = isHeatSource ? (heatRule.intensity ?? initialIntensity) : initialIntensity;
 
         extraProps.isOn = item.isOn || isHeatSource || false;
-        const detection = detectApparatusTypeAbove(item, allApparatus);
+        const detection = detectApparatusTypeAbove(item, allApparatus, item.gasFlow ?? 0.6);
         extraProps.apparatusType = detection.type;
         extraProps.flameTargetY = detection.distY;
+        extraProps.baseRadius = detection.baseRadius;
+        extraProps.proximity = detection.proximity ?? 0;
 
         extraProps.intensity = currentIntensity;
         // Pass flame color from initial state OR advanced effect

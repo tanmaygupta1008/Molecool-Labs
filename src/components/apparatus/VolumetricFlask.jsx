@@ -2,8 +2,10 @@ import React from 'react';
 import * as THREE from 'three';
 import { Sphere, Cylinder, Torus } from '@react-three/drei';
 import Precipitate from '../effects/Precipitate';
+import SphericalContents from './SphericalContents';
 
 const VolumetricFlask = (props) => {
+    const { reactants, ...rest } = props;
     return (
         <group {...props}>
             {/* Body: Bulbous bottom (squashed sphere to give it a slightly flat bottom look) */}
@@ -116,6 +118,23 @@ const VolumetricFlask = (props) => {
                     position={[0, 0.8, 0]}
                 />
             )}
+            {/* Content Level Mark (100ml line for example) */}
+            <Torus args={[0.155, 0.005, 16, 32]} position={[0, 2.0, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                <meshBasicMaterial color="#ffffff" transparent opacity={0.6} />
+            </Torus>
+
+            {/* Reactant Contents - Using scale to match the squashed sphere body */}
+            <group scale={[1, 0.9, 1]}>
+                <SphericalContents 
+                    reactants={props.reactants} 
+                    radius={1.0} 
+                    position={[0, 0.8/0.9, 0]} 
+                    neckRadius={0.2} // Approximately fitting the neck transition
+                    neckBaseRelativeY={1.0}
+                    maxNeckHeight={4.0} // Reaches up to the 250ml mark
+                    {...props} 
+                />
+            </group>
         </group>
     );
 };

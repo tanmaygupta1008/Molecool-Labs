@@ -1,5 +1,75 @@
 
 import * as THREE from 'three';
+import { useMemo } from 'react';
+import { CHEMICALS } from '../data/chemicals';
+
+/**
+ * Shared hook to parse apparatus reactant array into renderable volumes, colors, and solid masses
+ * @param {Array} reactants - List of reactant objects
+ * @param {Object} props - Apparatus props containing optional overrides
+ * @returns {Object} { liquidVolume, liquidColor, solids, gasOpacity, gasColor }
+ */
+export const useReactantsData = (reactants = [], props = {}) => {
+    return useMemo(() => {
+        let lVol = 0;
+        let lr = 0, lg = 0, lb = 0, lCount = 0;
+        let gr = 0, gg = 0, gb = 0, gCount = 0;
+        const solidItems = [];
+
+        reactants.forEach(r => {
+            const chemical = CHEMICALS.find(c => c.id === r.chemicalId);
+            const overrideColor = props.reactantColorOverrides?.[r.id];
+            const color = overrideColor || chemical?.color || '#ffffff';
+            const c = new THREE.Color(color);
+
+            if (r.state === 'l' || r.state === 'aq') {
+                const overrideAmt = props.reactantOverrides?.[r.id];
+                const amt = overrideAmt !== undefined ? overrideAmt : (parseFloat(r.amount) || 0);
+                lVol += amt;
+
+                // Weighted color mixing
+                lr += c.r * amt;
+                lg += c.g * amt;
+                lb += c.b * amt;
+                lCount += amt; // Count is total volume for weighted average
+            } 
+            else if (r.state === 's') {
+                const initialAmt = parseFloat(r.amount) || 0;
+                const override = props.reactantOverrides?.[r.id];
+                const maxOverride = props.reactantMaxOverrides?.[r.id];
+
+                const currentAmt = Math.max(0, override !== undefined ? override : initialAmt);
+                const maxAmt = Math.max(initialAmt, maxOverride !== undefined ? maxOverride : initialAmt);
+
+                if (maxAmt > 0 && currentAmt > 0) {
+                    const scaleMultiplier = currentAmt / maxAmt;
+                    let remaining = maxAmt;
+                    while (remaining > 0) {
+                        const pieceWeight = Math.min(remaining, 50);
+                        const baseScale = Math.max(0.05, pieceWeight / 50);
+                        solidItems.push({
+                            ...r,
+                            color,
+                            weight: pieceWeight,
+                            scale: baseScale * scaleMultiplier
+                        });
+                        remaining -= pieceWeight;
+                    }
+                }
+            }
+            else if (r.state === 'g') {
+                gr += c.r; gg += c.g; gb += c.b;
+                gCount++;
+            }
+        });
+
+        const liquidColor = lCount > 0 ? new THREE.Color(lr / lCount, lg / lCount, lb / lCount).getStyle() : '#aaddff';
+        const gasColor = gCount > 0 ? new THREE.Color(gr / gCount, gg / gCount, gb / gCount).getStyle() : '#ffffff';
+        const gasOpacity = gCount > 0 ? 0.2 : 0; 
+
+        return { liquidVolume: lVol, liquidColor, solids: solidItems, gasColor, gasOpacity };
+    }, [reactants, props.reactantOverrides, props.reactantMaxOverrides, props.reactantColorOverrides]);
+};
 
 /**
  * Calculates which effects are currently active based on their start step and duration.

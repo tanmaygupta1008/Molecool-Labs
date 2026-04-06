@@ -2,9 +2,10 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { Sphere, Cylinder, Torus } from '@react-three/drei';
 import Precipitate from '../effects/Precipitate';
+import SphericalContents from './SphericalContents';
 
 const RoundBottomFlask = (props) => {
-    const { necks = 1, precipitateActive, precipitateAmount, precipitateColor, isHeating, ...rest } = props;
+    const { necks = 1, precipitateActive, precipitateAmount, precipitateColor, isHeating, reactants, ...rest } = props;
     
     // Side neck geometry builder
     // Tilted outwards by 30 degrees (Math.PI/6)
@@ -127,6 +128,17 @@ const RoundBottomFlask = (props) => {
                     position={[0, 1.0, 0]}
                 />
             )}
+
+            {/* Reactant Contents */}
+            <SphericalContents 
+                reactants={reactants} 
+                radius={1.0} 
+                position={[0, 1, 0]} 
+                neckRadius={0.35}
+                neckBaseRelativeY={0.9} // Safe intersection point within the sphere
+                maxNeckHeight={1.4} // Fills most of the 1.5 neck
+                {...props} 
+            />
         </group>
     );
 };
