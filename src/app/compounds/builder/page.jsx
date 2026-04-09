@@ -10,7 +10,7 @@ import AtomNode from '@/components/reactions/engine/AtomNode';
 import BondLine from '@/components/reactions/engine/BondLine';
 import RadicalGroupUI from '@/components/reactions/engine/RadicalGroupUI';
 import VSEPRPhysicsEngine from '@/components/reactions/engine/VSEPRPhysicsEngine';
-import { getAllElementsList, getElementData } from '@/utils/elementColors';
+import { getAllElementsList, getElementData, calculatePartialCharges } from '@/utils/elementColors';
 
 // --- SUBCOMPONENTS ---
 
@@ -122,10 +122,17 @@ export default function MoleculeBuilderPage() {
     const [mode, setMode] = useState('none'); // 'none', 'add', 'select', 'bond', 'group', 'delete'
     const [autoLayout, setAutoLayout] = useState(false);
     const [showLonePairs, setShowLonePairs] = useState(false);
+    const [showPartialCharges, setShowPartialCharges] = useState(false);
     const [element, setElement] = useState('C');
     const [charge, setCharge] = useState(0);
     const [bondOrder, setBondOrder] = useState(1);
     const [orbitEnabled, setOrbitEnabled] = useState(true);
+
+    // Partial charge computation - recalculated whenever atoms/bonds change
+    const partialChargeData = useMemo(() => {
+        if (!showPartialCharges) return null;
+        return calculatePartialCharges(script.atoms, script.bonds);
+    }, [showPartialCharges, script.atoms, script.bonds]);
 
     // Group State
     const [selectedGroupAtoms, setSelectedGroupAtoms] = useState([]);
@@ -238,7 +245,31 @@ export default function MoleculeBuilderPage() {
                                 </div>
                                 <span className={`text-sm font-bold transition-colors ${showLonePairs ? 'text-green-400' : 'text-gray-500 group-hover:text-gray-300'}`}>Show Lone Pairs</span>
                             </label>
-                            
+
+                            <label className="flex items-center gap-2 mt-3 cursor-pointer group" onClick={() => setShowPartialCharges(!showPartialCharges)}>
+                                <div className={`w-10 h-5 rounded-full px-1 flex items-center transition-colors ${showPartialCharges ? 'bg-orange-500' : 'bg-gray-700'}`}>
+                                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${showPartialCharges ? 'translate-x-5' : 'translate-x-0'}`} />
+                                </div>
+                                <span className={`text-sm font-bold transition-colors ${showPartialCharges ? 'text-orange-400' : 'text-gray-500 group-hover:text-gray-300'}`}>Show Partial Charges (δ)</span>
+                            </label>
+                            {showPartialCharges && partialChargeData && (
+                                <div className="mt-2 p-2 bg-black/40 rounded border border-orange-900/40 text-[10px] font-mono leading-relaxed">
+                                    <span className="text-blue-400 font-bold">δ+</span>
+                                    <span className="text-gray-400"> most e-poor: </span>
+                                    <span className="text-white">{partialChargeData.mostPositive}</span>
+                                    <br />
+                                    <span className="text-red-400 font-bold">δ−</span>
+                                    <span className="text-gray-400"> most e-rich: </span>
+                                    <span className="text-white">{partialChargeData.mostNegative}</span>
+                                </div>
+                            )}
+                            {showPartialCharges && !partialChargeData && script.bonds.length > 0 && (
+                                <p className="text-[10px] text-orange-600 mt-1">Electronegativity difference too small — molecule is nonpolar.</p>
+                            )}
+                            {showPartialCharges && script.bonds.length === 0 && (
+                                <p className="text-[10px] text-gray-600 mt-1">Add bonds between atoms to calculate partial charges.</p>
+                            )}
+
                             <p className="text-[10px] text-gray-500 mt-2 leading-tight">Continuously applies repulsive forces to bonds, arranging atoms into minimum-energy 3D geometry.</p>
                         </div>
                     </div>
@@ -505,6 +536,44 @@ export default function MoleculeBuilderPage() {
 
                     {/* Interaction Plane - Only render in Add mode */}
                     {mode === 'add' && <ClickablePlane onPlaceAtom={handlePlaneClick} />}
+
+                    {/* Partial charge highlight glows */}
+                    {showPartialCharges && partialChargeData && (() => {
+                        const { mostPositive, mostNegative } = partialChargeData;
+                        return script.atoms.map(atom => {
+                            if (atom.id !== mostPositive && atom.id !== mostNegative) return null;
+                            const isPositive = atom.id === mostPositive;
+                            const baseRadius = getElementData(atom.element).radius;
+                            const glowRadius = baseRadius * 3.2;
+                            const color = isPositive ? '#4488ff' : '#ff3333';
+                            const label = isPositive ? 'δ+' : 'δ−';
+                            return (
+                                <group key={`pc-halo-${atom.id}`} position={atom.startPos}>
+                                    {/* Outer soft glow sphere */}
+                                    <mesh>
+                                        <sphereGeometry args={[glowRadius, 32, 32]} />
+                                        <meshBasicMaterial
+                                            color={color}
+                                            transparent
+                                            opacity={0.12}
+                                            depthWrite={false}
+                                        />
+                                    </mesh>
+                                    {/* Inner ring */}
+                                    <mesh rotation={[-Math.PI / 2, 0, 0]}>
+                                        <ringGeometry args={[baseRadius * 1.6, baseRadius * 2.2, 48]} />
+                                        <meshBasicMaterial
+                                            color={color}
+                                            transparent
+                                            opacity={0.55}
+                                            depthWrite={false}
+                                            side={THREE.DoubleSide}
+                                        />
+                                    </mesh>
+                                </group>
+                            );
+                        });
+                    })()}
 
                     {/* Render AtomNodes */}
                     {script.atoms.map(atom => {

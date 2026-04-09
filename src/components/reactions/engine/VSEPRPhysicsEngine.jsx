@@ -12,11 +12,43 @@ const getExpectedLonePairs = (atom, bondOrderSum) => {
     else if (['N', 'P'].includes(atom.element)) valence = 5;
     else if (['C', 'Si'].includes(atom.element)) valence = 4;
     else if (['B', 'Al'].includes(atom.element)) valence = 3;
-    else return 0; // H, He, etc.
-
+    else return 0;
     const charge = atom.charge || 0;
     const remaining = valence - charge - bondOrderSum;
     return Math.max(0, Math.floor(remaining / 2));
+};
+
+/**
+ * VSEPR Repulsion Strength Table
+ * Matches: LP–LP > LP–BP₃ > LP–BP₂ > LP–BP₁ > BP₃–BP₃ > BP₃–BP₂ > BP₃–BP₁ > BP₂–BP₂ > BP₂–BP₁ > BP₁–BP₁
+ *
+ * typeA and typeB are: 'LP' | 'BP1' | 'BP2' | 'BP3'
+ */
+const VSEPR_BASE = 100.0; // Base repulsion unit
+
+const getRepulsionStrength = (typeA, typeB) => {
+    // Canonical order: LP > BP3 > BP2 > BP1 — sort to normalize pair
+    const rank = { LP: 3, BP3: 2, BP2: 1, BP1: 0 };
+    const [hi, lo] = rank[typeA] >= rank[typeB] ? [typeA, typeB] : [typeB, typeA];
+
+    if (hi === 'LP'  && lo === 'LP')  return VSEPR_BASE * 2.20; // LP–LP:  Highest
+    if (hi === 'LP'  && lo === 'BP3') return VSEPR_BASE * 1.80; // LP–BP₃: Very High
+    if (hi === 'LP'  && lo === 'BP2') return VSEPR_BASE * 1.50; // LP–BP₂: High
+    if (hi === 'LP'  && lo === 'BP1') return VSEPR_BASE * 1.20; // LP–BP₁: Moderate
+    if (hi === 'BP3' && lo === 'BP3') return VSEPR_BASE * 1.50; // BP₃–BP₃: High
+    if (hi === 'BP3' && lo === 'BP2') return VSEPR_BASE * 1.30; // BP₃–BP₂: Medium-High
+    if (hi === 'BP3' && lo === 'BP1') return VSEPR_BASE * 1.10; // BP₃–BP₁: Medium
+    if (hi === 'BP2' && lo === 'BP2') return VSEPR_BASE * 1.00; // BP₂–BP₂: Medium
+    if (hi === 'BP2' && lo === 'BP1') return VSEPR_BASE * 0.85; // BP₂–BP₁: Low-Medium
+    if (hi === 'BP1' && lo === 'BP1') return VSEPR_BASE * 0.70; // BP₁–BP₁: Lowest
+    return VSEPR_BASE; // Fallback
+};
+
+/** Convert bond order integer to BP type string */
+const bpType = (order) => {
+    if (order >= 3) return 'BP3';
+    if (order === 2) return 'BP2';
+    return 'BP1';
 };
 
 // Orbital Visual Component (Teardrop shape pointing towards +Y local up)
@@ -134,7 +166,6 @@ const VSEPRPhysicsEngine = ({ active, script, updateAllAtomPositions, showLonePa
 
         // Strictly defined VSEPR parameters
         const LP_DISTANCE = 0.8;
-        const LP_REPULSION_STRENGTH = 120.0;
 
         const forces = {};
         const lpForces = [];
@@ -218,13 +249,21 @@ const VSEPRPhysicsEngine = ({ active, script, updateAllAtomPositions, showLonePa
             const pCenter = new THREE.Vector3(...(a.currentPos || a.startPos));
             
             // Collect Bonded Vectors normalized onto the surface of the sphere
+            // Each entry also carries the bond order so repulsion can be scaled correctly
             const bondedPoints = adjMap[a.id].map(neighborId => {
+                const bond = script.bonds.find(b =>
+                    (b.from === a.id && b.to === neighborId) ||
+                    (b.to === a.id && b.from === neighborId)
+                );
+                const bondOrder = bond ? (bond.order || 1) : 1;
                 const otherAtom = script.atoms.find(oa => oa.id === neighborId);
                 const pOther = new THREE.Vector3(...(otherAtom.currentPos || otherAtom.startPos));
                 const dir = pOther.clone().sub(pCenter);
-                if (dir.lengthSq() < 0.01) dir.set(1,0,0);
+                if (dir.lengthSq() < 0.01) dir.set(1, 0, 0);
                 return {
                     id: neighborId,
+                    bondOrder,
+                    type: bpType(bondOrder),
                     posOnSphere: pCenter.clone().add(dir.normalize().multiplyScalar(LP_DISTANCE)),
                     realPos: pOther
                 };
@@ -242,7 +281,7 @@ const VSEPRPhysicsEngine = ({ active, script, updateAllAtomPositions, showLonePa
                 const pLp = lpPositions.current[currentLpIndex];
                 const fLp = new THREE.Vector3(); // Local accumulator
 
-                // A. LP vs LP Repulsion
+                // A. LP vs LP Repulsion  (Highest — from table)
                 for (let ol = l + 1; ol < numLP; ol++) {
                     const otherLpIndex = lpIndex + ol;
                     const oLpPos = lpPositions.current[otherLpIndex];
@@ -250,31 +289,30 @@ const VSEPRPhysicsEngine = ({ active, script, updateAllAtomPositions, showLonePa
                         const dir = pLp.clone().sub(oLpPos);
                         let ds = dir.lengthSq();
                         if (ds < 0.01) { dir.set(0.1, 0, 0); ds = 0.01; }
-                        
-                        // Stronger repulsion between pure Lone Pairs minimizes their interactions
-                        const fmag = (LP_REPULSION_STRENGTH * 1.5) / ds; 
+
+                        const fmag = getRepulsionStrength('LP', 'LP') / ds;
                         const fvec = dir.normalize().multiplyScalar(fmag);
                         fLp.add(fvec);
-                        lpForces[otherLpIndex].sub(fvec); 
+                        lpForces[otherLpIndex].sub(fvec);
                     }
                 }
 
-                // B. LP vs Bond Points Repulsion
+                // B. LP vs Bond-Pair Repulsion (LP – BP₁/₂/₃ — from table)
                 bondedPoints.forEach(bp => {
                     const dir = pLp.clone().sub(bp.posOnSphere);
                     let ds = dir.lengthSq();
                     if (ds < 0.01) { dir.set(0.1, 0, 0); ds = 0.01; }
-                    
-                    const fmag = LP_REPULSION_STRENGTH / ds;
+
+                    // Use VSEPR table: LP vs this bond's type (BP1/BP2/BP3)
+                    const fmag = getRepulsionStrength('LP', bp.type) / ds;
                     const fvec = dir.normalize().multiplyScalar(fmag);
-                    
-                    fLp.add(fvec); // Pushes the LP along the sphere away from the bond
-                    
-                    // Crucial Step: The bond pushes back, physically bending the ACTUAL neighbor atom
-                    // This imparts the 104.5 "bending" effect
+
+                    fLp.add(fvec); // Pushes LP away from bond along sphere
+
+                    // Backforce: bends the actual bonded atom (gives the 104.5° effect)
                     const bendingForce = bp.realPos.clone().sub(pLp).normalize().multiplyScalar(fmag * 0.4);
-                    forces[bp.id].add(bendingForce); 
-                    forces[a.id].sub(bendingForce); // counter-force to stop net drift
+                    forces[bp.id].add(bendingForce);
+                    forces[a.id].sub(bendingForce);
                 });
                 
                 // Apply all gathered symmetric forces to the master tracker
