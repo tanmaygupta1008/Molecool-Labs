@@ -4572,5 +4572,582 @@
         ],
         "tableWidth": 25,
         "tableDepth": 16.5
+    },
+    {
+        "id": "decomposition-of-hydrogen-peroxide",
+        "name": "Decomposition of hydrogen peroxide",
+        "type": "Custom Built",
+        "equation": "2H₂O₂(aq) → 2H₂O(l) + O₂(g)",
+        "apparatus": [],
+        "macroView": {
+            "visuals": [
+                "Custom reaction loaded"
+            ],
+            "steps": [
+                "Add reactants",
+                "Observe reaction"
+            ],
+            "visualRules": {
+                "timeline": {}
+            }
+        },
+        "microView": {
+            "script": {
+                "atoms": [
+                    {
+                        "id": "H1",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            -3.5050610967913918,
+                            -0.14966260379331153,
+                            -5.626600478845218
+                        ]
+                    },
+                    {
+                        "id": "H2",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            2.214326093655252,
+                            0.41400695720518677,
+                            -5.3445098940957045
+                        ]
+                    },
+                    {
+                        "id": "O1",
+                        "element": "O",
+                        "charge": 0,
+                        "startPos": [
+                            -1.771209460065394,
+                            0.7582936400192926,
+                            -4.564900896675408
+                        ]
+                    },
+                    {
+                        "id": "O2",
+                        "element": "O",
+                        "charge": 0,
+                        "startPos": [
+                            0.2879630870516747,
+                            -0.5614353655520782,
+                            -4.770103695635622
+                        ]
+                    },
+                    {
+                        "id": "O3",
+                        "element": "O",
+                        "charge": 0,
+                        "startPos": [
+                            1.2821615968913358,
+                            0.4603552523634085,
+                            3.8840679926101056
+                        ]
+                    },
+                    {
+                        "id": "O4",
+                        "element": "O",
+                        "charge": 0,
+                        "startPos": [
+                            0.6361775262926914,
+                            -0.6315793285216538,
+                            1.8183235608265156
+                        ]
+                    },
+                    {
+                        "id": "H3",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            3.4954448274182264,
+                            0.5172649454052122,
+                            3.816638839833262
+                        ]
+                    },
+                    {
+                        "id": "H4",
+                        "element": "H",
+                        "charge": 0,
+                        "startPos": [
+                            -1.5617041504165936,
+                            -0.891338084303001,
+                            1.9157553068501596
+                        ]
+                    }
+                ],
+                "bonds": [
+                    {
+                        "id": "B_H1_O1",
+                        "from": "H1",
+                        "to": "O1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_O1_O2",
+                        "from": "O1",
+                        "to": "O2",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_O2_H2",
+                        "from": "O2",
+                        "to": "H2",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_O4_H4",
+                        "from": "O4",
+                        "to": "H4",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_O4_O3",
+                        "from": "O4",
+                        "to": "O3",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_O3_H3",
+                        "from": "O3",
+                        "to": "H3",
+                        "order": 1,
+                        "color": "#ffffff"
+                    }
+                ],
+                "tracks": [
+                    {
+                        "id": "trk_1775748592102",
+                        "name": "Track 1",
+                        "startTime": 0,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_O3_H3"
+                            },
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_O4_H4"
+                            },
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_O1_O2"
+                            }
+                        ],
+                        "targetPositions": {}
+                    },
+                    {
+                        "id": "trk_1775748622566",
+                        "name": "Track 2",
+                        "startTime": 5,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "FORM_BOND",
+                                "from": "H4",
+                                "to": "O1",
+                                "order": 1
+                            },
+                            {
+                                "type": "FORM_BOND",
+                                "from": "H3",
+                                "to": "O2",
+                                "order": 1
+                            },
+                            {
+                                "type": "UPDATE_BOND_ORDER",
+                                "bondId": "B_O4_O3",
+                                "newOrder": 2
+                            }
+                        ],
+                        "targetPositions": {}
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "id": "chlorine-water-potassium-bromide",
+        "name": "Chlorine water + potassium bromide",
+        "type": "Custom Built",
+        "equation": "Cl₂(aq) + 2KBr(aq) → 2KCl(aq) + Br₂(aq)",
+        "apparatus": [],
+        "macroView": {
+            "visuals": [
+                "Custom reaction loaded"
+            ],
+            "steps": [
+                "Add reactants",
+                "Observe reaction"
+            ],
+            "visualRules": {
+                "timeline": {}
+            }
+        },
+        "microView": {
+            "script": {
+                "atoms": [
+                    {
+                        "id": "Cl1",
+                        "element": "Cl",
+                        "charge": 0,
+                        "startPos": [
+                            5.135957450491898,
+                            0.014600943325745658,
+                            5.177296185623733
+                        ]
+                    },
+                    {
+                        "id": "Cl2",
+                        "element": "Cl",
+                        "charge": 0,
+                        "startPos": [
+                            4.8361549416922935,
+                            -0.0177363418613481,
+                            2.6073075984486622
+                        ]
+                    },
+                    {
+                        "id": "K1",
+                        "element": "K",
+                        "charge": 1,
+                        "startPos": [
+                            0.03063173608534644,
+                            0.06106664591072166,
+                            4.630793303000595
+                        ]
+                    },
+                    {
+                        "id": "Br1",
+                        "element": "Br",
+                        "charge": -1,
+                        "startPos": [
+                            0.03110201773912324,
+                            -0.05825786068678451,
+                            2.3320585820357596
+                        ]
+                    },
+                    {
+                        "id": "K2",
+                        "element": "K",
+                        "charge": 1,
+                        "startPos": [
+                            -4.901807478105522,
+                            0.015057437605365221,
+                            2.182892092013478
+                        ]
+                    },
+                    {
+                        "id": "Br2",
+                        "element": "Br",
+                        "charge": -1,
+                        "startPos": [
+                            -4.773417641622587,
+                            -0.015421261074669065,
+                            4.473260981110431
+                        ]
+                    }
+                ],
+                "bonds": [
+                    {
+                        "id": "B_Cl1_Cl2",
+                        "from": "Cl1",
+                        "to": "Cl2",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_K1_Br1",
+                        "from": "K1",
+                        "to": "Br1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_K2_Br2",
+                        "from": "K2",
+                        "to": "Br2",
+                        "order": 1,
+                        "color": "#ffffff"
+                    }
+                ],
+                "tracks": [
+                    {
+                        "id": "trk_1775748856684",
+                        "name": "Track 1",
+                        "startTime": 0,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_K2_Br2"
+                            },
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_K1_Br1"
+                            },
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_Cl1_Cl2"
+                            }
+                        ],
+                        "targetPositions": {}
+                    },
+                    {
+                        "id": "trk_1775748878626",
+                        "name": "Track 2",
+                        "startTime": 3,
+                        "duration": 2,
+                        "events": [
+                            {
+                                "type": "UPDATE_CHARGE",
+                                "atomId": "K2",
+                                "newCharge": 0
+                            },
+                            {
+                                "type": "UPDATE_CHARGE",
+                                "atomId": "Br2",
+                                "newCharge": 0
+                            },
+                            {
+                                "type": "UPDATE_CHARGE",
+                                "atomId": "Br1",
+                                "newCharge": 0
+                            },
+                            {
+                                "type": "UPDATE_CHARGE",
+                                "atomId": "K1",
+                                "newCharge": 0
+                            }
+                        ],
+                        "targetPositions": {}
+                    },
+                    {
+                        "id": "trk_1775748904623",
+                        "name": "Track 3",
+                        "startTime": 5,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "FORM_BOND",
+                                "from": "K1",
+                                "to": "Cl2",
+                                "order": 1
+                            },
+                            {
+                                "type": "FORM_BOND",
+                                "from": "K2",
+                                "to": "Cl1",
+                                "order": 1
+                            },
+                            {
+                                "type": "FORM_BOND",
+                                "from": "Br1",
+                                "to": "Br2",
+                                "order": 1
+                            }
+                        ],
+                        "targetPositions": {}
+                    },
+                    {
+                        "id": "trk_1775749064902",
+                        "name": "Track 4",
+                        "startTime": 9.21,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "UPDATE_CHARGE",
+                                "atomId": "K2",
+                                "newCharge": 1
+                            },
+                            {
+                                "type": "UPDATE_CHARGE",
+                                "atomId": "Cl1",
+                                "newCharge": -1
+                            },
+                            {
+                                "type": "UPDATE_CHARGE",
+                                "atomId": "K1",
+                                "newCharge": 1
+                            },
+                            {
+                                "type": "UPDATE_CHARGE",
+                                "atomId": "Cl2",
+                                "newCharge": -1
+                            }
+                        ],
+                        "targetPositions": {}
+                    }
+                ],
+                "groups": []
+            }
+        }
+    },
+    {
+        "id": "electrolysis-of-copper-sulfate",
+        "name": "Electrolysis of copper sulfate",
+        "type": "Custom Built",
+        "equation": "CuSO₄(aq)  → Cu(s)",
+        "apparatus": [],
+        "macroView": {
+            "visuals": [
+                "Custom reaction loaded"
+            ],
+            "steps": [
+                "Add reactants",
+                "Observe reaction"
+            ],
+            "visualRules": {
+                "timeline": {}
+            }
+        },
+        "microView": {
+            "script": {
+                "atoms": [
+                    {
+                        "id": "Cu1",
+                        "element": "Cu",
+                        "charge": 2,
+                        "startPos": [
+                            0.16672778455201281,
+                            -1.9840230530184109,
+                            0.1583908902613454
+                        ]
+                    },
+                    {
+                        "id": "S1",
+                        "element": "S",
+                        "charge": 0,
+                        "startPos": [
+                            -0.9340544829872615,
+                            0.8092182956332444,
+                            1.7701831992454768
+                        ]
+                    },
+                    {
+                        "id": "O1",
+                        "element": "O",
+                        "charge": -1,
+                        "startPos": [
+                            -1.1384934313934072,
+                            -0.2849459647649587,
+                            -0.35447734556354005
+                        ]
+                    },
+                    {
+                        "id": "O2",
+                        "element": "O",
+                        "charge": 0,
+                        "startPos": [
+                            -2.6645609316834515,
+                            0.5385083188897449,
+                            3.364845770176361
+                        ]
+                    },
+                    {
+                        "id": "O3",
+                        "element": "O",
+                        "charge": 0,
+                        "startPos": [
+                            0.8145227334266387,
+                            1.9614725422137262,
+                            2.9005165467447407
+                        ]
+                    },
+                    {
+                        "id": "O4",
+                        "element": "O",
+                        "charge": -1,
+                        "startPos": [
+                            0.10335633222213739,
+                            -1.2535785743688217,
+                            2.244879263374618
+                        ]
+                    }
+                ],
+                "bonds": [
+                    {
+                        "id": "B_O3_S1",
+                        "from": "O3",
+                        "to": "S1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_S1_O4",
+                        "from": "S1",
+                        "to": "O4",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_S1_O2",
+                        "from": "S1",
+                        "to": "O2",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_S1_O1",
+                        "from": "S1",
+                        "to": "O1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_O1_Cu1",
+                        "from": "O1",
+                        "to": "Cu1",
+                        "order": 1,
+                        "color": "#ffffff"
+                    },
+                    {
+                        "id": "B_Cu1_O4",
+                        "from": "Cu1",
+                        "to": "O4",
+                        "order": 1,
+                        "color": "#ffffff"
+                    }
+                ],
+                "tracks": [
+                    {
+                        "id": "trk_1775748330483",
+                        "name": "Track 1",
+                        "startTime": 0,
+                        "duration": 5,
+                        "events": [
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_O1_Cu1"
+                            },
+                            {
+                                "type": "BREAK_BOND",
+                                "bondId": "B_Cu1_O4"
+                            }
+                        ],
+                        "targetPositions": {}
+                    },
+                    {
+                        "id": "trk_1775748372299",
+                        "name": "Track 2",
+                        "startTime": 3,
+                        "duration": 2,
+                        "events": [
+                            {
+                                "type": "UPDATE_CHARGE",
+                                "atomId": "Cu1",
+                                "newCharge": 0
+                            }
+                        ],
+                        "targetPositions": {}
+                    }
+                ]
+            }
+        }
     }
 ]
