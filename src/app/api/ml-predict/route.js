@@ -36,14 +36,13 @@ export async function POST(request) {
 
         const data = await response.json();
 
-        // Format data into a chat-friendly message
-        const chatMessage = formatPredictionResponse(data);
-
+        // The FastAPI backend now returns { message: "...", docs: [...], source: "..." }
         return NextResponse.json({
-            message: chatMessage,
-            raw: data,
-            source: data.source || 'ml-backend',
+            message: data.message || "No answer returned.",
+            docs: data.docs || [],
+            source: data.source || 'ChemistryRAG Model',
             fallback: false,
+            raw: data,
         });
 
     } catch (error) {
@@ -69,48 +68,4 @@ export async function GET() {
     } catch {
         return NextResponse.json({ connected: false }, { status: 503 });
     }
-}
-
-function formatPredictionResponse(data) {
-    const {
-        reactants,
-        product,
-        probability,
-        yield_pct,
-        feasible,
-        explanation,
-        reaction_type,
-        source,
-    } = data;
-
-    let msg = '';
-
-    // Header
-    if (reactants && reactants.length > 0) {
-        msg += `**Reactants:** ${reactants.join(' + ')}\n`;
-    }
-    msg += `**Predicted Product:** ${product}\n`;
-    msg += `**Confidence:** ${probability.toFixed(1)}%\n`;
-    msg += `**Estimated Yield:** ${yield_pct.toFixed(1)}%\n`;
-
-    if (reaction_type && reaction_type !== 'unknown') {
-        msg += `**Reaction Type:** ${reaction_type}\n`;
-    }
-
-    if (!feasible) {
-        msg += `\n⚠️ This reaction may not be feasible under normal conditions.\n`;
-    }
-
-    // Explanation
-    if (explanation) {
-        msg += `\n${explanation}`;
-    }
-
-    // Source tag
-    const sourceLabel = source === 'ml-model' ? '🧠 ML Model' :
-                        source === 'rule-based' ? '📘 Rule-Based' :
-                        source === 'cache' ? '⚡ Cached' : `📡 ${source}`;
-    msg += `\n\n_Powered by ${sourceLabel}_`;
-
-    return msg;
 }

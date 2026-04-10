@@ -116,6 +116,7 @@ const ReactionChatbot = ({ currentReaction }) => {
           content: data.message,
           source: data.source,
           raw: data.raw,
+          docs: data.raw?.docs || [],
         },
       ]);
     } catch {
@@ -222,6 +223,23 @@ const ReactionChatbot = ({ currentReaction }) => {
                     : 'bg-white/10 text-gray-200 border border-white/5 rounded-bl-none shadow-md'
                 }`}>
                   <div>{renderMessageContent(msg.content)}</div>
+                  {msg.docs && msg.docs.length > 0 && (
+                    <div className="mt-3 text-xs border-t border-white/10 pt-2">
+                        <details className="group">
+                            <summary className="cursor-pointer text-cyan-300/80 hover:text-cyan-300 font-medium flex items-center gap-1 select-none">
+                                <span className="transform group-open:rotate-90 transition-transform">▶</span>
+                                Retrieved Context ({msg.docs.length})
+                            </summary>
+                            <div className="mt-2 flex flex-col gap-2 relative">
+                                {msg.docs.map((doc, dIdx) => (
+                                    <div key={dIdx} className="bg-black/30 p-2 rounded border border-white/5 text-[11px] text-gray-300 leading-relaxed max-h-40 overflow-y-auto custom-scrollbar">
+                                        {doc.content}
+                                    </div>
+                                ))}
+                            </div>
+                        </details>
+                    </div>
+                  )}
                   {msg.source === 'offline' && (
                     <div className="mt-2 text-[10px] text-amber-400/60 flex items-center gap-1">
                       <ZapOff size={8} /> Offline response
