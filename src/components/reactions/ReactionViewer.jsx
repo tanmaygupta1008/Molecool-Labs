@@ -45,6 +45,7 @@ import { OrbitControls, Environment, PerspectiveCamera } from '@react-three/drei
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import MacroView from './views/MacroView';
 import MicroView from './views/MicroView';
+import { Suspense } from 'react';
 
 const ReactionViewer = ({ reaction, viewMode, progress, isPlaying, environment }) => {
   return (
@@ -60,7 +61,9 @@ const ReactionViewer = ({ reaction, viewMode, progress, isPlaying, environment }
         */}
         <PerspectiveCamera makeDefault position={[0, 0, 20]} fov={50} />
 
-        <Environment preset="city" blur={1} />
+        <Suspense fallback={null}>
+          <Environment preset="city" blur={1} />
+        </Suspense>
         <ambientLight intensity={0.8} />
         <directionalLight position={[10, 10, 10]} intensity={1.5} castShadow />
         <directionalLight position={[-10, 5, -10]} intensity={0.5} />

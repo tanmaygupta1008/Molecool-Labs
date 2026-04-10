@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, Grid, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
@@ -103,7 +103,9 @@ const FluidSimulationPage = () => {
                 {/* Lighting */}
                 <ambientLight intensity={0.5} />
                 <pointLight position={[10, 10, 10]} intensity={1} />
-                <Environment preset="city" />
+                <Suspense fallback={null}>
+                    <Environment preset="city" />
+                </Suspense>
 
                 <Grid infiniteGrid sectionColor="white" cellColor="#333" fadeDistance={30} position={[0, -0.01, 0]} />
                 <ContactShadows position={[0, 0, 0]} opacity={0.5} scale={20} blur={2} far={4.5} />

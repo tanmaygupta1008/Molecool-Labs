@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Save, Plus, Trash2, FlaskConical, TestTube, Thermometer, Gauge, Eye, Layers } from 'lucide-react';
 import { CHEMICALS } from '@/data/chemicals';
 import { Canvas } from '@react-three/fiber';
@@ -28,7 +28,9 @@ const ApparatusPreview = ({ apparatus }) => {
             <Canvas camera={{ position: [0, 2, 5], fov: 45 }}>
                 <ambientLight intensity={0.5} />
                 <pointLight position={[10, 10, 10]} intensity={1} />
-                <Environment preset="city" />
+                <Suspense fallback={null}>
+                    <Environment preset="city" />
+                </Suspense>
                 <Center>
                     <Component {...apparatusProps} reactants={apparatus.reactants || []} />
                 </Center>
@@ -84,7 +86,9 @@ const FullSetupPreview = ({ reaction }) => {
             <Canvas camera={{ position: [0, 5, 10], fov: 45 }}>
                 <ambientLight intensity={0.5} />
                 <pointLight position={[10, 10, 10]} intensity={1} />
-                <Environment preset="city" />
+                <Suspense fallback={null}>
+                    <Environment preset="city" />
+                </Suspense>
                 <group position={[0, 0, 0]}>
                     <group>
                         {apparatusList.filter(app => !app.parentId).map(app => (

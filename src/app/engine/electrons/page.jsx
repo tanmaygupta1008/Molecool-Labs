@@ -1,6 +1,6 @@
 'use client';
 // src/app/engine/electrons/page.jsx
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, Text } from '@react-three/drei';
 import AtomNode from '@/components/reactions/engine/AtomNode';
@@ -41,7 +41,9 @@ export default function Phase4ElectronsPage() {
 
             <div className="flex-1 relative">
                 <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
-                    <Environment preset="city" />
+                    <Suspense fallback={null}>
+                        <Environment preset="city" />
+                    </Suspense>
                     <ambientLight intensity={0.5} />
                     <directionalLight position={[10, 10, 10]} intensity={1} />
 

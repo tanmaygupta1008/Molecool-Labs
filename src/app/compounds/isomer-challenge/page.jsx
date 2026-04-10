@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Grid, Plane, TransformControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -350,7 +350,9 @@ export default function IsomerChallengePage() {
                     }}>
                     <CameraController />
                     <VSEPRPhysicsEngine active={autoLayout} script={script} updateAllAtomPositions={updateAllAtomPositions} />
-                    <Environment preset="city" />
+                    <Suspense fallback={null}>
+                        <Environment preset="city" />
+                    </Suspense>
                     <ambientLight intensity={0.5} />
                     <directionalLight position={[10, 10, 10]} intensity={1} />
                     <Grid infiniteGrid fadeDistance={40} sectionColor="#113344" cellColor="#0a192f" position={[0, 0, 0]} />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, PerspectiveCamera, Grid } from '@react-three/drei';
 import MacroView from '@/components/reactions/views/MacroView';
@@ -359,7 +359,9 @@ const ReactionRefinerPage = () => {
                             <Canvas dpr={[1, 2]} gl={{ antialias: true }}>
                                 <PerspectiveCamera makeDefault position={[0, 2, 8]} fov={50} />
                                 <OrbitControls makeDefault />
-                                <Environment preset="city" />
+                                <Suspense fallback={null}>
+                                    <Environment preset="city" />
+                                </Suspense>
                                 <ambientLight intensity={0.5} />
                                 <directionalLight position={[5, 10, 5]} intensity={1} />
                                 <MacroView

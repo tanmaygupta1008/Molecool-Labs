@@ -123,7 +123,9 @@ const Atom3DModel = ({ glbUrl }) => {
         <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
         
         {/* Add a light environment for better model visibility */}
-        <Environment preset="city" /> 
+        <Suspense fallback={null}>
+          <Environment preset="city" />
+        </Suspense>
         
         <Suspense fallback={<LoadingFallback />}>
           <Model url={glbUrl} />

@@ -3,7 +3,7 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Sphere, Cylinder, Plane, TransformControls } from '@react-three/drei';
 import * as THREE from 'three'; 
-import { useRef, useState, useLayoutEffect, useEffect } from 'react';
+import { useRef, useState, useLayoutEffect, useEffect, Suspense } from 'react';
 import { getElementData } from '@/utils/elementColors';
 import AnimatedDashedLine from '@/components/reactions/engine/AnimatedDashedLine';
 import BondLine from '@/components/reactions/engine/BondLine';
@@ -225,7 +225,9 @@ export default function MoleculeBuilder3D({
 
     return (
         <Canvas camera={{ position: [0, 5, 12], fov: 60 }} onContextMenu={(e) => e.preventDefault()}>
-            <Environment preset="night" />
+            <Suspense fallback={null}>
+                <Environment preset="night" />
+            </Suspense>
             <ambientLight intensity={0.6} />
             <directionalLight position={[10, 15, 10]} intensity={1.5} />
             

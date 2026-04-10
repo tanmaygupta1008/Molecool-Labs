@@ -1,7 +1,7 @@
 'use client';
 // src/app/engine/actions/page.jsx
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { Plus, Trash2, Clock, Play, Pause, RotateCw, Eye, EyeOff } from 'lucide-react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -515,7 +515,9 @@ export default function Phase2ActionEditorPage() {
                             updateAllAtomPositions={setLivePositions}
                         />
 
-                        <Environment preset="city" />
+                        <Suspense fallback={null}>
+                            <Environment preset="city" />
+                        </Suspense>
                         <ambientLight intensity={0.5} />
                         <directionalLight position={[10, 10, 10]} intensity={1} />
 

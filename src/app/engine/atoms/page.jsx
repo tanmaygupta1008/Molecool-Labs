@@ -1,7 +1,7 @@
 'use client';
 // src/app/engine/atoms/page.jsx
 
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Grid, Plane, TransformControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -588,7 +588,9 @@ export default function Phase1ReactantEditorPage() {
                     {/* Engine for auto-arranging atoms/bonds */}
                     <VSEPRPhysicsEngine active={autoLayout} script={script} updateAllAtomPositions={updateAllAtomPositions} />
 
-                    <Environment preset="city" />
+                    <Suspense fallback={null}>
+                        <Environment preset="city" />
+                    </Suspense>
                     <ambientLight intensity={0.5} />
                     <directionalLight position={[10, 10, 10]} intensity={1} />
 

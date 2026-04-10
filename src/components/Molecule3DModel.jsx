@@ -2,9 +2,10 @@
 
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Sphere, Cylinder, Html } from '@react-three/drei';
-import { Vector3, Color, Quaternion, TorusGeometry, Euler } from 'three'; 
-import { useRef, useLayoutEffect, useState, useMemo } from 'react';
+import { Vector3, Color, Quaternion, TorusGeometry, Euler, CylinderGeometry, BufferAttribute } from 'three'; 
+import { useRef, useLayoutEffect, useState, useMemo, Suspense, useEffect } from 'react';
 import { calculateLonePairs } from '@/lib/cheminformatics';
+import { getElementData } from '@/utils/elementColors';
 
 const ATOM_RADIUS = 0.3; 
 const BOND_RADIUS = 0.1; 
@@ -28,17 +29,19 @@ const getBondAngle = (centerPos, posA, posB) => {
 };
 
 const Atom = ({ position, element, sphereRef, isHighlighted, isDimmed, onSelectAtom, id }) => {
-  const baseColor = CPK_COLORS[element] || CPK_COLORS.DEFAULT;
+  const baseColor = getElementData(element).color || CPK_COLORS.DEFAULT;
+  const radius = (getElementData(element).radius || ATOM_RADIUS) * 0.65;
   const color = new Color(baseColor);
-  const emissiveColor = isHighlighted ? new Color('#00ffff') : new Color('#000000');
-  const emissiveIntensity = isHighlighted ? 1.5 : 0;
-  const opacity = isDimmed ? 0.3 : 1;
+  // Always apply a subtle emissive so atoms look vivid and bright (like the builder)
+  const emissiveColor = isHighlighted ? new Color('#00ffff') : color.clone().multiplyScalar(0.25);
+  const emissiveIntensity = isHighlighted ? 1.5 : 0.6;
+  const opacity = isDimmed ? 0.25 : 1;
 
   return (
     <Sphere 
         ref={sphereRef} 
         position={position} 
-        args={[ATOM_RADIUS, 32, 32]}
+        args={[radius, 32, 32]}
         onClick={(e) => { e.stopPropagation(); onSelectAtom && onSelectAtom(id); }}
         onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; }}
         onPointerOut={(e) => { document.body.style.cursor = 'auto'; }}
@@ -47,6 +50,8 @@ const Atom = ({ position, element, sphereRef, isHighlighted, isDimmed, onSelectA
         color={color} 
         emissive={emissiveColor} 
         emissiveIntensity={emissiveIntensity} 
+        roughness={0.3}
+        metalness={0.1}
         transparent={true} 
         opacity={opacity} 
       />
@@ -126,7 +131,7 @@ const BondLengthLabel = ({ midPoint, length, orientation, atomRefs }) => {
     );
 };
 
-const Bond = ({ start, end, length, showLength, atomRefs, isHighlighted, isDimmed }) => {
+const Bond = ({ start, end, length, showLength, atomRefs, isHighlighted, isDimmed, colorStart, colorEnd }) => {
   const meshRef = useRef();
   
   const midPoint = new Vector3().addVectors(start, end).multiplyScalar(0.5);
@@ -148,20 +153,62 @@ const Bond = ({ start, end, length, showLength, atomRefs, isHighlighted, isDimme
     }
   }, [midPoint, calculatedLength, quaternion]);
 
+  // 1. Base Geometry
+  const geometry = useMemo(() => {
+    const geo = new CylinderGeometry(BOND_RADIUS, BOND_RADIUS, calculatedLength, 8, 12);
+    const colors = new Float32Array(geo.attributes.position.count * 3);
+    geo.setAttribute('color', new BufferAttribute(colors, 3));
+    return geo;
+  }, [calculatedLength]);
+
+  // 2. Linear Gradient Vertex Colors based on atoms
+  useEffect(() => {
+    const cStart = new Color(colorStart || '#A0A0A0');
+    const cEnd = new Color(colorEnd || '#A0A0A0');
+
+    const pos = geometry.attributes.position;
+    const colorAttr = geometry.attributes.color;
+
+    let minY = Infinity; let maxY = -Infinity;
+    for (let i = 0; i < pos.count; i++) {
+        const y = pos.getY(i);
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+    }
+    const yRange = maxY - minY || 1;
+
+    for (let i = 0; i < pos.count; i++) {
+        const y = pos.getY(i);
+        // Map Y along the cylinder from 0 to 1
+        let t = (y - minY) / yRange; 
+        
+        // Wait, Three.js Cylinder geometry points along Y axis. 
+        // End is at top (y = maxY, t=1), Start is at bottom (y = minY, t=0).
+        if (t < 0.4) t = 0;
+        else if (t > 0.6) t = 1.0;
+        else t = (t - 0.4) / 0.2;
+
+        const vertexColor = cEnd.clone().lerp(cStart, t); // lerp respects Y axis progression
+        colorAttr.setXYZ(i, vertexColor.r, vertexColor.g, vertexColor.b);
+    }
+    colorAttr.needsUpdate = true;
+  }, [colorStart, colorEnd, geometry]);
+
   return (
     <>
-      <Cylinder 
+      <mesh 
         ref={meshRef} 
-        args={[BOND_RADIUS, BOND_RADIUS, calculatedLength, 8]}
+        geometry={geometry}
       >
         <meshStandardMaterial 
-            color={'#A0A0A0'} 
+            color={0xffffff} 
+            vertexColors={true}
             emissive={emissiveColor} 
             emissiveIntensity={emissiveIntensity} 
             transparent={true} 
             opacity={opacity} 
         /> 
-      </Cylinder>
+      </mesh>
       
       {showLength && (
         <BondLengthLabel 
@@ -175,43 +222,77 @@ const Bond = ({ start, end, length, showLength, atomRefs, isHighlighted, isDimme
   );
 };
 
-const BondAngleArc = ({ centerPos, posA, posB, arcRadius, angleRad }) => {
+const BondAngleArc = ({ centerPos, posA, posB, arcRadius, angleRad, override }) => {
     const meshRef = useRef();
-    const angleDeg = (angleRad * 180 / Math.PI).toFixed(1);
 
-    const bondVectorA = new Vector3().subVectors(posA, centerPos).normalize();
-    const bondVectorB = new Vector3().subVectors(posB, centerPos).normalize();
-    const normalVector = new Vector3().crossVectors(bondVectorA, bondVectorB).normalize();
+    const actualPosA = override?.swapVectors ? posB : posA;
+    const actualPosB = override?.swapVectors ? posA : posB;
+    const actualRadius = override?.arcRadius ? parseFloat(override.arcRadius) : arcRadius;
+    const angleDeg = ((override?.majorAngle ? (2 * Math.PI - angleRad) : angleRad) * 180 / Math.PI).toFixed(1);
+    const actualAngleRad = override?.majorAngle ? (2 * Math.PI - angleRad) : angleRad;
+
+    const bondVectorA = new Vector3().subVectors(actualPosA, centerPos).normalize();
+    const bondVectorB = new Vector3().subVectors(actualPosB, centerPos).normalize();
+    let normalVector = new Vector3().crossVectors(bondVectorA, bondVectorB);
+    
+    // Protect against collinear vectors (180 or 0 degree angles) yielding zero cross product length
+    if (normalVector.lengthSq() < 1e-6) {
+        // Fallback: pick an arbitrary perpendicular vector.
+        const up = new Vector3(0, 1, 0);
+        if (Math.abs(bondVectorA.y) > 0.99) up.set(1, 0, 0); // avoid collinearity with up
+        normalVector.crossVectors(bondVectorA, up);
+    }
+    normalVector.normalize();
+    
+    if (override?.invertNormal) {
+        normalVector.negate();
+    }
     
     const quaternion = new Quaternion();
     const zAxis = new Vector3(0, 0, 1); 
     quaternion.setFromUnitVectors(zAxis, normalVector); 
 
-    const averageVector = new Vector3().addVectors(bondVectorA, bondVectorB).normalize();
-    const labelPosition = new Vector3().addVectors(centerPos, averageVector.multiplyScalar(arcRadius + 0.3));
-
     useLayoutEffect(() => {
         if (meshRef.current) {
-            meshRef.current.position.copy(centerPos); 
+            // Apply base position
+            let finalPos = centerPos.clone();
+            if (override?.posX) finalPos.x += parseFloat(override.posX);
+            if (override?.posY) finalPos.y += parseFloat(override.posY);
+            if (override?.posZ) finalPos.z += parseFloat(override.posZ);
+            
+            meshRef.current.position.copy(finalPos); 
+
+            // Base rotation to align with the bond plane
             meshRef.current.setRotationFromQuaternion(quaternion); 
             const localVectorA = bondVectorA.clone().applyQuaternion(quaternion.clone().invert());
             const angleOffset = Math.atan2(localVectorA.y, localVectorA.x);
             meshRef.current.rotation.z = angleOffset; 
+
+            // Apply manual visual overrides
+            if (override?.rotX) meshRef.current.rotation.x += parseFloat(override.rotX) * Math.PI / 180;
+            if (override?.rotY) meshRef.current.rotation.y += parseFloat(override.rotY) * Math.PI / 180;
+            if (override?.rotZ) meshRef.current.rotation.z += parseFloat(override.rotZ) * Math.PI / 180;
+
             meshRef.current.updateMatrixWorld();
         }
-    }, [centerPos, posA, posB, angleRad, quaternion]); 
+    }, [centerPos, actualPosA, actualPosB, actualAngleRad, quaternion, override]);
+
+    // Local position of the label (midpoint of the torus arc)
+    const midAngle = actualAngleRad / 2;
+    const labelX = (actualRadius + 0.3) * Math.cos(midAngle);
+    const labelY = (actualRadius + 0.3) * Math.sin(midAngle);
 
     return (
         <> 
             <mesh ref={meshRef}>
-                <torusGeometry args={[arcRadius, ARC_THICKNESS, 16, 100, angleRad]} />
-                <meshStandardMaterial color={'#FFFF00'} side={2} /> 
+                <torusGeometry args={[actualRadius, ARC_THICKNESS, 16, 100, actualAngleRad]} />
+                <meshStandardMaterial color={override && Object.keys(override).length > 0 ? '#ff00ff' : '#FFFF00'} side={2} /> 
+                <Html position={[labelX, labelY, 0]} center>
+                    <div className={`text-sm font-bold pointer-events-none ${override && Object.keys(override).length > 0 ? 'text-fuchsia-400' : 'text-yellow-300'}`}>
+                        {angleDeg}°
+                    </div>
+                </Html>
             </mesh>
-            <Html position={labelPosition.toArray()} center>
-                <div className="text-sm font-bold text-yellow-300 pointer-events-none">
-                    {angleDeg}°
-                </div>
-            </Html>
         </> 
     );
 };
@@ -251,10 +332,13 @@ const ControlPanel = ({ showBondLength, setShowBondLength, showBondAngle, setSho
     </div>
 );
 
-const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, onAtomSelect }) => { 
+const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, onAtomSelect, angleOverrides, forceShowAngles, enableAutoRotate = true }) => { 
     const [showBondLength, setShowBondLength] = useState(false);
     const [showBondAngle, setShowBondAngle] = useState(false);
     const [showLonePairs, setShowLonePairs] = useState(false);
+    
+    // Force show angles if overriden
+    const effectiveShowBondAngle = forceShowAngles || showBondAngle;
     
     const atomMeshRefs = useRef([]); 
 
@@ -306,7 +390,7 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
     }, [structure, showLonePairs]);
 
     const bondAngleArcs = useMemo(() => {
-        if (!showBondAngle) return []; 
+        if (!effectiveShowBondAngle) return []; 
         
         const arcs = [];
         const atomsCount = structure.atoms.length;
@@ -325,7 +409,9 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
                     const neighborA = neighbors[i];
                     const neighborB = neighbors[j];
 
-                    const angleKey = [c, neighborA.id, neighborB.id].sort((a, b) => a - b).join('-');
+                    const angleKey = `${c}-${Math.min(neighborA.id, neighborB.id)}-${Math.max(neighborA.id, neighborB.id)}`;
+                    const override = angleOverrides?.[angleKey] || null;
+
                     const bondLengthA = centerPos.distanceTo(neighborA.pos);
                     const bondLengthB = centerPos.distanceTo(neighborB.pos);
                     const { angleRad } = getBondAngle(centerPos, neighborA.pos, neighborB.pos);
@@ -347,13 +433,14 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
                             posB={neighborB.pos}
                             arcRadius={arcRadius} 
                             angleRad={angleRad} 
+                            override={override}
                         />
                     );
                 }
             }
         }
         return arcs;
-    }, [showBondAngle, structure, atomPositions]);
+    }, [effectiveShowBondAngle, structure, atomPositions, angleOverrides]);
 
     const hasHighlight = highlightedGroup && highlightedGroup.atoms && highlightedGroup.atoms.size > 0;
 
@@ -369,9 +456,13 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
             />
 
             <Canvas camera={{ position: [0, 0, cameraDistance], fov: 60 }}>
-                <Environment preset="night" />
-                <ambientLight intensity={0.5} />
-                <pointLight position={[10, 10, 10]} intensity={1} />
+                <Suspense fallback={null}>
+                    <Environment preset="city" />
+                </Suspense>
+                <ambientLight intensity={0.7} />
+                <directionalLight position={[10, 10, 10]} intensity={1.4} />
+                <directionalLight position={[-8, 6, -8]} intensity={0.5} />
+                <pointLight position={[0, 8, 4]} intensity={0.8} />
                 
                 {structure.atoms.map((atom, index) => {
                     const isHighlighted = hasHighlight ? highlightedGroup.atoms.has(index) : false;
@@ -405,6 +496,8 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
                             atomRefs={actualAtomMeshes}
                             isHighlighted={isHighlighted}
                             isDimmed={isDimmed}
+                            colorStart={isHighlighted ? '#00ffff' : '#ffffff'}
+                            colorEnd={isHighlighted ? '#00ffff' : '#ffffff'}
                         />
                     );
                 })}
@@ -427,7 +520,7 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
                 <OrbitControls 
                     enableZoom={true} 
                     enablePan={false} 
-                    autoRotate={!hasHighlight} 
+                    autoRotate={enableAutoRotate && !hasHighlight} 
                     autoRotateSpeed={1}
                     target={centroid.toArray()} 
                 />
@@ -441,34 +534,19 @@ export default Molecule3DModel;
 export const MoleculeLegend = ({ elementsUsed }) => { 
     if (!elementsUsed || elementsUsed.length === 0) return null;
 
-    const presentElements = elementsUsed
-        .filter(el => CPK_COLORS[el])
-        .reduce((obj, el) => {
-            obj[el] = CPK_COLORS[el];
-            return obj;
-        }, {});
-    
     const getFullName = (symbol) => {
-        switch (symbol) {
-            case 'C': return 'Carbon';
-            case 'H': return 'Hydrogen';
-            case 'O': return 'Oxygen';
-            case 'N': return 'Nitrogen';
-            case 'P': return 'Phosphorus';
-            case 'S': return 'Sulfur';
-            default: return 'Other';
-        }
+        return getElementData(symbol).name || symbol;
     };
 
     return (
         <div className="absolute bottom-4 left-4 bg-gray-700 bg-opacity-80 p-3 rounded-lg text-xs shadow-xl text-white pointer-events-auto z-10 border border-cyan-800">
             <h4 className="font-bold border-b border-gray-600 mb-2 pb-1 text-cyan-300">Atom Legend</h4>
             <ul className="space-y-1">
-                {Object.entries(presentElements).map(([symbol, color]) => (
+                {elementsUsed.map((symbol) => (
                     <li key={symbol} className="flex items-center space-x-2">
                         <span 
                             style={{ 
-                                backgroundColor: color, 
+                                backgroundColor: getElementData(symbol).color, 
                                 width: '12px', 
                                 height: '12px', 
                                 borderRadius: '50%',
