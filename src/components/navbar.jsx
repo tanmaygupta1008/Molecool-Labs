@@ -20,7 +20,7 @@ const NavDropdown = ({ title, name, activeDropdown, toggleDropdown, children, ri
       </svg>
     </button>
     {activeDropdown === name && (
-      <div className={`absolute ${rightAlign ? 'right-0' : 'left-0'} mt-2 w-48 bg-gray-900 border border-cyan-800 rounded-xl shadow-2xl shadow-cyan-900/40 overflow-hidden z-50 py-1`}>
+      <div className={`absolute ${rightAlign ? 'right-0' : 'left-0'} mt-2 w-48 bg-[#0f172a]/90 backdrop-blur-lg border border-cyan-500/30 rounded-xl shadow-2xl shadow-emerald-900/30 overflow-hidden z-50 py-1`}>
         {children}
       </div>
     )}
@@ -63,7 +63,7 @@ const NavBar = () => {
   const closeDropdown = () => setActiveDropdown(null);
 
   return (
-    <nav className="bg-gray-900 border-b border-cyan-800 text-white shadow-lg sticky top-0 z-40" ref={navRef}>
+    <nav className="bg-[#0f172a]/60 backdrop-blur-xl border-b border-sky-500/20 text-white shadow-lg sticky top-0 z-40 transition-colors" ref={navRef}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
 
@@ -141,7 +141,7 @@ const NavBar = () => {
 
                 {/* User Dropdown Menu */}
                 {activeDropdown === 'user' && (
-                  <div className="absolute right-0 mt-2 w-60 bg-gray-900 border border-cyan-800 rounded-xl shadow-2xl shadow-cyan-900/40 overflow-hidden z-50">
+                  <div className="absolute right-0 mt-2 w-60 bg-[#0f172a]/90 backdrop-blur-lg border border-cyan-500/30 rounded-xl shadow-2xl shadow-emerald-900/30 overflow-hidden z-50">
                     <div className="px-4 py-3 border-b border-gray-800">
                       <p className="text-white font-semibold text-sm truncate">{user.displayName}</p>
                       <p className="text-gray-400 text-xs truncate">{user.email}</p>
@@ -164,7 +164,7 @@ const NavBar = () => {
             ) : (
               <button
                 onClick={() => router.push('/login')}
-                className="ml-2 flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white text-sm font-semibold transition-all duration-150 shadow-lg shadow-cyan-900/40"
+                className="ml-2 flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-sky-600 to-emerald-600 hover:from-sky-500 hover:to-emerald-500 active:scale-95 text-white text-sm font-semibold transition-all duration-150 shadow-lg shadow-emerald-900/30"
               >
                 Sign In
               </button>

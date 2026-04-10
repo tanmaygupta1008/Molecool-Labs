@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Animation frames
+Home Page animations/
+public/frames/
+
+# Python cache
+src/ML/__pycache__/
+src/ML/chroma_db/

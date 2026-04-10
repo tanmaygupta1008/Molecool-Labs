@@ -2,6 +2,8 @@
 // src/app/page.js  — Landing Page
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
+import BackgroundScene3D from '../components/BackgroundScene3D';
+import TeamSection from '../components/TeamSection';
 
 const FEATURES = [
   {
@@ -67,44 +69,34 @@ export default function LandingPage() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden">
+    <div className="bg-transparent text-white overflow-x-hidden relative">
 
-      {/* ── Grid overlay ─────────────────────────────────────────── */}
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(6,182,212,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(6,182,212,0.04) 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
-        }}
-      />
-
-      {/* ── Glow blobs ───────────────────────────────────────────── */}
-      <div className="fixed -top-60 -left-60 w-[600px] h-[600px] bg-cyan-600 opacity-10 rounded-full blur-3xl pointer-events-none animate-pulse" />
-      <div className="fixed -bottom-60 -right-60 w-[600px] h-[600px] bg-purple-700 opacity-10 rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />
+      {/* ── 3D Scene Background ─────────────────────────────────────────── */}
+      <BackgroundScene3D />
 
       {/* ═══════════════════════════════════════════════════════════
-          HERO
+          HERO (Macro Level)
       ═══════════════════════════════════════════════════════════ */}
-      <section className="relative flex flex-col items-center justify-center text-center pt-28 pb-24 px-4">
+      <section className="relative flex flex-col items-center justify-center text-center min-h-[110vh] px-4">
 
         {/* Pill badge */}
-        <div className="mb-8 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-cyan-700/60 bg-cyan-950/40 text-cyan-300 text-xs font-semibold tracking-widest uppercase backdrop-blur">
-          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+        <div className="mb-8 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-sky-400/50 bg-sky-950/40 text-cyan-200 text-xs font-semibold tracking-widest uppercase backdrop-blur-md shadow-lg shadow-sky-900/50">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-300 animate-pulse" />
           Virtual Chemistry Laboratory
         </div>
 
         {/* Heading */}
-        <h1 className="text-6xl sm:text-7xl md:text-8xl font-black tracking-tight leading-none mb-6">
-          <span className="block text-white">Molecool</span>
+        <h1 className="text-6xl sm:text-7xl md:text-8xl font-black tracking-tight leading-none mb-6 drop-shadow-2xl">
+          <span className="block text-white" style={{ textShadow: '0 4px 30px rgba(14, 165, 233, 0.4)' }}>Molecool</span>
           <span
             className="block"
             style={{
-              background: 'linear-gradient(90deg, #22d3ee, #a78bfa, #22d3ee)',
+              background: 'linear-gradient(90deg, #38bdf8, #10b981, #38bdf8)',
               backgroundSize: '200% auto',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               animation: 'gradientShift 4s linear infinite',
+              filter: 'drop-shadow(0px 0px 20px rgba(56, 189, 248, 0.5))'
             }}
           >
             Labs
@@ -112,17 +104,15 @@ export default function LandingPage() {
         </h1>
 
         {/* Sub */}
-        <p className="max-w-2xl text-lg sm:text-xl text-gray-400 leading-relaxed mb-10">
+        <p className="max-w-2xl text-lg sm:text-xl text-sky-100/90 leading-relaxed mb-10 drop-shadow-lg font-medium">
           An immersive, AI-powered virtual chemistry lab. Simulate reactions, explore
           molecules in 3D, and run experiments — all in your browser.
         </p>
 
-
-
         {/* Auth nudge */}
         {!user && (
-          <p className="mt-6 text-sm text-gray-600">
-            <Link href="/login" className="text-cyan-500 hover:text-cyan-300 transition-colors">
+          <p className="mt-6 text-sm text-sky-200/70 bg-black/40 px-5 py-2.5 rounded-full backdrop-blur-md border border-sky-500/20 shadow-xl">
+            <Link href="/login" className="text-cyan-300 hover:text-cyan-200 transition-colors font-bold tracking-wide">
               Sign in
             </Link>
             {' '}to save your experiments and progress.
@@ -130,23 +120,21 @@ export default function LandingPage() {
         )}
 
         {/* Scroll indicator */}
-        <div className="mt-20 flex flex-col items-center gap-2 text-gray-600 text-xs animate-bounce">
-          <span>Scroll to explore</span>
+        <div className="mt-auto pb-12 flex flex-col items-center gap-2 text-sky-200/60 text-xs animate-bounce drop-shadow-lg uppercase tracking-widest font-semibold">
+          <span>Scroll to explore the micro world</span>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </div>
       </section>
 
-
-
       {/* ═══════════════════════════════════════════════════════════
-          FEATURES GRID
+          FEATURES GRID (Lattice Level)
       ═══════════════════════════════════════════════════════════ */}
-      <section className="relative max-w-7xl mx-auto px-4 py-24">
+      <section className="relative max-w-7xl mx-auto px-4 min-h-[110vh] flex flex-col justify-center py-20 pointer-events-auto z-10">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-extrabold text-white mb-3">Everything in one lab</h2>
-          <p className="text-gray-500 text-lg max-w-xl mx-auto">
+          <h2 className="text-5xl font-extrabold text-white mb-3 drop-shadow-lg">Everything in one lab</h2>
+          <p className="text-gray-300 text-lg max-w-xl mx-auto drop-shadow-md">
             Every tool a chemistry student or enthusiast could need, built for the web.
           </p>
         </div>
@@ -156,7 +144,7 @@ export default function LandingPage() {
             <Link
               key={f.href}
               href={f.href}
-              className={`group relative flex flex-col gap-4 p-7 rounded-2xl border ${f.border} bg-gradient-to-br ${f.color} backdrop-blur hover:scale-[1.02] hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden`}
+              className={`group relative flex flex-col gap-4 p-7 rounded-2xl border ${f.border} bg-gradient-to-br ${f.color} backdrop-blur-md hover:scale-[1.02] hover:shadow-2xl hover:shadow-cyan-500/20 transition-all duration-300 cursor-pointer overflow-hidden`}
             >
               {/* Badge */}
               {f.badge && (
@@ -166,18 +154,18 @@ export default function LandingPage() {
               )}
 
               {/* Icon */}
-              <div className="text-4xl group-hover:scale-110 transition-transform duration-300 w-fit">
+              <div className="text-4xl group-hover:scale-110 transition-transform duration-300 w-fit drop-shadow-lg">
                 {f.icon}
               </div>
 
               {/* Text */}
               <div>
-                <h3 className="text-lg font-bold text-white mb-1">{f.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{f.desc}</p>
+                <h3 className="text-lg font-bold text-white mb-1 drop-shadow-md">{f.title}</h3>
+                <p className="text-gray-300 text-sm leading-relaxed drop-shadow-md">{f.desc}</p>
               </div>
 
               {/* Arrow */}
-              <div className="mt-auto flex items-center gap-1 text-xs text-gray-600 group-hover:text-cyan-400 transition-colors duration-200 font-medium">
+              <div className="mt-auto flex items-center gap-1 text-xs text-cyan-300 group-hover:text-cyan-200 transition-colors duration-200 font-medium">
                 Explore
                 <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -189,23 +177,23 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════
-          CTA BANNER
+          CTA BANNER (Molecule Level)
       ═══════════════════════════════════════════════════════════ */}
-      <section className="relative mx-4 mb-24">
+      <section className="relative mx-4 min-h-[90vh] flex flex-col justify-center pointer-events-auto z-10">
         <div
-          className="max-w-5xl mx-auto rounded-3xl p-12 text-center overflow-hidden relative"
-          style={{ background: 'linear-gradient(135deg, #0c4a6e 0%, #1e1b4b 50%, #0c4a6e 100%)' }}
+          className="max-w-5xl w-full mx-auto rounded-3xl p-12 text-center overflow-hidden relative backdrop-blur-lg border border-white/10"
+          style={{ background: 'linear-gradient(135deg, rgba(12,74,110,0.4) 0%, rgba(30,27,75,0.4) 50%, rgba(12,74,110,0.4) 100%)' }}
         >
           {/* Inner glow */}
-          <div className="absolute inset-0 rounded-3xl" style={{ boxShadow: 'inset 0 0 80px rgba(6,182,212,0.1)' }} />
+          <div className="absolute inset-0 rounded-3xl" style={{ boxShadow: 'inset 0 0 80px rgba(6,182,212,0.2)' }} />
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
 
           <div className="relative z-10">
-            <div className="text-5xl mb-5">🧪</div>
-            <h2 className="text-4xl font-extrabold text-white mb-4">
+            <div className="text-5xl mb-5 drop-shadow-2xl">🧪</div>
+            <h2 className="text-4xl font-extrabold text-white mb-4 drop-shadow-lg">
               Start your first experiment
             </h2>
-            <p className="text-blue-200/70 text-lg mb-8 max-w-lg mx-auto">
+            <p className="text-blue-100 text-lg mb-8 max-w-lg mx-auto drop-shadow-md">
               No equipment needed. No safety goggles required. Just pure chemistry in your browser.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -221,10 +209,15 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════
+          TEAM SECTION (Atomic Level)
+      ═══════════════════════════════════════════════════════════ */}
+      <TeamSection />
+
+      {/* ═══════════════════════════════════════════════════════════
           FOOTER
       ═══════════════════════════════════════════════════════════ */}
-      <footer className="border-t border-gray-800/60 py-8 px-4 text-center">
-        <p className="text-gray-600 text-sm">
+      <footer className="border-t border-gray-800/60 py-8 px-4 text-center mt-20 relative z-10 bg-black/50 backdrop-blur-md">
+        <p className="text-gray-500 text-sm">
           🧪 <span className="text-cyan-500 font-semibold">Molecool Labs</span> — Built for curious minds.
         </p>
       </footer>
