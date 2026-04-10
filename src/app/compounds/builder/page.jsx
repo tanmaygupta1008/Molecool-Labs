@@ -17,6 +17,25 @@ import { getAllElementsList, getElementData, calculatePartialCharges } from '@/u
 /**
  * Invisible plane that captures clicks to place atoms.
  */
+// Simple Error Boundary to catch Canvas crashes
+class CanvasErrorBoundary extends React.Component {
+    constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+    static getDerivedStateFromError(error) { return { hasError: true, error }; }
+    componentDidCatch(error, errorInfo) { console.error("Canvas crashed:", error, errorInfo); }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-8 text-center text-red-500 font-mono">
+                    <span className="text-4xl mb-4">💥 WebGL Crash</span>
+                    <h2 className="text-xl font-bold mb-2">The 3D Scene encountered a critical error:</h2>
+                    <p className="bg-red-900/30 p-4 rounded text-sm max-w-2xl overflow-auto select-all">{this.state.error?.toString()}</p>
+                    <button onClick={() => this.setState({hasError: false})} className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-500">Attempt Recovery</button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
 const ClickablePlane = ({ onPlaceAtom }) => {
     return (
         <Plane
@@ -509,6 +528,7 @@ export default function MoleculeBuilderPage() {
                     </ul>
                 </div>
 
+                <CanvasErrorBoundary>
                 <Canvas
                     camera={{ position: [0, 5, 10], fov: 45 }}
                     onContextMenu={(e) => e.preventDefault()} // Block browser right-click menu
@@ -747,6 +767,7 @@ export default function MoleculeBuilderPage() {
                         }}
                     />
                 </Canvas>
+                </CanvasErrorBoundary>
             </div>
 
             {/* RIGHT PANEL - JSON OUTPUT */}

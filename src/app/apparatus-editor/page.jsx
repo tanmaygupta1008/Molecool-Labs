@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, TransformControls, Grid, Environment, Html } from '@react-three/drei';
 import * as THREE from 'three';
@@ -19,6 +19,26 @@ import { getApparatusAnchors } from '../../utils/apparatus-anchors';
 import { detectApparatusTypeAbove } from '../../utils/apparatus-logic';
 
 // import reactionsData from '../../data/reactions.json'; // REMOVED to avoid HMR issues
+
+// Simple Error Boundary to catch Canvas crashes
+class CanvasErrorBoundary extends React.Component {
+    constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+    static getDerivedStateFromError(error) { return { hasError: true, error }; }
+    componentDidCatch(error, errorInfo) { console.error("Canvas crashed:", error, errorInfo); }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-8 text-center text-red-500 font-mono">
+                    <span className="text-4xl mb-4">💥 WebGL Crash</span>
+                    <h2 className="text-xl font-bold mb-2">The 3D Scene encountered a critical error:</h2>
+                    <p className="bg-red-900/30 p-4 rounded text-sm max-w-2xl overflow-auto select-all">{this.state.error?.toString()}</p>
+                    <button onClick={() => this.setState({hasError: false})} className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-500">Attempt Recovery</button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
 
 // --- Re-use shared Apparatus Map ---
 const APPARATUS_MAP = {
@@ -335,39 +355,41 @@ const LabTable = ({ width = 14, depth = 10 }) => (
 // --- COMPONENTS ---
 
 // Keyboard Navigation Component
+// ─── CameraController ────────────────────────────────────────────────────────
+// Uses refs instead of useState so keydown/keyup NEVER trigger React re-renders.
+// All movement is consumed imperatively inside useFrame.
 const CameraController = () => {
-    const { camera, gl } = useThree();
-    const [movement, setMovement] = useState({
-        forward: false,
-        backward: false,
-        left: false,
-        right: false,
-        up: false,
-        down: false
+    const { camera } = useThree();
+    // Ref-based movement flags — mutations here are invisible to React
+    const movementRef = useRef({
+        forward: false, backward: false,
+        left: false, right: false,
+        up: false, down: false
     });
 
     useEffect(() => {
         const handleKeyDown = (e) => {
+            const m = movementRef.current;
             switch (e.code) {
-                case 'KeyW': case 'ArrowUp': setMovement(m => ({ ...m, forward: true })); break;
-                case 'KeyS': case 'ArrowDown': setMovement(m => ({ ...m, backward: true })); break;
-                case 'KeyA': case 'ArrowLeft': setMovement(m => ({ ...m, left: true })); break;
-                case 'KeyD': case 'ArrowRight': setMovement(m => ({ ...m, right: true })); break;
-                case 'KeyQ': setMovement(m => ({ ...m, up: true })); break; // Elevation Up
-                case 'KeyE': setMovement(m => ({ ...m, down: true })); break; // Elevation Down
+                case 'KeyW': case 'ArrowUp':    m.forward  = true; break;
+                case 'KeyS': case 'ArrowDown':  m.backward = true; break;
+                case 'KeyA': case 'ArrowLeft':  m.left     = true; break;
+                case 'KeyD': case 'ArrowRight': m.right    = true; break;
+                case 'KeyQ': m.up   = true; break;
+                case 'KeyE': m.down = true; break;
             }
         };
         const handleKeyUp = (e) => {
+            const m = movementRef.current;
             switch (e.code) {
-                case 'KeyW': case 'ArrowUp': setMovement(m => ({ ...m, forward: false })); break;
-                case 'KeyS': case 'ArrowDown': setMovement(m => ({ ...m, backward: false })); break;
-                case 'KeyA': case 'ArrowLeft': setMovement(m => ({ ...m, left: false })); break;
-                case 'KeyD': case 'ArrowRight': setMovement(m => ({ ...m, right: false })); break;
-                case 'KeyQ': setMovement(m => ({ ...m, up: false })); break;
-                case 'KeyE': setMovement(m => ({ ...m, down: false })); break;
+                case 'KeyW': case 'ArrowUp':    m.forward  = false; break;
+                case 'KeyS': case 'ArrowDown':  m.backward = false; break;
+                case 'KeyA': case 'ArrowLeft':  m.left     = false; break;
+                case 'KeyD': case 'ArrowRight': m.right    = false; break;
+                case 'KeyQ': m.up   = false; break;
+                case 'KeyE': m.down = false; break;
             }
         };
-
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
         return () => {
@@ -377,41 +399,35 @@ const CameraController = () => {
     }, []);
 
     useFrame((state, delta) => {
-        const speed = 10 * delta; // units per second
+        const m = movementRef.current;
+        // Early-exit if nothing is held — avoids work on every idle frame
+        if (!m.forward && !m.backward && !m.left && !m.right && !m.up && !m.down) return;
+
+        const speed = 10 * delta;
         const moveVec = new THREE.Vector3();
 
-        // Standard FPS-like movement direction relative to camera view
-        if (movement.forward || movement.backward) {
+        if (m.forward || m.backward) {
             const forward = new THREE.Vector3();
             camera.getWorldDirection(forward);
-            forward.y = 0; // Lock to XZ plane if desired? Or free fly? Let's lock to XZ for "walking"
+            forward.y = 0;
             forward.normalize();
-            if (movement.forward) moveVec.add(forward);
-            if (movement.backward) moveVec.sub(forward);
+            if (m.forward)  moveVec.add(forward);
+            if (m.backward) moveVec.sub(forward);
         }
-
-        if (movement.left || movement.right) {
+        if (m.left || m.right) {
             const forward = new THREE.Vector3();
             camera.getWorldDirection(forward);
             const right = new THREE.Vector3();
-            right.crossVectors(forward, camera.up).normalize(); // Assuming Y up
-            if (movement.right) moveVec.add(right);
-            if (movement.left) moveVec.sub(right);
+            right.crossVectors(forward, camera.up).normalize();
+            if (m.right) moveVec.add(right);
+            if (m.left)  moveVec.sub(right);
         }
-
-        // Vertical movement
-        if (movement.up) moveVec.y += 1;
-        if (movement.down) moveVec.y -= 1;
+        if (m.up)   moveVec.y += 1;
+        if (m.down) moveVec.y -= 1;
 
         if (moveVec.lengthSq() > 0) {
             moveVec.normalize().multiplyScalar(speed);
-
-            // Move Camera
             camera.position.add(moveVec);
-
-            // Move OrbitControls Target to keep valid orbit around the new position
-            // We need to access the controls instance.
-            // Drei's OrbitControls usually attaches to the default controls in the store?
             if (state.controls) {
                 state.controls.target.add(moveVec);
                 state.controls.update();
@@ -424,9 +440,9 @@ const CameraController = () => {
 
 
 const TubePointEditor = ({ points, position, rotation, scale, onUpdatePoints, selectedIndices = [], onSelectIndex }) => {
-    // Generate stable IDs for points to avoid re-mounting controls
+    // Generate stable IDs keyed only to the index, not random — avoids re-mounting on every render
     const pointIds = useMemo(() => {
-        return points.map((_, i) => `point-${i}-${Math.random().toString(36).substr(2, 9)}`);
+        return points.map((_, i) => `tube-point-${i}`);
     }, [points.length]);
 
     const [isDragging, setIsDragging] = useState(false);
@@ -524,6 +540,19 @@ const TubePointEditor = ({ points, position, rotation, scale, onUpdatePoints, se
     );
 };
 
+// ─── SceneSync ──────────────────────────────────────────────────────────────
+// Bridges React re-renders and Three.js draw calls when `frameloop="demand"`.
+// After every React render, calls `invalidate()` once to flush scene changes.
+// When animated items (BunsenBurner flame) are present it keeps looping.
+const SceneSync = ({ hasAnims }) => {
+    const { invalidate } = useThree();
+    // Flush after every React re-render so prop changes show immediately.
+    useEffect(() => { invalidate(); });
+    // Keep the render loop alive while animated items exist.
+    useFrame(state => { if (hasAnims) state.invalidate(); });
+    return null;
+};
+
 const AnchorEditor = ({ item, onUpdateItem }) => {
     const defaultAnchors = useMemo(() => getApparatusAnchors(item), [item]);
 
@@ -599,10 +628,15 @@ const AnchorEditor = ({ item, onUpdateItem }) => {
     );
 };
 
-const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateItems, transformMode, allItems, isBuilding, gridSnap, isGhost, basinBounds }) => {
+const ApparatusEditorItem = React.memo(({ item, selectedId, onSelect, updateItem, onUpdateItems, transformMode, allItems, isBuilding, gridSnap, isGhost, basinBounds }) => {
     const Component = APPARATUS_MAP[item.model];
-    // Use state-based ref to ensure re-render when the group is actually mounted
     const [group, setGroup] = useState(null);
+
+    // ── allItemsRef ───────────────────────────────────────────────────────────
+    // Keeps snap logic in handleTransform (called on mouseUp) always fresh
+    // without including allItems in the React.memo comparison.
+    const allItemsRef = useRef(allItems);
+    useEffect(() => { allItemsRef.current = allItems; }, [allItems]);
 
     // Ghost preview removed - was causing WebGL shader errors by imperatively
     // replacing materials mid-render. Ghost previews are no longer used.
@@ -612,6 +646,8 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
     const isSelected = item.id === selectedId;
 
     const handleTransform = () => {
+        // Always use freshest allItems from the ref so snap logic isn't stale
+        const allItems = allItemsRef.current;
         if (item.isEditingPoints || item.isEditingAnchors) return;
 
         if (group) {
@@ -1266,44 +1302,59 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
         }
     };
 
-    const componentProps = {};
-    if (item.model === 'Tongs' || item.model === 'Clamp') componentProps.angle = item.angle || 0;
-    if (item.model === 'VacuumFlask') componentProps.sideArmType = item.sideArmType || 'plastic';
-    if (item.model === 'Thermometer') componentProps.temperature = item.temperature || 20;
-    if (item.model === 'TripodStand' || item.model === 'RingClamp') componentProps.ringRadius = item.ringRadius || 1.2;
-    if (item.model === 'Clamp') {
-        componentProps.headAngle = item.headAngle || 0;
-        componentProps.size = item.size || 1;
-        componentProps.extendLength = item.extendLength || 0;
-    }
-    if (item.model === 'RingClamp') {
-        componentProps.extendLength = item.extendLength || 0;
-    }
-    if (item.model === 'BunsenBurner') {
-        componentProps.isOn       = item.isOn || false;
-        componentProps.airFlow    = item.airFlow  ?? 0.8;   // 0=yellow/luminous, 1=blue/non-luminous
-        componentProps.gasFlow    = item.gasFlow  ?? 0.6;   // 0=small flame, 1=large flame
-        const detection = detectApparatusTypeAbove(item, allItems, item.gasFlow ?? 0.6);
-        componentProps.isHeating     = detection.isHeating;
-        componentProps.apparatusType = detection.type;
-        componentProps.flameTargetY  = detection.distY;
-        componentProps.baseRadius    = detection.baseRadius;
-        componentProps.proximity     = detection.proximity ?? 0;
-    }
-    if (item.model.startsWith('WaterTrough')) {
-        componentProps.customHeight = item.customHeight !== undefined ? item.customHeight : 1;
-        componentProps.baseRadiusScale = item.baseRadiusScale !== undefined ? item.baseRadiusScale : 1;
-        componentProps.wallTaper = item.wallTaper !== undefined ? item.wallTaper : 0.25;
-    }
-    if (item.model === 'GasJar') { componentProps.hasLid = item.hasLid !== false; componentProps.holeCount = item.holeCount || 0; }
-    if (item.model === 'RubberCork') componentProps.holes = item.holes || 1;
-    if (item.model === 'DeliveryTube' && item.points?.length > 0) componentProps.points = item.points;
-    if (item.model === 'Wire' && item.points?.length > 0) componentProps.points = item.points;
-    if (item.model === 'Wire') componentProps.color = item.color || 'red';
-    if (item.model === 'WorkTable') {
-        componentProps.width = item.width || 6;
-        componentProps.depth = item.depth || 4;
-    }
+    // ── Memoized BunsenBurner detection ──────────────────────────────────────
+    // detectApparatusTypeAbove is O(n) — only run it when the burner or nearby
+    // items actually change, not on every render of every item.
+    const burnerDetection = useMemo(() => {
+        if (item.model !== 'BunsenBurner') return null;
+        return detectApparatusTypeAbove(item, allItems, item.gasFlow ?? 0.6);
+    }, [item.model, item.id, item.position, item.isOn, item.gasFlow, allItems]);
+
+    // ── Memoized component props ──────────────────────────────────────────────
+    // Prevents recreating the props object on every render.
+    const componentProps = useMemo(() => {
+        const props = {};
+        if (item.model === 'Tongs' || item.model === 'Clamp') props.angle = item.angle || 0;
+        if (item.model === 'VacuumFlask') props.sideArmType = item.sideArmType || 'plastic';
+        if (item.model === 'Thermometer') props.temperature = item.temperature || 20;
+        if (item.model === 'TripodStand' || item.model === 'RingClamp') props.ringRadius = item.ringRadius || 1.2;
+        if (item.model === 'Clamp') {
+            props.headAngle = item.headAngle || 0;
+            props.size = item.size || 1;
+            props.extendLength = item.extendLength || 0;
+        }
+        if (item.model === 'RingClamp') props.extendLength = item.extendLength || 0;
+        if (item.model === 'BunsenBurner') {
+            props.isOn      = item.isOn || false;
+            props.airFlow   = item.airFlow  ?? 0.8;
+            props.gasFlow   = item.gasFlow  ?? 0.6;
+            props.isHeating     = burnerDetection?.isHeating;
+            props.apparatusType = burnerDetection?.type;
+            props.flameTargetY  = burnerDetection?.distY;
+            props.baseRadius    = burnerDetection?.baseRadius;
+            props.proximity     = burnerDetection?.proximity ?? 0;
+        }
+        if (item.model.startsWith('WaterTrough')) {
+            props.customHeight     = item.customHeight     !== undefined ? item.customHeight     : 1;
+            props.baseRadiusScale  = item.baseRadiusScale  !== undefined ? item.baseRadiusScale  : 1;
+            props.wallTaper        = item.wallTaper         !== undefined ? item.wallTaper         : 0.25;
+        }
+        if (item.model === 'GasJar') { props.hasLid = item.hasLid !== false; props.holeCount = item.holeCount || 0; }
+        if (item.model === 'RubberCork') props.holes = item.holes || 1;
+        if (item.model === 'DeliveryTube' && item.points?.length > 0) props.points = item.points;
+        if (item.model === 'Wire' && item.points?.length > 0) props.points = item.points;
+        if (item.model === 'Wire') props.color = item.color || 'red';
+        if (item.model === 'WorkTable') { props.width = item.width || 6; props.depth = item.depth || 4; }
+        return props;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [item, burnerDetection]);
+
+    // ── Memoized children list ────────────────────────────────────────────────
+    // Avoids O(n) filter on every render of every item.
+    const childItems = useMemo(
+        () => (isGhost || !allItems) ? [] : allItems.filter(i => i.parentId === item.id),
+        [allItems, item.id, isGhost]
+    );
 
 
     return (
@@ -1387,7 +1438,7 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
                 )}
 
             
-            {!isGhost && allItems && allItems.filter(i => i.parentId === item.id).map(childItem => (
+            {childItems.map(childItem => (
                 <ApparatusEditorItem
                     key={childItem.id}
                     item={childItem}
@@ -1406,7 +1457,43 @@ const ApparatusEditorItem = ({ item, selectedId, onSelect, updateItem, onUpdateI
         </group>
         </group>
     );
-};
+},
+// ─── React.memo comparison ───────────────────────────────────────────────────
+// Skip re-rendering an item when nothing that VISUALLY affects it changed.
+// Key insight: in handleUpdateItems, unchanged items return the same object
+// reference, so `item === item` is stable for non-dragged apparatus.
+(prevProps, nextProps) => {
+    // My own data changed (position/rotation/properties)
+    if (prevProps.item !== nextProps.item) return false;
+    // Selection glow appears/disappears for me specifically
+    const prevMine = prevProps.selectedId === prevProps.item.id;
+    const nextMine = nextProps.selectedId === nextProps.item.id;
+    if (prevMine !== nextMine) return false;
+    // Transform handle mode (translate/rotate) only matters when I'm selected
+    if (prevMine && prevProps.transformMode !== nextProps.transformMode) return false;
+    // Building mode changes whether clicks register
+    if (prevProps.isBuilding !== nextProps.isBuilding) return false;
+    // Grid snap matters for the visual snap-to-grid behaviour when selected
+    if (prevMine && prevProps.gridSnap !== nextProps.gridSnap) return false;
+    // Basin bounds is already memoized upstream — reference equality is safe
+    if (prevProps.basinBounds !== nextProps.basinBounds) return false;
+    // allItems: only re-render if a DIRECT CHILD of mine changed,
+    // or if I'm a BunsenBurner (needs flame-above detection on allItems).
+    if (prevProps.allItems !== nextProps.allItems) {
+        if (prevProps.item.model === 'BunsenBurner') return false;
+        const myId = prevProps.item.id;
+        const prev = prevProps.allItems || [];
+        const next = nextProps.allItems || [];
+        if (prev.length !== next.length) return false;
+        for (let i = 0; i < prev.length; i++) {
+            if (prev[i] !== next[i]) {
+                // Only re-render if the changed item is MY child
+                if (prev[i].parentId === myId || next[i]?.parentId === myId) return false;
+            }
+        }
+    }
+    return true; // Nothing relevant changed — skip re-render
+});
 
 // ... (skipping TubeBuilderTool definition as it is fine) ...
 // ... (skipping rest of file until render loop) ...
@@ -1825,11 +1912,16 @@ export default function ApparatusEditorPage() {
             .catch(err => console.error("Failed to load reactions", err));
     }, []);
 
-    // Autosave reactions and selected reaction ID
+    // Debounced autosave — wait 1.5 s after the last change before writing to localStorage.
+    // This prevents hammering localStorage at 60 fps during drag operations.
+    const autosaveTimerRef = useRef(null);
     useEffect(() => {
-        if (reactions.length > 0) {
+        if (reactions.length === 0) return;
+        if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = setTimeout(() => {
             localStorage.setItem('molecool_reactions_autosave', JSON.stringify(reactions));
-        }
+        }, 1500);
+        return () => clearTimeout(autosaveTimerRef.current);
     }, [reactions]);
     useEffect(() => {
         if (selectedReactionId) {
@@ -1885,7 +1977,20 @@ export default function ApparatusEditorPage() {
         if (selectedStageIndex !== 0) setTimeout(() => setSelectedStageIndex(0), 0);
     }
 
-    const handleUpdateItems = (updates) => {
+    // Memoize basin bounds so the prop reference stays stable between renders.
+    // Without this, a new object literal is created every render, defeating React.memo on children.
+    const basinBounds = useMemo(() => {
+        if (!showTable) return null;
+        return {
+            xMin: globalTableWidth  / 2 - 2.2 - 2.5,
+            xMax: globalTableWidth  / 2 - 2.2 + 2.5,
+            zMin: -globalTableDepth / 2 + 2.2 - 2.2,
+            zMax: -globalTableDepth / 2 + 2.2 + 2.2,
+            yMax: 0.64
+        };
+    }, [showTable, globalTableWidth, globalTableDepth]);
+
+    const handleUpdateItems = useCallback((updates) => {
         // ── Basin collision clamping ──────────────────────────────────────────
         // Basin outer half-extents (must match LabTable geometry: bW=2.0, bD=1.4, bH=0.44)
         const _basinCX  = globalTableWidth  / 2 - 2.2;   // basin centre X in world
@@ -1947,13 +2052,14 @@ export default function ApparatusEditorPage() {
                 r.id === selectedReactionId ? { ...r, stages: updatedStages } : r
             );
         });
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedReactionId, selectedStageIndex, globalTableWidth, globalTableDepth]);
 
-    const handleUpdateItem = (id, newProps) => {
+    const handleUpdateItem = useCallback((id, newProps) => {
         handleUpdateItems([{ id, ...newProps }]);
-    };
+    }, [handleUpdateItems]);
 
-    const handleAddItem = (model) => {
+    const handleAddItem = useCallback((model) => {
         const id = `${model.toLowerCase()}-${Date.now().toString().slice(-4)}`;
         const newItem = {
             id,
@@ -1980,9 +2086,10 @@ export default function ApparatusEditorPage() {
         });
 
         setSelectedApparatusId(id);
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedReactionId, selectedStageIndex]);
 
-    const handleDeleteItem = (id) => {
+    const handleDeleteItem = useCallback((id) => {
         setReactions(prevReactions => {
             const currentReactionLocal = prevReactions.find(r => r.id === selectedReactionId);
             if (!currentReactionLocal) return prevReactions;
@@ -1999,7 +2106,8 @@ export default function ApparatusEditorPage() {
             );
         });
         setSelectedApparatusId(null);
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedReactionId, selectedStageIndex]);
 
     const handleAddStage = (copyPrevious) => {
         if (!currentReaction) return;
@@ -3334,14 +3442,19 @@ export default function ApparatusEditorPage() {
                     </div>
                 </div>
             </div>
+
             {/* 3D Viewport */}
             <div className="flex-1 relative bg-gradient-to-br from-neutral-800 to-neutral-900">
-                <Canvas camera={{ position: [5, 5, 5], fov: 50 }}>
+                <CanvasErrorBoundary>
+                <Canvas camera={{ position: [5, 5, 5], fov: 50 }} dpr={[1, 1.5]} frameloop="demand">
                     <color attach="background" args={['#1a1a1a']} />
 
                     {/* Controls */}
                     <OrbitControls makeDefault />
-                    <CameraController /> {/* Add Keyboard Navigation */}
+                    <CameraController />
+                    
+                    {/* SceneSync bridges React renders and Three.js draw calls in frameloop="demand" mode */}
+                    <SceneSync hasAnims={currentStage?.apparatus?.some(i => i.model === 'BunsenBurner' && i.isOn)} />
 
                     <Grid infiniteGrid sectionColor="white" cellColor="#333" fadeDistance={30} position={[0, -4.05, 0]} />
                     <ambientLight intensity={0.5} />
@@ -3354,7 +3467,7 @@ export default function ApparatusEditorPage() {
                         <meshBasicMaterial color="#222" transparent opacity={0.5} />
                     </mesh>
 
-                    {currentStage?.apparatus?.filter(i => !i.parentId).map(item => (
+                    {currentStage?.apparatus?.filter(i => !i.parentId)?.map(item => (
                         <ApparatusEditorItem
                             key={item.id}
                             item={item}
@@ -3367,13 +3480,7 @@ export default function ApparatusEditorPage() {
                             isBuilding={builderState.active}
                             gridSnap={gridSnap}
                             isGhost={false}
-                            basinBounds={showTable ? {
-                                xMin: globalTableWidth  / 2 - 2.2 - 2.5,
-                                xMax: globalTableWidth  / 2 - 2.2 + 2.5,
-                                zMin: -globalTableDepth / 2 + 2.2 - 2.2,
-                                zMax: -globalTableDepth / 2 + 2.2 + 2.2,
-                                yMax: 0.64
-                            } : null}
+                            basinBounds={basinBounds}
                         />
                     ))}
 
@@ -3390,6 +3497,7 @@ export default function ApparatusEditorPage() {
                         />
                     )}
                 </Canvas>
+                </CanvasErrorBoundary>
 
                 <div className="absolute top-4 right-4 bg-black/50 p-2 rounded text-xs text-white/50 pointer-events-none">
                     <p>Left Click: Orbit</p>

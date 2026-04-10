@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, PerspectiveCamera, Grid } from '@react-three/drei';
 import MacroView from '@/components/reactions/views/MacroView';
@@ -86,40 +86,42 @@ const ReactionRefinerPage = () => {
             .catch(err => console.error("Failed to load reactions", err));
     }, []);
 
-    // Autosave syncing logic
+    // Debounced autosave — prevents JSON.stringify on every reaction edit
+    const autosaveTimerRef = useRef(null);
     useEffect(() => {
-        if (reactions.length > 0) {
+        if (reactions.length === 0) return;
+        if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+        autosaveTimerRef.current = setTimeout(() => {
             localStorage.setItem('molecool_reactions_autosave', JSON.stringify(reactions));
-        }
+        }, 1500);
+        return () => clearTimeout(autosaveTimerRef.current);
     }, [reactions]);
-    
+
     useEffect(() => {
         if (selectedReactionId) {
             localStorage.setItem('molecool_selected_reaction', selectedReactionId);
         }
     }, [selectedReactionId]);
 
-    // Load Selected Reaction
+    // Load Selected Reaction — only re-runs when the selected ID changes, not on every edit.
+    // currentReaction stays in sync via the single-state handleVisualChange below.
     useEffect(() => {
         if (!selectedReactionId || reactions.length === 0) return;
-
         const reaction = reactions.find(r => r.id === selectedReactionId);
         if (reaction) {
             setCurrentReaction(reaction);
-            // Format JSON for editor
             setJsonInput(JSON.stringify(reaction.macroView?.visualRules || {}, null, 4));
             setProgress(0);
             setIsPlaying(false);
         }
-    }, [selectedReactionId, reactions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedReactionId]);
 
     // Handle Timeline Resizer
     useEffect(() => {
         const handleMouseMove = (e) => {
             if (!isDraggingTimeline) return;
-            // Calculate height from bottom of window
             const newHeight = window.innerHeight - e.clientY;
-            // Clamp between 100px and 80vh
             const clamped = Math.max(100, Math.min(newHeight, window.innerHeight * 0.8));
             setTimelineHeight(clamped);
         };
@@ -128,7 +130,6 @@ const ReactionRefinerPage = () => {
         if (isDraggingTimeline) {
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
-            // Disable page text selection while dragging
             document.body.style.userSelect = 'none';
         } else {
             document.body.style.userSelect = '';
@@ -140,21 +141,40 @@ const ReactionRefinerPage = () => {
         };
     }, [isDraggingTimeline]);
 
-    // Handle Sidebar Resizing
+    // Handle Sidebar Resizing — RAF-throttled so setState is called at most once per animation
+    // frame (16ms) instead of on every mouse pixel, which was re-rendering the Canvas each time.
+    const pendingSidebarX = useRef(null);
+    const sidebarRafId = useRef(null);
+
     useEffect(() => {
-        const handleMouseMove = (e) => {
+        const commitResize = () => {
+            const x = pendingSidebarX.current;
+            sidebarRafId.current = null;
+            if (x === null) return;
             if (isDraggingLeft) {
-                const newWidth = e.clientX;
-                setLeftSidebarWidth(Math.max(200, Math.min(newWidth, window.innerWidth / 2.5)));
+                setLeftSidebarWidth(Math.max(200, Math.min(x, window.innerWidth / 2.5)));
             } else if (isDraggingRight) {
-                const newWidth = window.innerWidth - e.clientX;
-                setRightSidebarWidth(Math.max(200, Math.min(newWidth, window.innerWidth / 2.5)));
+                setRightSidebarWidth(Math.max(200, Math.min(window.innerWidth - x, window.innerWidth / 2.5)));
+            }
+            pendingSidebarX.current = null;
+        };
+
+        const handleMouseMove = (e) => {
+            if (!isDraggingLeft && !isDraggingRight) return;
+            pendingSidebarX.current = e.clientX;
+            if (!sidebarRafId.current) {
+                sidebarRafId.current = requestAnimationFrame(commitResize);
             }
         };
 
         const handleMouseUp = () => {
             setIsDraggingLeft(false);
             setIsDraggingRight(false);
+            if (sidebarRafId.current) {
+                cancelAnimationFrame(sidebarRafId.current);
+                sidebarRafId.current = null;
+            }
+            pendingSidebarX.current = null;
         };
 
         if (isDraggingLeft || isDraggingRight) {
@@ -171,35 +191,27 @@ const ReactionRefinerPage = () => {
         };
     }, [isDraggingLeft, isDraggingRight, isDraggingTimeline]);
 
-    const handleVisualChange = (category, newData) => {
-        setCurrentReaction(prev => {
-            const newRules = { ...(prev.macroView?.visualRules || {}) };
-
-            if (category === 'initialState') {
-                newRules.initialState = newData;
-            } else if (category === 'timeline') {
-                newRules.timeline = newData;
-            } else if (category === 'reactantTimeline') {
-                newRules.reactantTimeline = newData;
-            } else if (category === 'explanationTimeline') {
-                newRules.explanationTimeline = newData;
-            }
-
-            const updatedReaction = {
-                ...prev,
-                macroView: {
-                    ...prev.macroView,
-                    visualRules: newRules
-                }
-            };
-
-            // Update main list
-            setReactions(prevList => prevList.map(r => r.id === updatedReaction.id ? updatedReaction : r));
-            setJsonInput(JSON.stringify(updatedReaction.macroView.visualRules, null, 4));
-
-            return updatedReaction;
+    // Single setState handleVisualChange — previously called setCurrentReaction + setReactions
+    // causing two consecutive re-renders. Now only setReactions is called, and currentReaction
+    // is kept in sync separately for the JSON editor view.
+    const handleVisualChange = useCallback((category, newData) => {
+        setReactions(prevList => {
+            return prevList.map(r => {
+                if (r.id !== selectedReactionId) return r;
+                const newRules = { ...(r.macroView?.visualRules || {}) };
+                if (category === 'initialState')             newRules.initialState        = newData;
+                else if (category === 'timeline')             newRules.timeline            = newData;
+                else if (category === 'reactantTimeline')     newRules.reactantTimeline    = newData;
+                else if (category === 'explanationTimeline')  newRules.explanationTimeline = newData;
+                const updated = { ...r, macroView: { ...r.macroView, visualRules: newRules } };
+                // Keep currentReaction and JSON editor in sync imperatively (no extra setState)
+                setCurrentReaction(updated);
+                setJsonInput(JSON.stringify(newRules, null, 4));
+                return updated;
+            });
         });
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedReactionId]);
 
     const handleSave = async () => {
         setSaveStatus('saving');
