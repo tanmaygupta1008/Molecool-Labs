@@ -29,7 +29,7 @@ class PredictRequest(BaseModel):
     session_id: str = "default_session"
 
 @app.post("/predict")
-async def predict(req: PredictRequest):
+def predict(req: PredictRequest):
     if not rag:
         raise HTTPException(status_code=500, detail="ChemistryRAG model failed to initialize on server.")
     
