@@ -2,23 +2,27 @@ import React from 'react';
 
 const TEAM_MEMBERS = [
   {
-    name: "Dr. Elena Rostova", k 
-    title: "Lead Chemist",
+    name: "Tanmay Gupta",
+    title: "Full Stack Web Developer",
+    imageUrl: "https://drive.google.com/file/d/13CQ4yDot6TcdM1fng4fGOdU8cVr6ubSF/view?usp=sharing",
     id: 1,
   },
   {
-    name: "Marcus Vane",
-    title: "Simulation Engineer",
+    name: "Om Gaikwad",
+    title: "ML Engineer and Data Scientist",
+    imageUrl: "",
     id: 2,
   },
   {
-    name: "Dr. Sarah Chen",
-    title: "Quantum Researcher",
+    name: "Vansh Ghori",
+    title: "AR Engineer and Simulation Specialist",
+    imageUrl: "https://drive.google.com/drive/folders/19QXAuLlXEuVsszbFD4CydH6beXX2syza",
     id: 3,
   },
   {
-    name: "James Holden",
-    title: "UI/UX Architect",
+    name: "Priyansh Ghori",
+    title: "UI/UX Designer",
+    imageUrl: "https://drive.google.com/drive/folders/19QXAuLlXEuVsszbFD4CydH6beXX2syza",
     id: 4,
   }
 ];
@@ -47,13 +51,17 @@ export default function TeamSection() {
 
             {/* Avatar Placeholder */}
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-950 to-[#022c22] border-2 border-teal-500/30 mb-4 flex items-center justify-center overflow-hidden group-hover:border-cyan-300 transition-colors">
-              <span className="text-3xl opacity-50 text-cyan-200">👤</span>
+              <img
+                src={member.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=082f49&color=5eead4&size=150`}
+                alt={`${member.name} profile`}
+                className="w-full h-full object-cover"
+              />
             </div>
 
-            <h3 className="text-xl font-bold text-white mb-1 group-hover:text-cyan-300 transition-colors">
+            <h3 className="text-xl font-bold text-white mb-1 group-hover:text-cyan-300 transition-colors text-center">
               {member.name}
             </h3>
-            <p className="text-sm text-teal-200/80 font-medium">
+            <p className="text-sm text-teal-200/80 font-medium text-center">
               {member.title}
             </p>
           </div>
