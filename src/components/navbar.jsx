@@ -98,7 +98,7 @@ const NavBar = () => {
               <NavLinkItem href="/apparatus" onClick={closeDropdown}>Apparatus 🧪</NavLinkItem>
               <NavLinkItem href="/apparatus-editor" onClick={closeDropdown}>Apparatus Editor 🛠️</NavLinkItem>
               <NavLinkItem href="/apparatus-compat" onClick={closeDropdown}>Snap Compatibility 🔗</NavLinkItem>
-              <NavLinkItem href="/compound-editor" onClick={closeDropdown}>Edit Angles 📐</NavLinkItem>
+              <NavLinkItem href="/compounds/edit-angles" onClick={closeDropdown}>Edit Angles 📐</NavLinkItem>
               <NavLinkItem href="/reactant-config" onClick={closeDropdown}>Reactant Config 🧪</NavLinkItem>
               <NavLinkItem href="/reaction-refiner" onClick={closeDropdown}>Reaction Refiner 🎨</NavLinkItem>
             </NavDropdown>

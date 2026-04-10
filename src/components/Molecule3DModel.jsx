@@ -131,7 +131,7 @@ const BondLengthLabel = ({ midPoint, length, orientation, atomRefs }) => {
     );
 };
 
-const Bond = ({ start, end, length, showLength, atomRefs, isHighlighted, isDimmed, colorStart, colorEnd }) => {
+const Bond = ({ start, end, length, showLength, atomRefs, isHighlighted, isDimmed, colorStart, colorEnd, order = 1 }) => {
   const meshRef = useRef();
   
   const midPoint = new Vector3().addVectors(start, end).multiplyScalar(0.5);
@@ -153,22 +153,22 @@ const Bond = ({ start, end, length, showLength, atomRefs, isHighlighted, isDimme
     }
   }, [midPoint, calculatedLength, quaternion]);
 
-  // 1. Base Geometry
+  // Geometry is memoized per length
   const geometry = useMemo(() => {
-    const geo = new CylinderGeometry(BOND_RADIUS, BOND_RADIUS, calculatedLength, 8, 12);
+    // Single bonds use full BOND_RADIUS; multi-bonds use thinner tubes
+    const r = order === 1 ? BOND_RADIUS : BOND_RADIUS * 0.65;
+    const geo = new CylinderGeometry(r, r, calculatedLength, 8, 12);
     const colors = new Float32Array(geo.attributes.position.count * 3);
     geo.setAttribute('color', new BufferAttribute(colors, 3));
     return geo;
-  }, [calculatedLength]);
+  }, [calculatedLength, order]);
 
-  // 2. Linear Gradient Vertex Colors based on atoms
+  // Vertex color gradient (start → end)
   useEffect(() => {
-    const cStart = new Color(colorStart || '#A0A0A0');
-    const cEnd = new Color(colorEnd || '#A0A0A0');
-
+    const cStart = new Color(colorStart || '#ffffff');
+    const cEnd = new Color(colorEnd || '#ffffff');
     const pos = geometry.attributes.position;
     const colorAttr = geometry.attributes.color;
-
     let minY = Infinity; let maxY = -Infinity;
     for (let i = 0; i < pos.count; i++) {
         const y = pos.getY(i);
@@ -176,40 +176,86 @@ const Bond = ({ start, end, length, showLength, atomRefs, isHighlighted, isDimme
         if (y > maxY) maxY = y;
     }
     const yRange = maxY - minY || 1;
-
     for (let i = 0; i < pos.count; i++) {
         const y = pos.getY(i);
-        // Map Y along the cylinder from 0 to 1
-        let t = (y - minY) / yRange; 
-        
-        // Wait, Three.js Cylinder geometry points along Y axis. 
-        // End is at top (y = maxY, t=1), Start is at bottom (y = minY, t=0).
+        let t = (y - minY) / yRange;
         if (t < 0.4) t = 0;
         else if (t > 0.6) t = 1.0;
         else t = (t - 0.4) / 0.2;
-
-        const vertexColor = cEnd.clone().lerp(cStart, t); // lerp respects Y axis progression
+        const vertexColor = cEnd.clone().lerp(cStart, t);
         colorAttr.setXYZ(i, vertexColor.r, vertexColor.g, vertexColor.b);
     }
     colorAttr.needsUpdate = true;
   }, [colorStart, colorEnd, geometry]);
 
+  // For double/triple bonds: compute a perpendicular offset vector
+  // so the parallel tubes sit visually side-by-side without overlapping the atoms
+  const offsetVec = useMemo(() => {
+    if (order === 1) return null;
+    // Pick a world-space vector not parallel to bond direction
+    const dir = orientation.clone();
+    const worldUp = Math.abs(dir.y) < 0.95 ? new Vector3(0, 1, 0) : new Vector3(1, 0, 0);
+    return new Vector3().crossVectors(dir, worldUp).normalize().multiplyScalar(BOND_RADIUS * 1.6);
+  }, [orientation, order]);
+
+  const material = (
+    <meshStandardMaterial 
+        color={0xffffff} 
+        vertexColors={true}
+        emissive={emissiveColor} 
+        emissiveIntensity={emissiveIntensity} 
+        transparent={true} 
+        opacity={opacity} 
+    />
+  );
+
+  // Single bond — original renderer
+  if (order === 1) {
+    return (
+      <>
+        <mesh ref={meshRef} geometry={geometry}>
+          {material}
+        </mesh>
+        {showLength && (
+          <BondLengthLabel 
+            midPoint={midPoint} 
+            length={(length || calculatedLength).toFixed(3)} 
+            orientation={quaternion} 
+            atomRefs={atomRefs}       
+          />
+        )}
+      </>
+    );
+  }
+
+  // Double bond — two parallel offset tubes
+  if (order === 2) {
+    return (
+      <>
+        <group position={midPoint.toArray()} quaternion={quaternion}>
+          <mesh position={offsetVec ? [offsetVec.x, 0, offsetVec.z] : [0,0,0]} geometry={geometry}>{material}</mesh>
+          <mesh position={offsetVec ? [-offsetVec.x, 0, -offsetVec.z] : [0,0,0]} geometry={geometry}>{material}</mesh>
+        </group>
+        {showLength && (
+          <BondLengthLabel 
+            midPoint={midPoint} 
+            length={(length || calculatedLength).toFixed(3)} 
+            orientation={quaternion} 
+            atomRefs={atomRefs}       
+          />
+        )}
+      </>
+    );
+  }
+
+  // Triple bond — three parallel tubes: centre + two offset
   return (
     <>
-      <mesh 
-        ref={meshRef} 
-        geometry={geometry}
-      >
-        <meshStandardMaterial 
-            color={0xffffff} 
-            vertexColors={true}
-            emissive={emissiveColor} 
-            emissiveIntensity={emissiveIntensity} 
-            transparent={true} 
-            opacity={opacity} 
-        /> 
-      </mesh>
-      
+      <group position={midPoint.toArray()} quaternion={quaternion}>
+        <mesh position={[0, 0, 0]} geometry={geometry}>{material}</mesh>
+        <mesh position={offsetVec ? [offsetVec.x * 1.2, 0, offsetVec.z * 1.2] : [0,0,0]} geometry={geometry}>{material}</mesh>
+        <mesh position={offsetVec ? [-offsetVec.x * 1.2, 0, -offsetVec.z * 1.2] : [0,0,0]} geometry={geometry}>{material}</mesh>
+      </group>
       {showLength && (
         <BondLengthLabel 
           midPoint={midPoint} 
@@ -222,7 +268,7 @@ const Bond = ({ start, end, length, showLength, atomRefs, isHighlighted, isDimme
   );
 };
 
-const BondAngleArc = ({ centerPos, posA, posB, arcRadius, angleRad, override }) => {
+const BondAngleArc = ({ centerPos, posA, posB, arcRadius, angleRad, override, isSelected }) => {
     const meshRef = useRef();
 
     const actualPosA = override?.swapVectors ? posB : posA;
@@ -282,13 +328,17 @@ const BondAngleArc = ({ centerPos, posA, posB, arcRadius, angleRad, override }) 
     const labelX = (actualRadius + 0.3) * Math.cos(midAngle);
     const labelY = (actualRadius + 0.3) * Math.sin(midAngle);
 
+    // Arc is cyan (bright) only while actively selected for editing; all others stay yellow
+    const arcColor = isSelected ? '#00ffff' : '#FFFF00';
+    const labelClass = `text-sm font-bold pointer-events-none ${isSelected ? 'text-cyan-300' : 'text-yellow-300'}`;
+
     return (
         <> 
             <mesh ref={meshRef}>
                 <torusGeometry args={[actualRadius, ARC_THICKNESS, 16, 100, actualAngleRad]} />
-                <meshStandardMaterial color={override && Object.keys(override).length > 0 ? '#ff00ff' : '#FFFF00'} side={2} /> 
+                <meshStandardMaterial color={arcColor} side={2} /> 
                 <Html position={[labelX, labelY, 0]} center>
-                    <div className={`text-sm font-bold pointer-events-none ${override && Object.keys(override).length > 0 ? 'text-fuchsia-400' : 'text-yellow-300'}`}>
+                    <div className={labelClass}>
                         {angleDeg}°
                     </div>
                 </Html>
@@ -332,7 +382,7 @@ const ControlPanel = ({ showBondLength, setShowBondLength, showBondAngle, setSho
     </div>
 );
 
-const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, onAtomSelect, angleOverrides, forceShowAngles, enableAutoRotate = true }) => { 
+const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, onAtomSelect, angleOverrides, forceShowAngles, enableAutoRotate = true, selectedAngleKey = null }) => { 
     const [showBondLength, setShowBondLength] = useState(false);
     const [showBondAngle, setShowBondAngle] = useState(false);
     const [showLonePairs, setShowLonePairs] = useState(false);
@@ -399,15 +449,18 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
             const centerPos = atomPositions[c];
             const connectedBonds = structure.bonds.filter(b => b.a === c || b.b === c);
             
-            const neighbors = connectedBonds.map(bond => {
-                const neighborId = bond.a === c ? bond.b : bond.a;
-                return { id: neighborId, pos: atomPositions[neighborId] };
-            });
+            const neighbors = connectedBonds
+                .map(bond => {
+                    const neighborId = bond.a === c ? bond.b : bond.a;
+                    return { id: neighborId, pos: atomPositions[neighborId] };
+                })
+                .filter(n => n.pos !== undefined); // guard against out-of-range bond refs
             
             for (let i = 0; i < neighbors.length; i++) {
                 for (let j = i + 1; j < neighbors.length; j++) {
                     const neighborA = neighbors[i];
                     const neighborB = neighbors[j];
+                    if (!neighborA.pos || !neighborB.pos) continue; // extra safety
 
                     const angleKey = `${c}-${Math.min(neighborA.id, neighborB.id)}-${Math.max(neighborA.id, neighborB.id)}`;
                     const override = angleOverrides?.[angleKey] || null;
@@ -434,6 +487,7 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
                             arcRadius={arcRadius} 
                             angleRad={angleRad} 
                             override={override}
+                            isSelected={selectedAngleKey === angleKey}
                         />
                     );
                 }
@@ -498,6 +552,7 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
                             isDimmed={isDimmed}
                             colorStart={isHighlighted ? '#00ffff' : '#ffffff'}
                             colorEnd={isHighlighted ? '#00ffff' : '#ffffff'}
+                            order={bond.order || 1}
                         />
                     );
                 })}
@@ -519,7 +574,8 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
 
                 <OrbitControls 
                     enableZoom={true} 
-                    enablePan={false} 
+                    enablePan={true}
+                    mouseButtons={{ LEFT: 0, MIDDLE: 1, RIGHT: 2 }}
                     autoRotate={enableAutoRotate && !hasHighlight} 
                     autoRotateSpeed={1}
                     target={centroid.toArray()} 

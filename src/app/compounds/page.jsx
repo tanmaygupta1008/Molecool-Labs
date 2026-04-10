@@ -5,6 +5,7 @@ import { collection, getDocs, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Molecule3DModel, { MoleculeLegend } from '@/components/Molecule3DModel'; 
 import { findFunctionalGroups } from '@/lib/cheminformatics';
+import { formulaToJSX } from '@/utils/formulaUtils';
 
 const CompoundViewerPage = () => {
     const [compounds, setCompounds] = useState([]);
@@ -113,7 +114,7 @@ const CompoundViewerPage = () => {
                                     }`}
                                 >
                                     <span>{compound.name}</span>
-                                    <span className="text-xs opacity-70">{compound.formula}</span>
+                                    <span className="text-xs opacity-70 font-mono">{formulaToJSX(compound.formula)}</span>
                                 </button>
                             </li>
                         ))}
@@ -130,7 +131,7 @@ const CompoundViewerPage = () => {
                                 <div className="flex justify-between items-end mb-4">
                                     <div>
                                         <h2 className="text-3xl font-extrabold text-white">{selectedCompound.name}</h2>
-                                        <p className="text-cyan-400 font-mono text-lg">{selectedCompound.formula}</p>
+                                        <p className="text-cyan-400 font-mono text-lg">{formulaToJSX(selectedCompound.formula)}</p>
                                     </div>
                                     <div className="text-right text-sm text-gray-400">
                                         <p>CID: {selectedCompound.cid}</p>
@@ -207,6 +208,7 @@ const CompoundViewerPage = () => {
                                         onElementsUsedChange={setElementsForLegend} 
                                         highlightedGroup={highlightedGroup}
                                         onAtomSelect={setSelectedAtomIndex}
+                                        angleOverrides={selectedCompound.structure?.angleOverrides}
                                     />
                                     <MoleculeLegend elementsUsed={elementsForLegend} />
                                     
