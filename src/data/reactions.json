@@ -238,7 +238,7 @@
                         "id": "r_step_1772262542512",
                         "name": "Reactant Stage 1",
                         "startTime": 0,
-                        "duration": 10,
+                        "duration": 20,
                         "effects": [
                             {
                                 "id": "eff_1772262554398",
@@ -289,13 +289,13 @@
                         "id": "exp_1775880298862",
                         "text": "The reaction between zinc (Zn) and hydrochloric acid (HCl) is a typical single displacement reaction in which zinc, being more reactive than hydrogen, displaces hydrogen from the acid. When zinc metal is added to hydrochloric acid, it reacts to form zinc chloride (ZnCl₂) and hydrogen gas (H₂).",
                         "startTime": 0,
-                        "duration": 5
+                        "duration": 10
                     },
                     {
                         "id": "exp_1775880308134",
                         "text": "This reaction can be represented by the equation: Zn + 2HCl → ZnCl₂ + H₂. During the process, zinc atoms lose electrons to form Zn²⁺ ions (oxidation), while hydrogen ions (H⁺) from the acid gain electrons to form hydrogen gas (reduction), making it a redox reaction as well.",
-                        "startTime": 5,
-                        "duration": 5
+                        "startTime": 10,
+                        "duration": 10
                     }
                 ]
             }
