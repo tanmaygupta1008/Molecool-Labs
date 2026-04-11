@@ -1,521 +1,5 @@
 [
     {
-        "id": "magnesium-burning",
-        "name": "Magnesium Burning in Air",
-        "type": "Combination + Redox",
-        "equation": "2Mg + O₂ → 2MgO",
-        "apparatus": [
-            {
-                "id": "bunsen-burner",
-                "model": "BunsenBurner",
-                "position": [
-                    0,
-                    0,
-                    0
-                ],
-                "isOn": true
-            },
-            {
-                "id": "tongs",
-                "model": "Tongs",
-                "position": [
-                    -1.113,
-                    4.136,
-                    0.023
-                ],
-                "rotation": [
-                    0,
-                    0,
-                    -0.5
-                ],
-                "scale": [
-                    1,
-                    1,
-                    1
-                ]
-            },
-            {
-                "id": "magnesium",
-                "model": "MagnesiumRibbon",
-                "position": [
-                    0.034,
-                    3.493,
-                    0.568
-                ],
-                "rotation": [
-                    1.665,
-                    -0.444,
-                    -0.118
-                ],
-                "scale": [
-                    1,
-                    1,
-                    1
-                ]
-            },
-            {
-                "id": "mat",
-                "model": "HeatproofMat",
-                "position": [
-                    0,
-                    -0.05,
-                    0
-                ]
-            }
-        ],
-        "macroView": {
-            "visuals": [
-                "Bright white flame animation",
-                "Formation of white powder (MgO)",
-                "Heat haze effect"
-            ],
-            "steps": [
-                "Hold Magnesium Ribbon with Tongs",
-                "Place over Bunsen Burner flame",
-                "Observe bright white flash",
-                "Collect white ash in crucible (optional)"
-            ],
-            "visualRules": {
-                "initialState": {
-                    "magnesium": {
-                        "color": "#c0c0c0",
-                        "model": "MagnesiumRibbon",
-                        "scale": [
-                            1,
-                            1,
-                            1
-                        ]
-                    },
-                    "burner": {
-                        "flameColor": "#3b82f6",
-                        "intensity": 1.1,
-                        "isOn": true
-                    }
-                },
-                "timeline": {
-                    "0": {
-                        "description": "User picks up Magnesium with Tongs",
-                        "animations": [
-                            {
-                                "target": "tongs",
-                                "type": "move",
-                                "position": [
-                                    -0.5,
-                                    3.5,
-                                    0
-                                ],
-                                "duration": 1
-                            },
-                            {
-                                "target": "magnesium",
-                                "type": "attach_to",
-                                "parent": "tongs",
-                                "offset": [
-                                    0.1,
-                                    -0.6,
-                                    0
-                                ]
-                            }
-                        ]
-                    },
-                    "1": {
-                        "description": "Place Magnesium in flame",
-                        "animations": [
-                            {
-                                "target": "tongs",
-                                "type": "move_to_object",
-                                "destinationId": "bunsen-burner",
-                                "offset": [
-                                    0,
-                                    3.8,
-                                    0
-                                ],
-                                "duration": 1.5
-                            }
-                        ],
-                        "effects": [
-                            {
-                                "type": "flame_interaction",
-                                "intensity": 1.2,
-                                "colorShift": "#ffffff"
-                            }
-                        ]
-                    },
-                    "2": {
-                        "description": "Reaction occurs - Bright Flash",
-                        "effects": [
-                            {
-                                "type": "flash",
-                                "color": "#ffffff",
-                                "intensity": 5,
-                                "duration": 0.3,
-                                "delay": 0.5
-                            },
-                            {
-                                "type": "smoke",
-                                "color": "#eeeeee",
-                                "density": 0.8,
-                                "duration": 3
-                            }
-                        ],
-                        "transformations": [
-                            {
-                                "target": "magnesium",
-                                "newModel": "MagnesiumOxideAsh",
-                                "delay": 0.8
-                            }
-                        ],
-                        "sounds": [
-                            "magnesium_burn"
-                        ]
-                    }
-                },
-                "reactantTimeline": [
-                    {
-                        "id": "r_step_1775323054369",
-                        "name": "Reactant Stage 1",
-                        "startTime": 0,
-                        "duration": 5,
-                        "effects": []
-                    },
-                    {
-                        "id": "r_step_1775323087000",
-                        "name": "Reactant Stage 2",
-                        "startTime": 5.25,
-                        "duration": 5,
-                        "effects": []
-                    }
-                ],
-                "explanationTimeline": [
-                    {
-                        "id": "exp_1775322880045",
-                        "text": "Good news!!!!! Good news!!!!!\nSale Sale Sale",
-                        "startTime": 0,
-                        "duration": 5
-                    },
-                    {
-                        "id": "exp_1775322937078",
-                        "text": "Second explanation",
-                        "startTime": 5,
-                        "duration": 5
-                    }
-                ]
-            }
-        },
-        "microView": {
-            "description": "Mg loses electrons to Oxygen, forming ionic lattice",
-            "particles": [
-                "Mg",
-                "O2",
-                "MgO"
-            ],
-            "script": {
-                "atoms": [
-                    {
-                        "id": "Ca1",
-                        "element": "Ca",
-                        "charge": 0,
-                        "startPos": [
-                            -2.2704015775535216,
-                            1.7698172446753543e-16,
-                            -0.7970548283633804
-                        ]
-                    },
-                    {
-                        "id": "O1",
-                        "element": "O",
-                        "charge": 0,
-                        "startPos": [
-                            -0.5943992730087373,
-                            4.983807796750776e-16,
-                            -2.244507493633297
-                        ]
-                    },
-                    {
-                        "id": "O2",
-                        "element": "O",
-                        "charge": 0,
-                        "startPos": [
-                            -0.547920539358486,
-                            -1.3345485941314465e-16,
-                            0.6010272551238202
-                        ]
-                    },
-                    {
-                        "id": "C1",
-                        "element": "C",
-                        "charge": 0,
-                        "startPos": [
-                            1.2301743628386075,
-                            1.8935820948317192e-16,
-                            -0.8527935616679574
-                        ]
-                    },
-                    {
-                        "id": "O3",
-                        "element": "O",
-                        "charge": 0,
-                        "startPos": [
-                            3.307726806437294,
-                            1.7973555808506774e-16,
-                            -0.8094569924171392
-                        ]
-                    }
-                ],
-                "bonds": [
-                    {
-                        "id": "B_Ca1_O1",
-                        "from": "Ca1",
-                        "to": "O1",
-                        "order": 1,
-                        "color": "#ffffff"
-                    },
-                    {
-                        "id": "B_Ca1_O2",
-                        "from": "Ca1",
-                        "to": "O2",
-                        "order": 1,
-                        "color": "#ffffff"
-                    },
-                    {
-                        "id": "B_O1_C1",
-                        "from": "O1",
-                        "to": "C1",
-                        "order": 1,
-                        "color": "#ffffff"
-                    },
-                    {
-                        "id": "B_O2_C1",
-                        "from": "O2",
-                        "to": "C1",
-                        "order": 1,
-                        "color": "#ffffff"
-                    },
-                    {
-                        "id": "B_C1_O3",
-                        "from": "C1",
-                        "to": "O3",
-                        "order": 2,
-                        "color": "#ffffff"
-                    }
-                ],
-                "groups": [],
-                "tracks": [
-                    {
-                        "id": "trk_1773250183835",
-                        "name": "Track 1",
-                        "startTime": 0,
-                        "duration": 5,
-                        "events": [
-                            {
-                                "type": "BREAK_BOND",
-                                "bondId": "B_O1_C1"
-                            },
-                            {
-                                "type": "BREAK_BOND",
-                                "bondId": "B_Ca1_O2"
-                            }
-                        ],
-                        "targetPositions": {}
-                    },
-                    {
-                        "id": "trk_1773250199459",
-                        "name": "Track 2",
-                        "startTime": 5,
-                        "duration": 5,
-                        "events": [
-                            {
-                                "type": "UPDATE_BOND_ORDER",
-                                "bondId": "B_Ca1_O1",
-                                "newOrder": 2
-                            },
-                            {
-                                "type": "UPDATE_BOND_ORDER",
-                                "bondId": "B_O2_C1",
-                                "newOrder": 2
-                            }
-                        ],
-                        "targetPositions": {}
-                    }
-                ]
-            }
-        },
-        "stages": [
-            {
-                "id": "stage-1775041466943",
-                "name": "Stage 1",
-                "apparatus": [
-                    {
-                        "id": "bunsen-burner",
-                        "model": "BunsenBurner",
-                        "position": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "isOn": true
-                    },
-                    {
-                        "id": "tongs",
-                        "model": "Tongs",
-                        "position": [
-                            -1.113,
-                            4.136,
-                            0.023
-                        ],
-                        "rotation": [
-                            0,
-                            0,
-                            -0.5
-                        ],
-                        "scale": [
-                            1,
-                            1,
-                            1
-                        ]
-                    },
-                    {
-                        "id": "magnesium",
-                        "model": "MagnesiumRibbon",
-                        "position": [
-                            0.034,
-                            3.493,
-                            0.568
-                        ],
-                        "rotation": [
-                            1.665,
-                            -0.444,
-                            -0.118
-                        ],
-                        "scale": [
-                            1,
-                            1,
-                            1
-                        ]
-                    },
-                    {
-                        "id": "mat",
-                        "model": "HeatproofMat",
-                        "position": [
-                            0,
-                            -0.05,
-                            0
-                        ]
-                    }
-                ],
-                "macroView": {
-                    "visuals": [
-                        "Bright white flame animation",
-                        "Formation of white powder (MgO)",
-                        "Heat haze effect"
-                    ],
-                    "steps": [
-                        "Hold Magnesium Ribbon with Tongs",
-                        "Place over Bunsen Burner flame",
-                        "Observe bright white flash",
-                        "Collect white ash in crucible (optional)"
-                    ],
-                    "visualRules": {
-                        "initialState": {
-                            "magnesium": {
-                                "color": "#c0c0c0",
-                                "model": "MagnesiumRibbon",
-                                "scale": [
-                                    1,
-                                    1,
-                                    1
-                                ]
-                            },
-                            "burner": {
-                                "flameColor": "#3b82f6",
-                                "intensity": 0.6,
-                                "isOn": true
-                            }
-                        },
-                        "timeline": {
-                            "0": {
-                                "description": "User picks up Magnesium with Tongs",
-                                "animations": [
-                                    {
-                                        "target": "tongs",
-                                        "type": "move",
-                                        "position": [
-                                            -0.5,
-                                            3.5,
-                                            0
-                                        ],
-                                        "duration": 1
-                                    },
-                                    {
-                                        "target": "magnesium",
-                                        "type": "attach_to",
-                                        "parent": "tongs",
-                                        "offset": [
-                                            0.1,
-                                            -0.6,
-                                            0
-                                        ]
-                                    }
-                                ]
-                            },
-                            "1": {
-                                "description": "Place Magnesium in flame",
-                                "animations": [
-                                    {
-                                        "target": "tongs",
-                                        "type": "move_to_object",
-                                        "destinationId": "bunsen-burner",
-                                        "offset": [
-                                            0,
-                                            3.8,
-                                            0
-                                        ],
-                                        "duration": 1.5
-                                    }
-                                ],
-                                "effects": [
-                                    {
-                                        "type": "flame_interaction",
-                                        "intensity": 1.2,
-                                        "colorShift": "#ffffff"
-                                    }
-                                ]
-                            },
-                            "2": {
-                                "description": "Reaction occurs - Bright Flash",
-                                "effects": [
-                                    {
-                                        "type": "flash",
-                                        "color": "#ffffff",
-                                        "intensity": 5,
-                                        "duration": 0.3,
-                                        "delay": 0.5
-                                    },
-                                    {
-                                        "type": "smoke",
-                                        "color": "#eeeeee",
-                                        "density": 0.8,
-                                        "duration": 3
-                                    }
-                                ],
-                                "transformations": [
-                                    {
-                                        "target": "magnesium",
-                                        "newModel": "MagnesiumOxideAsh",
-                                        "delay": 0.8
-                                    }
-                                ],
-                                "sounds": [
-                                    "magnesium_burn"
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        ]
-    },
-    {
         "id": "zinc-hcl",
         "name": "Zinc + Hydrochloric Acid",
         "type": "Single Displacement",
@@ -754,7 +238,7 @@
                         "id": "r_step_1772262542512",
                         "name": "Reactant Stage 1",
                         "startTime": 0,
-                        "duration": 20,
+                        "duration": 10,
                         "effects": [
                             {
                                 "id": "eff_1772262554398",
@@ -798,6 +282,20 @@
                                 "finalVolume": 0
                             }
                         ]
+                    }
+                ],
+                "explanationTimeline": [
+                    {
+                        "id": "exp_1775880298862",
+                        "text": "The reaction between zinc (Zn) and hydrochloric acid (HCl) is a typical single displacement reaction in which zinc, being more reactive than hydrogen, displaces hydrogen from the acid. When zinc metal is added to hydrochloric acid, it reacts to form zinc chloride (ZnCl₂) and hydrogen gas (H₂).",
+                        "startTime": 0,
+                        "duration": 5
+                    },
+                    {
+                        "id": "exp_1775880308134",
+                        "text": "This reaction can be represented by the equation: Zn + 2HCl → ZnCl₂ + H₂. During the process, zinc atoms lose electrons to form Zn²⁺ ions (oxidation), while hydrogen ions (H⁺) from the acid gain electrons to form hydrogen gas (reduction), making it a redox reaction as well.",
+                        "startTime": 5,
+                        "duration": 5
                     }
                 ]
             }
@@ -5015,14 +4513,14 @@
                         "id": "tripodstand-9737",
                         "model": "TripodStand",
                         "position": [
-                            0,
+                            2.471,
                             0,
                             0
                         ],
                         "rotation": [
-                            0,
-                            0,
-                            0
+                            3.141,
+                            -0.049,
+                            3.141
                         ],
                         "scale": [
                             1,
@@ -5049,7 +4547,29 @@
                             1,
                             1
                         ],
-                        "parentId": "tripodstand-9737"
+                        "parentId": "tripodstand-9737",
+                        "reactants": [
+                            {
+                                "id": "1775879534294",
+                                "chemicalId": "kcl",
+                                "state": "aq",
+                                "amount": 250,
+                                "unit": "mL",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            },
+                            {
+                                "id": "1775879670711",
+                                "chemicalId": "zinc",
+                                "state": "s",
+                                "amount": 150,
+                                "unit": "g",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ]
                     },
                     {
                         "id": "droppingfunnel-1985",
@@ -5110,6 +4630,139 @@
                             1.15
                         ],
                         "parentId": "threeneckflask-5570"
+                    },
+                    {
+                        "id": "retortstand-5231",
+                        "model": "RetortStand",
+                        "position": [
+                            -6.06,
+                            0,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "height": 7.5
+                    },
+                    {
+                        "id": "clamp-6344",
+                        "model": "Clamp",
+                        "position": [
+                            1.65,
+                            5.7,
+                            -0.4
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "retortstand-5231",
+                        "headAngle": 1.5707963267948966,
+                        "size": 1,
+                        "angle": 0.3
+                    },
+                    {
+                        "id": "testtube-9763",
+                        "model": "TestTube",
+                        "position": [
+                            0.62,
+                            -1.4,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "clamp-6344",
+                        "reactants": [
+                            {
+                                "id": "1775879500489",
+                                "chemicalId": "naoh",
+                                "state": "aq",
+                                "amount": 20,
+                                "unit": "mL",
+                                "concentration": 0,
+                                "temperature": 25,
+                                "pressure": 1
+                            }
+                        ]
+                    },
+                    {
+                        "id": "rubbercork-4973",
+                        "model": "RubberCork",
+                        "position": [
+                            0,
+                            1.7,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "parentId": "testtube-9763"
+                    },
+                    {
+                        "id": "deliverytube-1901",
+                        "model": "DeliveryTube",
+                        "position": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "scale": [
+                            1,
+                            1,
+                            1
+                        ],
+                        "points": [
+                            [
+                                -3.79,
+                                6.400000000000001,
+                                -0.4
+                            ],
+                            [
+                                -2.8857903948359596,
+                                8.282832747736625,
+                                -0.3999999999999986
+                            ],
+                            [
+                                1.1890333279630811,
+                                5.916647987181582,
+                                0.059360177253199094
+                            ]
+                        ],
+                        "tubeMode": "straight",
+                        "isEditingPoints": false
                     }
                 ],
                 "macroView": {
@@ -5125,7 +4778,9 @@
                     }
                 }
             }
-        ]
+        ],
+        "tableWidth": 19,
+        "tableDepth": 13.5
     },
     {
         "id": "electrolysis-of-copper-sulfate",
