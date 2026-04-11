@@ -197,7 +197,7 @@ const ReactionChatbot = ({ currentReaction }) => {
               <Bot className="text-cyan-400" size={24} />
               <div>
                 <h3 className="text-white font-bold tracking-wide text-sm">AI Lab Assistant</h3>
-                <p className="text-cyan-400/60 text-xs">MoleCool Labs</p>
+                <p className="text-cyan-400/60 text-xs">Molecools Lab</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

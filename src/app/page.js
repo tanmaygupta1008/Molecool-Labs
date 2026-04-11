@@ -87,7 +87,7 @@ export default function LandingPage() {
 
         {/* Heading */}
         <h1 className="text-6xl sm:text-7xl md:text-8xl font-black tracking-tight leading-none mb-6 drop-shadow-2xl">
-          <span className="block text-white" style={{ textShadow: '0 4px 30px rgba(14, 165, 233, 0.4)' }}>Molecool</span>
+          <span className="block text-white" style={{ textShadow: '0 4px 30px rgba(14, 165, 233, 0.4)' }}>Molecools</span>
           <span
             className="block"
             style={{
@@ -99,7 +99,7 @@ export default function LandingPage() {
               filter: 'drop-shadow(0px 0px 20px rgba(56, 189, 248, 0.5))'
             }}
           >
-            Labs
+            Lab
           </span>
         </h1>
 
@@ -218,7 +218,7 @@ export default function LandingPage() {
       ═══════════════════════════════════════════════════════════ */}
       <footer className="border-t border-gray-800/60 py-8 px-4 text-center mt-20 relative z-10 bg-black/50 backdrop-blur-md">
         <p className="text-gray-500 text-sm">
-          🧪 <span className="text-cyan-500 font-semibold">Molecool Labs</span> — Built for curious minds.
+          <span className="text-cyan-500 font-semibold">Molecools Lab</span> — Built for curious minds.
         </p>
       </footer>
 

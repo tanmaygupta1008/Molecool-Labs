@@ -70,7 +70,7 @@ const NavBar = () => {
           {/* Logo/Project Name */}
           <div className="flex-shrink-0 flex items-center">
             <Link href="/" onClick={closeDropdown} className="text-2xl font-extrabold text-cyan-400 hover:text-cyan-300 transition duration-150">
-              MOLECOOL LABS 🧪
+              MOLECOOLS LAB
             </Link>
           </div>
 

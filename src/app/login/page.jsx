@@ -86,8 +86,8 @@ export default function LoginPage() {
     }
 
     const titles = {
-        signin: { heading: 'Welcome back', sub: 'Sign in to your Molecool Labs account' },
-        signup: { heading: 'Create account', sub: 'Join Molecool Labs and start experimenting' },
+        signin: { heading: 'Welcome back', sub: 'Sign in to your Molecools Lab account' },
+        signup: { heading: 'Create account', sub: 'Join Molecools Lab and start experimenting' },
         reset: { heading: 'Reset password', sub: "We'll email you a reset link" },
     };
 
@@ -104,9 +104,8 @@ export default function LoginPage() {
 
                     {/* Logo */}
                     <div className="flex flex-col items-center gap-2 mb-8">
-                        <span className="text-5xl">🧪</span>
                         <h1 className="text-3xl font-extrabold text-white tracking-tight">
-                            Molecool<span className="text-cyan-400"> Labs</span>
+                            Molecools<span className="text-cyan-400"> Lab</span>
                         </h1>
                         <p className="text-gray-400 text-sm text-center">{titles[mode].sub}</p>
                     </div>

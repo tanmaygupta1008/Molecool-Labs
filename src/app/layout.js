@@ -5,7 +5,7 @@ import { ReactionEditorProvider } from '../context/ReactionEditorContext';
 import NextTopLoader from 'nextjs-toploader';
 
 export const metadata = {
-  title: 'Molecool Labs',
+  title: 'Molecools Lab',
   description: 'Your AI-powered virtual chemistry laboratory',
 };
 
