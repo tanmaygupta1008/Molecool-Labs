@@ -27,6 +27,18 @@ const TEAM_MEMBERS = [
   }
 ];
 
+// Helper to convert Google Drive share links into direct image viewing links
+const formatDriveImageUrl = (url) => {
+  if (!url) return null;
+  // Extract file ID from standard Google Drive share links (e.g. /file/d/ID/...)
+  const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileMatch && fileMatch[1]) {
+    return `https://drive.google.com/uc?export=view&id=${fileMatch[1]}`;
+  }
+  // If it's a folder link or already a direct link, just return it (though folder links won't render as images)
+  return url;
+};
+
 export default function TeamSection() {
   return (
     <section className="relative w-full max-w-6xl mx-auto px-4 py-32 mt-24">
@@ -40,32 +52,40 @@ export default function TeamSection() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
-        {TEAM_MEMBERS.map((member) => (
-          <div
-            key={member.id}
-            className="group relative flex flex-col items-center p-6 rounded-2xl bg-[#082f49]/40 border border-teal-500/20 backdrop-blur-md hover:bg-[#082f49]/70 transition-all duration-300 hover:-translate-y-2 shadow-2xl hover:shadow-cyan-500/30"
-          >
-            {/* Holographic glowing ring */}
-            <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        {TEAM_MEMBERS.map((member) => {
+          const directImgUrl = formatDriveImageUrl(member.imageUrl);
+          
+          return (
+            <div
+              key={member.id}
+              className="group relative flex flex-col items-center p-6 rounded-2xl bg-[#082f49]/40 border border-teal-500/20 backdrop-blur-md hover:bg-[#082f49]/70 transition-all duration-300 hover:-translate-y-2 shadow-2xl hover:shadow-cyan-500/30"
+            >
+              {/* Holographic glowing ring */}
+              <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-            {/* Avatar Placeholder */}
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-950 to-[#022c22] border-2 border-teal-500/30 mb-4 flex items-center justify-center overflow-hidden group-hover:border-cyan-300 transition-colors">
-              <img
-                src={member.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=082f49&color=5eead4&size=150`}
-                alt={`${member.name} profile`}
-                className="w-full h-full object-cover"
-              />
+              {/* Avatar Placeholder */}
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-950 to-[#022c22] border-2 border-teal-500/30 mb-4 flex items-center justify-center overflow-hidden group-hover:border-cyan-300 transition-colors">
+                <img
+                  src={directImgUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=082f49&color=5eead4&size=150`}
+                  alt={`${member.name} profile`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback if the Google Drive image fails to load (e.g. unshared or folder link)
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=082f49&color=5eead4&size=150`;
+                  }}
+                />
+              </div>
+
+              <h3 className="text-xl font-bold text-white mb-1 group-hover:text-cyan-300 transition-colors text-center">
+                {member.name}
+              </h3>
+              <p className="text-sm text-teal-200/80 font-medium text-center">
+                {member.title}
+              </p>
             </div>
-
-            <h3 className="text-xl font-bold text-white mb-1 group-hover:text-cyan-300 transition-colors text-center">
-              {member.name}
-            </h3>
-            <p className="text-sm text-teal-200/80 font-medium text-center">
-              {member.title}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
