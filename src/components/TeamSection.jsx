@@ -4,40 +4,28 @@ const TEAM_MEMBERS = [
   {
     name: "Tanmay Gupta",
     title: "Full Stack Web Developer",
-    imageUrl: "https://drive.google.com/file/d/13CQ4yDot6TcdM1fng4fGOdU8cVr6ubSF/view?usp=sharing",
+    imageUrl: "/profile/Tanmay.jpg",
     id: 1,
   },
   {
     name: "Om Gaikwad",
     title: "ML Engineer and Data Scientist",
-    imageUrl: "",
+    imageUrl: "/profile/Om.jpeg",
     id: 2,
   },
   {
     name: "Vansh Ghori",
     title: "AR Engineer and Simulation Specialist",
-    imageUrl: "https://drive.google.com/drive/folders/19QXAuLlXEuVsszbFD4CydH6beXX2syza",
+    imageUrl: "/profile/Vansh.png",
     id: 3,
   },
   {
     name: "Priyansh Ghori",
     title: "UI/UX Designer",
-    imageUrl: "https://drive.google.com/drive/folders/19QXAuLlXEuVsszbFD4CydH6beXX2syza",
+    imageUrl: "/profile/Priyansh.png",
     id: 4,
   }
 ];
-
-// Helper to convert Google Drive share links into direct image viewing links
-const formatDriveImageUrl = (url) => {
-  if (!url) return null;
-  // Extract file ID from standard Google Drive share links (e.g. /file/d/ID/...)
-  const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (fileMatch && fileMatch[1]) {
-    return `https://drive.google.com/uc?export=view&id=${fileMatch[1]}`;
-  }
-  // If it's a folder link or already a direct link, just return it (though folder links won't render as images)
-  return url;
-};
 
 export default function TeamSection() {
   return (
@@ -53,8 +41,6 @@ export default function TeamSection() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
         {TEAM_MEMBERS.map((member) => {
-          const directImgUrl = formatDriveImageUrl(member.imageUrl);
-          
           return (
             <div
               key={member.id}
@@ -67,11 +53,11 @@ export default function TeamSection() {
               {/* Avatar Placeholder */}
               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-950 to-[#022c22] border-2 border-teal-500/30 mb-4 flex items-center justify-center overflow-hidden group-hover:border-cyan-300 transition-colors">
                 <img
-                  src={directImgUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=082f49&color=5eead4&size=150`}
+                  src={member.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=082f49&color=5eead4&size=150`}
                   alt={`${member.name} profile`}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    // Fallback if the Google Drive image fails to load (e.g. unshared or folder link)
+                    // Fallback if the image fails to load
                     e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=082f49&color=5eead4&size=150`;
                   }}
                 />
