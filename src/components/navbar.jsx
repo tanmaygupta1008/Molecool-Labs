@@ -89,8 +89,6 @@ const NavBar = () => {
             {/* Labs */}
             <NavDropdown title="Labs ⚗️" name="labs" activeDropdown={activeDropdown} toggleDropdown={toggleDropdown}>
               <NavLinkItem href="/chemical-reactions" onClick={closeDropdown}>Reaction Lab ⚗️</NavLinkItem>
-              <NavLinkItem href="/fluid-simulation" onClick={closeDropdown}>Fluid Sim 💧</NavLinkItem>
-              <NavLinkItem href="/ar-vr" onClick={closeDropdown}>AR/VR 👓</NavLinkItem>
             </NavDropdown>
 
             {/* Tools */}
@@ -105,10 +103,9 @@ const NavBar = () => {
 
             {/* Engine Phases */}
             <NavDropdown title="Engine ⚙️" name="engine" activeDropdown={activeDropdown} toggleDropdown={toggleDropdown}>
-              <NavLinkItem href="/engine/reactions" onClick={closeDropdown} className="font-bold border-b border-gray-800 mb-1 pb-2">Phase 0: Reactions</NavLinkItem>
+              <NavLinkItem href="/engine/reactions" onClick={closeDropdown} className="font-bold border-b border-gray-800 mb-1 pb-2">Reaction Management</NavLinkItem>
               <NavLinkItem href="/engine/atoms" onClick={closeDropdown}>Phase 1: Reactants</NavLinkItem>
               <NavLinkItem href="/engine/actions" className="font-bold text-cyan-300" onClick={closeDropdown}>Phase 2: Visuals</NavLinkItem>
-              <NavLinkItem href="/engine/electrons" onClick={closeDropdown}>Phase 4: Electrons</NavLinkItem>
             </NavDropdown>
 
             {/* Auth Section */}
