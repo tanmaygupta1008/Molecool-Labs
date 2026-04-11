@@ -151,13 +151,14 @@
 // src/app/chemical-reactions/page.jsx
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import ReactionViewer from '@/components/reactions/ReactionViewer';
 import ReactionControls from '@/components/reactions/ReactionControls';
 import EnergyProfile from '@/components/reactions/EnergyProfile';
 import ReactionLibrary from '@/components/reactions/ReactionLibrary';
 import ReactorConditions from '@/components/reactions/ReactorConditions';
 import ReactionChatbot from '@/components/reactions/ReactionChatbot';
+import { MessageSquareText } from 'lucide-react';
 
 // Import JSON Configuration
 // import REACTIONS_LIST from '@/data/reactions.json'; // REMOVED to avoid HMR
@@ -196,6 +197,25 @@ const ChemicalReactionsPage = () => {
 
   const playingRef = useRef(false);
 
+  // Extract explicit Macro Duration dynamically exactly like reaction-refiner
+  const macroDuration = useMemo(() => {
+    let maxStepDuration = 0;
+    if (currentReaction?.macroView?.visualRules?.timeline) {
+      maxStepDuration = Object.values(currentReaction.macroView.visualRules.timeline).reduce((acc, step) => {
+        if (step.disabled) return acc;
+        return acc + (parseFloat(step.duration) || 0) + (parseFloat(step.delay) || 0);
+      }, 0);
+    }
+    let maxReactantDuration = 0;
+    if (currentReaction?.macroView?.visualRules?.reactantTimeline) {
+      maxReactantDuration = currentReaction.macroView.visualRules.reactantTimeline.reduce((acc, block) => {
+        const end = (parseFloat(block.startTime) || 0) + (parseFloat(block.duration) || 0);
+        return Math.max(acc, end);
+      }, 0);
+    }
+    return Math.max(maxStepDuration, maxReactantDuration) || 10;
+  }, [currentReaction]);
+
   // Animation Loop
   useEffect(() => {
     let animationFrameId;
@@ -225,7 +245,7 @@ const ChemicalReactionsPage = () => {
             });
             duration = Math.max(2, maxEnd);
           } else {
-            duration = 10;
+            duration = macroDuration;
           }
 
           // Physics Calculation (Arrhenius-like effect)
@@ -282,6 +302,32 @@ const ChemicalReactionsPage = () => {
           environment={envConditions}
         />
       </div>
+
+      {/* Explanation Overlay Logic */}
+      {viewMode === 'MACRO' && currentReaction?.macroView?.visualRules?.explanationTimeline && (() => {
+          const activeExplanation = currentReaction.macroView.visualRules.explanationTimeline.find(block => {
+              const currentTime = progress * macroDuration;
+              return currentTime >= block.startTime && currentTime <= (block.startTime + block.duration);
+          });
+          
+          if (activeExplanation) {
+              return (
+                  <div className="absolute bottom-36 left-1/2 -translate-x-1/2 w-4/5 max-w-xl pointer-events-none animate-in fade-in slide-in-from-bottom-4 duration-300 z-20">
+                      <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-4 shadow-2xl flex items-start gap-4">
+                          <div className="mt-1 bg-purple-500/20 p-2 rounded-lg border border-purple-500/30">
+                              <MessageSquareText size={16} className="text-purple-400" />
+                          </div>
+                          <div className="flex-1 pointer-events-auto">
+                              <p className="text-sm text-gray-200 font-medium leading-relaxed whitespace-pre-wrap">
+                                  {activeExplanation.text || "..."}
+                              </p>
+                          </div>
+                      </div>
+                  </div>
+              );
+          }
+          return null;
+      })()}
 
       {/* LEFT PANEL: Reaction Library */}
       {/* ⬅️ FIX: Changed 'top-6' to 'top-24' to clear Navbar */}
