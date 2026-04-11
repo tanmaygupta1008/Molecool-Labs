@@ -1281,11 +1281,20 @@ const ApparatusEditorItem = React.memo(({ item, selectedId, onSelect, updateItem
             // This fires both on fresh detach AND on any subsequent free-drag.
             if (!didSnap && ['RefluxCondenser', 'DroppingFunnel'].includes(item.model)) {
                 newRot = [0, Number(newRot[1].toFixed(4)), 0]; // keep Y spin, clear X/Z tilt
-                // Immediately apply to the THREE.js group to bypass TransformControls' cached state.
-                // Without this, the visual update lags one full React render cycle (needs another drag).
                 if (group) {
                     group.rotation.set(newRot[0], newRot[1], newRot[2]);
                 }
+            }
+
+            // Immediately apply transform to the THREE.js group to bypass TransformControls' cached state.
+            // Without this, the visual update lags one full React render cycle and causes flickering or missing meshes if unmounted rapidly
+            if (group && didSnap) {
+                 if (newRot) group.rotation.set(newRot[0], newRot[1], newRot[2]);
+                 if (newScale) group.scale.set(newScale[0], newScale[1], newScale[2]);
+                 if (finalStatePos) {
+                     group.position.set(finalStatePos[0], finalStatePos[1], finalStatePos[2]);
+                     group.updateMatrixWorld(true);
+                 }
             }
 
             if (didSnap) {
