@@ -27,6 +27,20 @@ export const getApparatusAnchors = (item) => {
     const getStandardAnchors = () => {
         const standard = [];
         switch (item.model) {
+            case 'RoundBottomFlask':
+            case 'VolumetricFlask':
+            case 'DistillationFlask':
+                standard.push({ id: 'mouth', localPos: [0, 3.25, 0], localNormal: [0, 1, 0] });
+                break;
+            case 'TwoNeckFlask':
+                standard.push({ id: 'mouth', localPos: [0, 3.25, 0], localNormal: [0, 1, 0] });
+                standard.push({ id: 'sidearm-right', localPos: [1.05, 2.818, 0], localNormal: [0.866, 0.5, 0] });
+                break;
+            case 'ThreeNeckFlask':
+                standard.push({ id: 'mouth', localPos: [0, 3.25, 0], localNormal: [0, 1, 0] });
+                standard.push({ id: 'sidearm-right', localPos: [1.05, 2.818, 0], localNormal: [0.866, 0.5, 0] });
+                standard.push({ id: 'sidearm-left', localPos: [-1.05, 2.818, 0], localNormal: [-0.866, 0.5, 0] });
+                break;
             case 'ConicalFlask':
                 standard.push({ id: 'mouth', localPos: [0, 2.5, 0], localNormal: [0, 1, 0] });
                 break;
