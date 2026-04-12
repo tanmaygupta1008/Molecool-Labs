@@ -48,7 +48,7 @@ next-env.d.ts
 
 # Animation frames
 Home Page animations/
-public/frames/
+
 
 # Python cache
 src/ML/__pycache__/
