@@ -1,0 +1,9 @@
+PDF_FOLDER = "data"
+DB_FOLDER = "chroma_db"
+
+EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
+OLLAMA_MODEL = "mistral"
+
+CHUNK_SIZE = 800
+CHUNK_OVERLAP = 150
+TOP_K = 4
