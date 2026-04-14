@@ -1279,8 +1279,13 @@ const ApparatusEditorItem = React.memo(({ item, selectedId, onSelect, updateItem
             // Whenever these items are dropped WITHOUT snapping into a flask neck,
             // clear any X/Z tilt (from side-neck connections) and return to upright.
             // This fires both on fresh detach AND on any subsequent free-drag.
-            if (!didSnap && ['RefluxCondenser', 'DroppingFunnel'].includes(item.model)) {
-                newRot = [0, Number(newRot[1].toFixed(4)), 0]; // keep Y spin, clear X/Z tilt
+            if (!didSnap && ['RefluxCondenser', 'DroppingFunnel', 'RubberCork'].includes(item.model)) {
+                if (item.model === 'RubberCork') {
+                    // Rubber Corks snap upright when placed on the table
+                    newRot = [0, Number(newRot[1].toFixed(4)), 0];
+                } else {
+                    newRot = [0, Number(newRot[1].toFixed(4)), 0]; // keep Y spin, clear X/Z tilt
+                }
                 if (group) {
                     group.rotation.set(newRot[0], newRot[1], newRot[2]);
                 }
@@ -1288,13 +1293,11 @@ const ApparatusEditorItem = React.memo(({ item, selectedId, onSelect, updateItem
 
             // Immediately apply transform to the THREE.js group to bypass TransformControls' cached state.
             // Without this, the visual update lags one full React render cycle and causes flickering or missing meshes if unmounted rapidly
-            if (['RefluxCondenser', 'DroppingFunnel'].includes(item.model)) {
-                if (group && didSnap) {
-                     if (newRot) group.rotation.set(newRot[0], newRot[1], newRot[2]);
-                     if (finalStatePos) {
-                         group.position.set(finalStatePos[0], finalStatePos[1], finalStatePos[2]);
-                         group.updateMatrixWorld(true);
-                     }
+            if (group) {
+                if (newRot) group.rotation.set(newRot[0], newRot[1], newRot[2]);
+                if (finalStatePos) {
+                    group.position.set(finalStatePos[0], finalStatePos[1], finalStatePos[2]);
+                    group.updateMatrixWorld(true);
                 }
             }
 
@@ -1487,7 +1490,7 @@ const ApparatusEditorItem = React.memo(({ item, selectedId, onSelect, updateItem
     if (prevMine && prevProps.gridSnap !== nextProps.gridSnap) return false;
     // Basin bounds is already memoized upstream — reference equality is safe
     if (prevProps.basinBounds !== nextProps.basinBounds) return false;
-    // allItems: only re-render if a DIRECT CHILD of mine changed,
+    // allItems: only re-render if a DESCENDANT of mine changed,
     // or if I'm a BunsenBurner (needs flame-above detection on allItems).
     if (prevProps.allItems !== nextProps.allItems) {
         if (prevProps.item.model === 'BunsenBurner') return false;
@@ -1495,10 +1498,30 @@ const ApparatusEditorItem = React.memo(({ item, selectedId, onSelect, updateItem
         const prev = prevProps.allItems || [];
         const next = nextProps.allItems || [];
         if (prev.length !== next.length) return false;
+        
+        // Also ensure re-render if we previously had children or currently have children
+        // and allItems has changed (reference equality failed above), just to safely catch side-effects.
+        const prevHasChildren = prev.some(x => x.parentId === myId);
+        const nextHasChildren = next.some(x => x.parentId === myId);
+        if (prevHasChildren || nextHasChildren) return false;
+
+        // Helper to check if itemId is a descendant of targetId in a given items array
+        const checkIsDescendant = (itemId, items, targetId) => {
+            let curr = items.find(x => x.id === itemId);
+            while (curr && curr.parentId) {
+                if (curr.parentId === targetId) return true;
+                curr = items.find(x => x.id === curr.parentId);
+            }
+            return false;
+        };
+
         for (let i = 0; i < prev.length; i++) {
             if (prev[i] !== next[i]) {
-                // Only re-render if the changed item is MY child
-                if (prev[i].parentId === myId || next[i]?.parentId === myId) return false;
+                const changedId = prev[i].id;
+                // Re-render if the changed item was our descendant or will be our descendant
+                if (checkIsDescendant(changedId, prev, myId) || checkIsDescendant(changedId, next, myId)) {
+                    return false;
+                }
             }
         }
     }

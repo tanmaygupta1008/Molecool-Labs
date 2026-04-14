@@ -52,10 +52,21 @@ const ReactionRefinerPage = () => {
                 return Math.max(acc, end);
             }, 0);
         }
+        let maxExplanationDuration = 0;
+        if (currentReaction?.macroView?.visualRules?.explanationTimeline) {
+            maxExplanationDuration = currentReaction.macroView.visualRules.explanationTimeline.reduce((acc, block) => {
+                const end = (parseFloat(block.startTime) || 0) + (parseFloat(block.duration) || 0);
+                return Math.max(acc, end);
+            }, 0);
+        }
 
         // Return whichever is longest, defaulting to 5s only if both timelines are completely empty
-        return Math.max(maxStepDuration, maxReactantDuration) || 5;
-    }, [currentReaction?.macroView?.visualRules?.timeline, currentReaction?.macroView?.visualRules?.reactantTimeline]);
+        return Math.max(maxStepDuration, maxReactantDuration, maxExplanationDuration) || 5;
+    }, [
+        currentReaction?.macroView?.visualRules?.timeline, 
+        currentReaction?.macroView?.visualRules?.reactantTimeline,
+        currentReaction?.macroView?.visualRules?.explanationTimeline
+    ]);
 
     // Fetch Reactions on Mount
     useEffect(() => {

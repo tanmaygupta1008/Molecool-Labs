@@ -282,6 +282,8 @@ export default function Phase2ActionEditorPage() {
 
             if (res.ok) {
                 setReactions(updatedReactions);
+                // Sync with local autosave so that editor pages pick up the new reaction
+                localStorage.setItem('molecool_reactions_autosave', JSON.stringify(updatedReactions));
                 alert("Saved to reactions.json successfully!");
             } else {
                 alert("Failed to save.");

@@ -173,6 +173,21 @@ const ChemicalReactionsPage = () => {
     fetch('/api/reactions', { cache: 'no-store', next: { revalidate: 0 } })
       .then(res => res.json())
       .then(data => {
+        // Recover autosaved state from local storage first to prevent losing work and stay synced with editors
+        const autosaved = localStorage.getItem('molecool_reactions_autosave');
+        if (autosaved) {
+            try {
+                const parsed = JSON.parse(autosaved);
+                if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                    setReactionsList(parsed);
+                    setCurrentReaction(parsed[0]);
+                    return;
+                }
+            } catch (e) {
+                console.error("Autosave parse error in Chemical Reactions:", e);
+            }
+        }
+        
         setReactionsList(data);
         if (data.length > 0) setCurrentReaction(data[0]);
       })
@@ -213,7 +228,14 @@ const ChemicalReactionsPage = () => {
         return Math.max(acc, end);
       }, 0);
     }
-    return Math.max(maxStepDuration, maxReactantDuration) || 10;
+    let maxExplanationDuration = 0;
+    if (currentReaction?.macroView?.visualRules?.explanationTimeline) {
+      maxExplanationDuration = currentReaction.macroView.visualRules.explanationTimeline.reduce((acc, block) => {
+        const end = (parseFloat(block.startTime) || 0) + (parseFloat(block.duration) || 0);
+        return Math.max(acc, end);
+      }, 0);
+    }
+    return Math.max(maxStepDuration, maxReactantDuration, maxExplanationDuration) || 10;
   }, [currentReaction]);
 
   // Animation Loop

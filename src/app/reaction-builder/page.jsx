@@ -71,6 +71,9 @@ export default function ReactionBuilderPage() {
 
             if (!saveRes.ok) throw new Error('Failed to save to reactions.json');
 
+            // Sync with local autosave so that editor pages pick up the new reaction
+            localStorage.setItem('molecool_reactions_autosave', JSON.stringify(updatedReactions));
+
             setStatus({ type: 'success', message: 'Reaction saved successfully!' });
             
             // Redirect back to reactions dashboard after brief delay

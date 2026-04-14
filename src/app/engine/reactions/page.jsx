@@ -41,6 +41,8 @@ export default function ReactionManagementPage() {
             });
             if (!res.ok) throw new Error('Failed to save changes');
             setReactions(updatedReactions);
+            // Sync with local autosave so that editor pages pick up deleted/modified reactions
+            localStorage.setItem('molecool_reactions_autosave', JSON.stringify(updatedReactions));
         } catch (err) {
             alert("Error saving: " + err.message);
             // Re-fetch to reset state on failure
