@@ -11,9 +11,12 @@ import BondLine from '@/components/reactions/engine/BondLine';
 import RadicalGroupUI from '@/components/reactions/engine/RadicalGroupUI';
 import VSEPRPhysicsEngine from '@/components/reactions/engine/VSEPRPhysicsEngine';
 import { getAllElementsList, getElementData } from '@/utils/elementColors';
+import { db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import Link from 'next/link';
 
-// Challenges
-const CHALLENGES = [
+// Fallback Challenges if Firestore is empty
+const DEFAULT_CHALLENGES = [
     { target: 'C4H10', expected: 2 },   // n-butane, isobutane
     { target: 'C3H8O', expected: 3 },   // propan-1-ol, propan-2-ol, methyl ethyl ether
     { target: 'C5H12', expected: 3 },   // pentane, isopentane, neopentane
@@ -21,6 +24,15 @@ const CHALLENGES = [
 ];
 
 // --- SUBCOMPONENTS ---
+const FormulaText = ({ text }) => {
+    if (!text) return null;
+    return (
+        <>
+            {text.split(/(\d+)/).map((p, i) => /^\d+$/.test(p) ? <sub className="text-[0.7em] bottom-[-0.2em]" key={i}>{p}</sub> : p)}
+        </>
+    );
+};
+
 const ClickablePlane = ({ onPlaceAtom }) => (
     <Plane args={[50, 50]} rotation={[-Math.PI / 2, 0, 0]} visible={false} onClick={(e) => { e.stopPropagation(); onPlaceAtom(e.point); }} />
 );
@@ -100,11 +112,35 @@ export default function IsomerChallengePage() {
     const [pointerPos3D, setPointerPos3D] = useState(null);
 
     // Game Specific State
+    const [challenges, setChallenges] = useState(DEFAULT_CHALLENGES);
+    const [isFetching, setIsFetching] = useState(true);
     const [challengeIdx, setChallengeIdx] = useState(0);
     const [foundIsomers, setFoundIsomers] = useState([]);
     const [feedback, setFeedback] = useState(null);
 
-    const currentChallenge = CHALLENGES[challengeIdx];
+    const currentChallenge = challenges[challengeIdx] || challenges[0];
+
+    useEffect(() => {
+        const loadChallenges = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'isomerChallenges'));
+                const data = [];
+                querySnapshot.forEach((doc) => {
+                    data.push({ id: doc.id, ...doc.data() });
+                });
+                
+                if (data.length > 0) {
+                    data.sort((a, b) => a.target.localeCompare(b.target));
+                    setChallenges(data);
+                }
+            } catch (err) {
+                console.error("Failed to load custom challenges:", err);
+            } finally {
+                setIsFetching(false);
+            }
+        };
+        loadChallenges();
+    }, []);
 
     useEffect(() => {
         if (mode !== 'bond' || !selectedAtomId) setPointerPos3D(null);
@@ -213,7 +249,7 @@ export default function IsomerChallengePage() {
     };
 
     const nextChallenge = () => {
-        setChallengeIdx((prev) => (prev + 1) % CHALLENGES.length);
+        setChallengeIdx((prev) => (prev + 1) % challenges.length);
         setFoundIsomers([]); clearScript(); setFeedback(null);
     };
 
@@ -333,7 +369,10 @@ export default function IsomerChallengePage() {
 
                 <div className="p-4 border-t border-gray-800">
                     <button onClick={clearScript} className="w-full py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded transition-colors text-sm font-bold mb-2">Clear Workspace</button>
-                    <button onClick={nextChallenge} className="w-full py-2 bg-gray-800 border border-cyan-800 text-cyan-300 rounded hover:bg-gray-700 transition text-sm font-bold">Skip Challenge ⏭️</button>
+                    <button onClick={nextChallenge} className="w-full py-2 bg-gray-800 border border-cyan-800 text-cyan-300 rounded hover:bg-gray-700 transition text-sm font-bold mb-2">Skip Challenge ⏭️</button>
+                    <Link href="/compounds/isomer-challenge/manager" className="w-full flex justify-center py-2 bg-indigo-900/30 border border-indigo-900/50 text-indigo-400 rounded hover:bg-indigo-900/60 transition text-xs font-bold">
+                        ⚙️ Isomer Manager
+                    </Link>
                 </div>
             </div>
 
@@ -440,8 +479,10 @@ export default function IsomerChallengePage() {
                 <h2 className="text-xl font-bold mb-4 text-white text-center">Challenge Status</h2>
                 
                 <div className="p-4 bg-gray-800 border border-gray-700 rounded-lg flex flex-col items-center justify-center space-y-2 mb-6">
-                    <span className="text-gray-400 text-xs uppercase tracking-widest">Target</span>
-                    <span className={`font-mono text-3xl font-bold text-cyan-400`}>{currentChallenge.target}</span>
+                    <span className="text-gray-400 text-xs uppercase tracking-widest flex items-center gap-2">
+                        Target {isFetching && <span className="animate-spin w-3 h-3 border-2 border-cyan-500 border-t-transparent rounded-full ml-1"></span>}
+                    </span>
+                    <span className={`font-mono text-3xl font-bold text-cyan-400`}><FormulaText text={currentChallenge?.target || 'C'} /></span>
                 </div>
 
                 {/* Progress Bar */}
@@ -454,7 +495,9 @@ export default function IsomerChallengePage() {
 
                 <div className="p-3 bg-black border border-gray-800 rounded-lg flex flex-col items-center justify-center mb-6">
                     <span className="text-gray-500 text-[10px] uppercase mb-1">Your Formula</span>
-                    <span className={`font-mono text-xl ${formula === currentChallenge.target ? 'text-green-500' : 'text-gray-400'}`}>{formula}</span>
+                    <span className={`font-mono text-xl ${formula === currentChallenge?.target ? 'text-green-500' : 'text-gray-400'}`}>
+                        <FormulaText text={formula} />
+                    </span>
                 </div>
 
                 <div className="flex-1">
