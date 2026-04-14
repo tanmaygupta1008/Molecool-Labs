@@ -83,6 +83,7 @@ const NavBar = () => {
               <NavLinkItem href="/compounds" onClick={closeDropdown}>Compounds Viewer 🧬</NavLinkItem>
               <NavLinkItem href="/compounds/builder" onClick={closeDropdown}>Molecule Builder 🏗️</NavLinkItem>
               <NavLinkItem href="/compounds/isomer-challenge" onClick={closeDropdown}>Isomer Challenge 🧩</NavLinkItem>
+              <NavLinkItem href="/orbitals" onClick={closeDropdown} className="font-bold text-blue-400">Atomic Orbitals ⚛️</NavLinkItem>
               <NavLinkItem href="/dna" onClick={closeDropdown}>DNA 🧬</NavLinkItem>
             </NavDropdown>
 
