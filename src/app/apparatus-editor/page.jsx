@@ -448,19 +448,25 @@ const TubePointEditor = ({ points, position, rotation, scale, onUpdatePoints, se
     const [isDragging, setIsDragging] = useState(false);
     const dummyRefs = useRef([]);
     const tubeRef = useRef();
+    const lastGeometryUpdate = useRef(0);
 
     // Ensure dummyRefs is correct size
     dummyRefs.current = points.map((_, i) => dummyRefs.current[i] || React.createRef());
 
-    // Imperative update of the tube geometry
-    useFrame(() => {
+    // Imperative update of the tube geometry (Throttled to prevent VRAM memory leaks)
+    useFrame((state) => {
         if (isDragging && tubeRef.current && dummyRefs.current.every(r => r.current)) {
-            const currentPositions = dummyRefs.current.map(r => r.current.position);
-            const path = new THREE.CatmullRomCurve3(currentPositions.map(p => p.clone()));
-            // Update geometry
-            const newGeo = new THREE.TubeGeometry(path, 64, 0.03, 8, false);
-            tubeRef.current.geometry.dispose();
-            tubeRef.current.geometry = newGeo;
+            const now = state.clock.elapsedTime;
+            // Throttle geometry reconstruction to 20 frames per second (0.05s) to avoid Context Loss
+            if (now - lastGeometryUpdate.current > 0.05) {
+                lastGeometryUpdate.current = now;
+                const currentPositions = dummyRefs.current.map(r => r.current.position);
+                const path = new THREE.CatmullRomCurve3(currentPositions.map(p => p.clone()));
+                // Update geometry
+                const newGeo = new THREE.TubeGeometry(path, 64, 0.03, 8, false);
+                tubeRef.current.geometry.dispose();
+                tubeRef.current.geometry = newGeo;
+            }
         }
     });
 
@@ -3479,7 +3485,19 @@ export default function ApparatusEditorPage() {
             {/* 3D Viewport */}
             <div className="flex-1 relative bg-gradient-to-br from-neutral-800 to-neutral-900">
                 <CanvasErrorBoundary>
-                <Canvas camera={{ position: [5, 5, 5], fov: 50 }} dpr={[1, 1.5]} frameloop="demand">
+                <Canvas 
+                    camera={{ position: [5, 5, 5], fov: 50 }} 
+                    dpr={[1, 1.5]} 
+                    frameloop="demand"
+                    gl={{ powerPreference: "high-performance", antialias: true, alpha: true, stencil: false, depth: true, preserveDrawingBuffer: false }}
+                    onCreated={({ gl }) => {
+                        gl.domElement.addEventListener('webglcontextlost', (e) => {
+                            e.preventDefault();
+                            console.error('WebGL Context Lost - Forcing reload to recover...');
+                            window.location.reload();
+                        });
+                    }}
+                >
                     <color attach="background" args={['#1a1a1a']} />
 
                     {/* Controls */}

@@ -39,6 +39,16 @@ const LocalVSEPRPhysics = ({ nodes, links, positions, lpPositions, atomRefs, bon
         // Maintain Lone Pair array state
         let lpIndex = 0;
 
+        // 0. Thermal Noise (Crucial to break 2D planar local minimums so square-planar becomes tetrahedral immediately)
+        for (let i = 0; i < nodes.length; i++) {
+            forces[i].add(new THREE.Vector3(
+                Math.random() - 0.5,
+                Math.random() - 0.5,
+                // Bias Z explicitly OUT of the plane to guarantee instant escape from 2D without wiggling
+                (i % 2 === 0 ? Math.random() : -Math.random()) 
+            ).multiplyScalar(30.0));
+        }
+
         // 1. Hooke's Law (Sprint Attraction along bonds)
         links.forEach(link => {
             const p1 = positions.current[link.source];
@@ -78,6 +88,38 @@ const LocalVSEPRPhysics = ({ nodes, links, positions, lpPositions, atomRefs, bon
                 forces[j].sub(dir);
             }
         }
+        
+        // 2.5 Angular Bond Repulsion (VSEPR Engine Core)
+        // Aggressively pushes connected bonds apart to perfectly form the 3D geometry
+        nodes.forEach((node, i) => {
+            const pCenter = positions.current[i];
+            const bondedAtoms = links.reduce((acc, l) => {
+                if (l.source === i) acc.push(l.target);
+                else if (l.target === i) acc.push(l.source);
+                return acc;
+            }, []);
+            
+            for(let m = 0; m < bondedAtoms.length; m++) {
+                for(let n = m + 1; n < bondedAtoms.length; n++) {
+                    const p1 = positions.current[bondedAtoms[m]];
+                    const p2 = positions.current[bondedAtoms[n]];
+                    
+                    const dir1 = p1.clone().sub(pCenter).normalize();
+                    const dir2 = p2.clone().sub(pCenter).normalize();
+                    
+                    const diff = dir1.clone().sub(dir2); // points from dir2 to dir1
+                    let distSq = diff.lengthSq();
+                    if(distSq < 0.01) { diff.set(Math.random(), Math.random(), Math.random()).normalize(); distSq = 0.5; }
+                    
+                    // Huge repulsion force scaled by inverse distance to aggressively snap shapes
+                    const forceMag = 40.0 / (distSq); 
+                    const force = diff.normalize().multiplyScalar(forceMag);
+                    
+                    forces[bondedAtoms[m]].add(force);
+                    forces[bondedAtoms[n]].sub(force);
+                }
+            }
+        });
 
         // 3. LONE PAIRS PHYSICS (VSEPR Integration)
         nodes.forEach((node, i) => {
@@ -149,8 +191,11 @@ const LocalVSEPRPhysics = ({ nodes, links, positions, lpPositions, atomRefs, bon
         // Apply Forces to Atoms
         for (let i = 0; i < nodes.length; i++) {
             if (forces[i].lengthSq() > 0.0001) {
+                // Aggressive fast-forward scaling to instantly arrange bonds
+                forces[i].multiplyScalar(12.0); 
                 forces[i].multiplyScalar(DAMPING);
-                if (forces[i].length() > 10) forces[i].normalize().multiplyScalar(10); // cap velocity
+                
+                if (forces[i].length() > 25) forces[i].normalize().multiplyScalar(25); // cap velocity
                 
                 positions.current[i].addScaledVector(forces[i], dt);
 

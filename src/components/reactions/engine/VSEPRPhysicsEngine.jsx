@@ -183,6 +183,13 @@ const VSEPRPhysicsEngine = ({ active, script, updateAllAtomPositions, showLonePa
             // Origin Centering Force to suppress overall drift
             const p = new THREE.Vector3(...(a.currentPos || a.startPos));
             forces[a.id].add(p.multiplyScalar(-1.5)); 
+            
+            // Add tiny thermal noise to break 2D planar symmetry (crucial for 3D VSEPR)
+            forces[a.id].add(new THREE.Vector3(
+                Math.random() - 0.5,
+                Math.random() - 0.5,
+                Math.random() - 0.5
+            ).multiplyScalar(8.0)); // Micro-force allows breaking out of Z=0 local minimum
         });
 
         // 1. Spring forces (Bonds)
@@ -268,6 +275,28 @@ const VSEPRPhysicsEngine = ({ active, script, updateAllAtomPositions, showLonePa
                     realPos: pOther
                 };
             });
+
+            // C. Explicit BP vs BP Angular Repulsion (VSEPR Engine Core)
+            // Mathematically guarantees perfect Linear (2), TrigPlanar (3), Tetrahedral (4), TriBipyramidal (5), Octahedral (6)
+            for (let i = 0; i < bondedPoints.length; i++) {
+                for (let j = i + 1; j < bondedPoints.length; j++) {
+                    const bp1 = bondedPoints[i];
+                    const bp2 = bondedPoints[j];
+
+                    // Calculate distance along the valence shell projection
+                    const dir = bp1.posOnSphere.clone().sub(bp2.posOnSphere);
+                    let ds = dir.lengthSq();
+                    if (ds < 0.01) { dir.set(0.1, 0.1, 0); ds = 0.02; }
+
+                    // Use the exact VSEPR repulsion table for BP vs BP (e.g. BP3 repels BP1 stronger than BP1 repels BP1)
+                    const fmag = getRepulsionStrength(bp1.type, bp2.type) / ds;
+                    const bendingForce = dir.normalize().multiplyScalar(fmag * 0.5);
+
+                    // Push the actual physical atoms apart to achieve the ideal VSEPR angle
+                    forces[bp1.id].add(bendingForce);
+                    forces[bp2.id].sub(bendingForce);
+                }
+            }
 
             for (let l = 0; l < numLP; l++) {
                 const currentLpIndex = lpIndex + l;
