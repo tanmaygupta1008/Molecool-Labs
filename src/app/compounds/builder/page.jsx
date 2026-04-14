@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, Environment, Grid, Plane, TransformControls } from '@react-three/drei';
+import { OrbitControls, Environment, Grid, Plane, TransformControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import AnimatedDashedLine from '@/components/reactions/engine/AnimatedDashedLine';
 import { useReactionEditor } from '@/context/ReactionEditorContext';
@@ -10,7 +10,9 @@ import AtomNode from '@/components/reactions/engine/AtomNode';
 import BondLine from '@/components/reactions/engine/BondLine';
 import RadicalGroupUI from '@/components/reactions/engine/RadicalGroupUI';
 import VSEPRPhysicsEngine from '@/components/reactions/engine/VSEPRPhysicsEngine';
-import { getAllElementsList, getElementData, calculatePartialCharges } from '@/utils/elementColors';
+import { getAllElementsList, getElementData } from '@/utils/elementColors';
+import { calculateInductiveEffects, calculateMesomericEffects } from '@/utils/electronicEffects';
+import { AnimatedInductiveArrow, ResonanceCloud, CurvedPushingArrow } from '@/components/effects/ElectronicEffects3D';
 
 // --- SUBCOMPONENTS ---
 
@@ -141,17 +143,24 @@ export default function MoleculeBuilderPage() {
     const [mode, setMode] = useState('none'); // 'none', 'add', 'select', 'bond', 'group', 'delete'
     const [autoLayout, setAutoLayout] = useState(false);
     const [showLonePairs, setShowLonePairs] = useState(false);
-    const [showPartialCharges, setShowPartialCharges] = useState(false);
+    const [showInductive, setShowInductive] = useState(false);
+    const [showMesomericArrows, setShowMesomericArrows] = useState(false);
+    const [showMesomericCloud, setShowMesomericCloud] = useState(false);
     const [element, setElement] = useState('C');
     const [charge, setCharge] = useState(0);
     const [bondOrder, setBondOrder] = useState(1);
     const [orbitEnabled, setOrbitEnabled] = useState(true);
 
-    // Partial charge computation - recalculated whenever atoms/bonds change
-    const partialChargeData = useMemo(() => {
-        if (!showPartialCharges) return null;
-        return calculatePartialCharges(script.atoms, script.bonds);
-    }, [showPartialCharges, script.atoms, script.bonds]);
+    // Electronic Effect Computations (cached unless topology changes)
+    const inductiveData = useMemo(() => {
+        if (!showInductive) return null;
+        return calculateInductiveEffects(script.atoms, script.bonds);
+    }, [showInductive, script.atoms, script.bonds]);
+
+    const mesomericData = useMemo(() => {
+        if (!showMesomericArrows && !showMesomericCloud) return null;
+        return calculateMesomericEffects(script.atoms, script.bonds);
+    }, [showMesomericArrows, showMesomericCloud, script.atoms, script.bonds]);
 
     // Group State
     const [selectedGroupAtoms, setSelectedGroupAtoms] = useState([]);
@@ -265,31 +274,47 @@ export default function MoleculeBuilderPage() {
                                 <span className={`text-sm font-bold transition-colors ${showLonePairs ? 'text-green-400' : 'text-gray-500 group-hover:text-gray-300'}`}>Show Lone Pairs</span>
                             </label>
 
-                            <label className="flex items-center gap-2 mt-3 cursor-pointer group" onClick={() => setShowPartialCharges(!showPartialCharges)}>
-                                <div className={`w-10 h-5 rounded-full px-1 flex items-center transition-colors ${showPartialCharges ? 'bg-orange-500' : 'bg-gray-700'}`}>
-                                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${showPartialCharges ? 'translate-x-5' : 'translate-x-0'}`} />
+                            {/* INDUCTIVE EFFECT TOGGLE */}
+                            <label className="flex items-center gap-2 mt-4 cursor-pointer group" onClick={() => setShowInductive(!showInductive)}>
+                                <div className={`w-10 h-5 rounded-full px-1 flex items-center transition-colors ${showInductive ? 'bg-orange-500' : 'bg-gray-700'}`}>
+                                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${showInductive ? 'translate-x-5' : 'translate-x-0'}`} />
                                 </div>
-                                <span className={`text-sm font-bold transition-colors ${showPartialCharges ? 'text-orange-400' : 'text-gray-500 group-hover:text-gray-300'}`}>Show Partial Charges (δ)</span>
+                                <span className={`text-sm font-bold transition-colors ${showInductive ? 'text-orange-400' : 'text-gray-500 group-hover:text-gray-300'}`}>Show Inductive Effect (±I)</span>
                             </label>
-                            {showPartialCharges && partialChargeData && (
-                                <div className="mt-2 p-2 bg-black/40 rounded border border-orange-900/40 text-[10px] font-mono leading-relaxed">
-                                    <span className="text-blue-400 font-bold">δ+</span>
-                                    <span className="text-gray-400"> most e-poor: </span>
-                                    <span className="text-white">{partialChargeData.mostPositive}</span>
-                                    <br />
-                                    <span className="text-red-400 font-bold">δ−</span>
-                                    <span className="text-gray-400"> most e-rich: </span>
-                                    <span className="text-white">{partialChargeData.mostNegative}</span>
+                            
+                            {/* MESOMERIC CLOUD TOGGLE */}
+                            <label className="flex items-center gap-2 mt-3 cursor-pointer group" onClick={() => setShowMesomericCloud(!showMesomericCloud)}>
+                                <div className={`w-10 h-5 rounded-full px-1 flex items-center transition-colors ${showMesomericCloud ? 'bg-purple-500' : 'bg-gray-700'}`}>
+                                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${showMesomericCloud ? 'translate-x-5' : 'translate-x-0'}`} />
                                 </div>
-                            )}
-                            {showPartialCharges && !partialChargeData && script.bonds.length > 0 && (
-                                <p className="text-[10px] text-orange-600 mt-1">Electronegativity difference too small — molecule is nonpolar.</p>
-                            )}
-                            {showPartialCharges && script.bonds.length === 0 && (
-                                <p className="text-[10px] text-gray-600 mt-1">Add bonds between atoms to calculate partial charges.</p>
+                                <span className={`text-sm font-bold transition-colors ${showMesomericCloud ? 'text-purple-400' : 'text-gray-500 group-hover:text-gray-300'}`}>Show Resonance Cloud (±M)</span>
+                            </label>
+
+                            {/* MESOMERIC ARROWS TOGGLE */}
+                            <label className="flex items-center gap-2 mt-3 cursor-pointer group" onClick={() => setShowMesomericArrows(!showMesomericArrows)}>
+                                <div className={`w-10 h-5 rounded-full px-1 flex items-center transition-colors ${showMesomericArrows ? 'bg-pink-500' : 'bg-gray-700'}`}>
+                                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${showMesomericArrows ? 'translate-x-5' : 'translate-x-0'}`} />
+                                </div>
+                                <span className={`text-sm font-bold transition-colors ${showMesomericArrows ? 'text-pink-400' : 'text-gray-500 group-hover:text-gray-300'}`}>Electron Pushing Arrows (±M)</span>
+                            </label>
+
+                            {/* Info Box */}
+                            {(showInductive || (showMesomericArrows || showMesomericCloud)) && (
+                                <div className="mt-4 p-3 bg-black/50 rounded border border-gray-800 text-[10px] font-mono leading-relaxed">
+                                    {showInductive && inductiveData && inductiveData.vectors.length > 0 && (
+                                        <div className="mb-2 text-orange-200">
+                                            <span className="font-bold text-orange-400">Inductive:</span> {inductiveData.vectors.length} polarized bonds found.
+                                        </div>
+                                    )}
+                                    {(showMesomericArrows || showMesomericCloud) && mesomericData && mesomericData.clouds.length > 0 && (
+                                        <div className="text-purple-200">
+                                            <span className="font-bold text-purple-400">Mesomeric:</span> {mesomericData.clouds.length} conjugated pi-system(s) detected.
+                                        </div>
+                                    )}
+                                </div>
                             )}
 
-                            <p className="text-[10px] text-gray-500 mt-2 leading-tight">Continuously applies repulsive forces to bonds, arranging atoms into minimum-energy 3D geometry.</p>
+                            <p className="text-[10px] text-gray-500 mt-4 leading-tight">These effects are computed dynamically using cheminformatics heuristics based on Pauling electronegativity and VBT conjugation rules.</p>
                         </div>
                     </div>
 
@@ -531,7 +556,9 @@ export default function MoleculeBuilderPage() {
                 <CanvasErrorBoundary>
                 <Canvas
                     camera={{ position: [0, 5, 10], fov: 45 }}
-                    onContextMenu={(e) => e.preventDefault()} // Block browser right-click menu
+                    dpr={[1, 1.5]}
+                    gl={{ antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
+                    onContextMenu={(e) => e.preventDefault()}
                     onPointerMissed={() => {
                         if (mode === 'bond' || mode === 'select') {
                             setSelectedAtomId(null);
@@ -559,43 +586,200 @@ export default function MoleculeBuilderPage() {
                     {/* Interaction Plane - Only render in Add mode */}
                     {mode === 'add' && <ClickablePlane onPlaceAtom={handlePlaneClick} />}
 
-                    {/* Partial charge highlight glows */}
-                    {showPartialCharges && partialChargeData && (() => {
-                        const { mostPositive, mostNegative } = partialChargeData;
-                        return script.atoms.map(atom => {
-                            if (atom.id !== mostPositive && atom.id !== mostNegative) return null;
-                            const isPositive = atom.id === mostPositive;
-                            const baseRadius = getElementData(atom.element).radius;
-                            const glowRadius = baseRadius * 3.2;
-                            const color = isPositive ? '#4488ff' : '#ff3333';
-                            const label = isPositive ? 'δ+' : 'δ−';
-                            return (
-                                <group key={`pc-halo-${atom.id}`} position={atom.startPos}>
-                                    {/* Outer soft glow sphere */}
-                                    <mesh>
-                                        <sphereGeometry args={[glowRadius, 32, 32]} />
-                                        <meshBasicMaterial
-                                            color={color}
-                                            transparent
-                                            opacity={0.12}
-                                            depthWrite={false}
-                                        />
-                                    </mesh>
-                                    {/* Inner ring */}
-                                    <mesh rotation={[-Math.PI / 2, 0, 0]}>
-                                        <ringGeometry args={[baseRadius * 1.6, baseRadius * 2.2, 48]} />
-                                        <meshBasicMaterial
-                                            color={color}
-                                            transparent
-                                            opacity={0.55}
-                                            depthWrite={false}
-                                            side={THREE.DoubleSide}
-                                        />
-                                    </mesh>
-                                </group>
+                    {/* Electronic Effects Renderers */}
+
+                    {/* 1. Inductive Effect Arrows */}
+                    {showInductive && inductiveData && inductiveData.vectors.map((vec, i) => {
+                        const a1 = script.atoms.find(a => a.id === vec.sourceId);
+                        const a2 = script.atoms.find(a => a.id === vec.targetId);
+                        if (!a1 || !a2) return null;
+                        
+                        let inSameRing = false;
+                        if (mesomericData) {
+                            inSameRing = mesomericData.clouds.some(cloud => 
+                                cloud.includes(a1.id) && cloud.includes(a2.id) && cloud.length >= 4
                             );
+                        }
+                        if (inSameRing) return null; // NO arrows inside conjugated rings!
+
+                        // vec.diff positive means electron pulls towards a2
+                        const start = vec.diff > 0 ? a1.startPos : a2.startPos;
+                        const end = vec.diff > 0 ? a2.startPos : a1.startPos;
+                        
+                        return (
+                            <AnimatedInductiveArrow 
+                                key={`ind-arrow-${i}`} 
+                                startPos={new THREE.Vector3(...start)} 
+                                endPos={new THREE.Vector3(...end)} 
+                                magnitude={Math.abs(vec.diff)} 
+                                isPositive={true} 
+                            />
+                        );
+                    })}
+
+                    {/* 2. Inductive Effect Labels & Halos (δ+ / δ-) */}
+                    {showInductive && inductiveData && script.atoms.map(atom => {
+                        const d = inductiveData.deltas[atom.id] || 0;
+                        if (Math.abs(d) < 0.1) return null;
+                        
+                        // Enforce Rule: Remove strong δ markings inside the ring
+                        let isInRing = false;
+                        if (mesomericData) {
+                            isInRing = mesomericData.clouds.some(cloud => cloud.includes(atom.id) && cloud.length >= 4);
+                        }
+                        if (isInRing && Math.abs(d) < 0.3) return null; // Only show on ring carbons if they are heavily pulled directly by a substituent
+
+                        const isPos = d > 0;
+                        const absD = Math.abs(d);
+                        
+                        const labelText = isPos ? `δ⁺` : `δ⁻`;
+                        const labelColor = isPos ? '#f87171' : '#60a5fa'; // Red/Blue
+                        const haloColor = isPos ? '#ff3333' : '#3b82f6';
+
+                        const baseRadius = getElementData(atom.element).radius;
+                        
+                        let scale = Math.min(2.5, 1.0 + absD * 1.5);
+                        let haloOpacity = Math.min(0.6, absD * 0.4);
+                        let fontSize = 18;
+
+                        // Reduce Hydrogen visual dominance
+                        if (atom.element === 'H') {
+                            scale *= 0.6;
+                            haloOpacity *= 0.3;
+                            fontSize = 14;
+                        }
+
+                        return (
+                            <group key={`ind-label-${atom.id}`} position={atom.startPos}>
+                                <mesh>
+                                    <sphereGeometry args={[baseRadius * scale, 32, 32]} />
+                                    <meshBasicMaterial color={haloColor} transparent opacity={haloOpacity} depthWrite={false} />
+                                </mesh>
+                                <Html center position={[0, -baseRadius - 0.6, 0]} zIndexRange={[100, 0]}>
+                                    <div 
+                                        className="select-none font-bold font-sans pointer-events-none" 
+                                        style={{ 
+                                            color: labelColor, 
+                                            fontSize: `${fontSize}px`, 
+                                            textShadow: '0px 2px 4px rgba(0,0,0,0.9), 0px 0px 2px rgba(0,0,0,1)',
+                                            fontFamily: 'serif',
+                                        }}
+                                    >
+                                        {labelText}
+                                    </div>
+                                </Html>
+                            </group>
+                        );
+                    })}
+
+                    {/* 2.5 Aromatic Ring explicitly drawn during Inductive Phase to explain missing labels */}
+                    {showInductive && mesomericData && (() => {
+                        const conjugatedBondPairs = [];
+                        script.bonds.forEach(bond => {
+                            mesomericData.clouds.forEach(cloud => {
+                                if (cloud.includes(bond.from) && cloud.includes(bond.to)) {
+                                    conjugatedBondPairs.push([bond.from, bond.to]);
+                                }
+                            });
                         });
+                        
+                        if (conjugatedBondPairs.length < 3) return null; // Only for meaningful networks
+
+                        const positionMap = {};
+                        script.atoms.forEach(a => { positionMap[a.id] = new THREE.Vector3(...a.startPos); });
+
+                        return (
+                            <group>
+                                {/* Render the visual cloud */}
+                                <ResonanceCloud atomPositions={positionMap} bondPairs={conjugatedBondPairs} />
+                                {/* Render the explanatory text label at the center of the ring */}
+                                {mesomericData.clouds.map((cloud, i) => {
+                                    if(cloud.length < 4) return null; // Rings/long chains only
+                                    const center = new THREE.Vector3();
+                                    cloud.forEach(id => {
+                                        const atom = script.atoms.find(a=>a.id === id);
+                                        if (atom) center.add(new THREE.Vector3(...atom.startPos));
+                                    });
+                                    center.divideScalar(cloud.length);
+                                    
+                                    return (
+                                        <Html key={`pi-explain-${i}`} position={[center.x, center.y + 0.5, center.z]} center zIndexRange={[50,0]}>
+                                            <div className="whitespace-nowrap px-2 py-0.5 bg-indigo-900/80 text-indigo-200 text-[10px] font-bold rounded shadow-lg backdrop-blur border border-indigo-500/30 pointer-events-none select-none">
+                                                π electrons delocalized
+                                            </div>
+                                        </Html>
+                                    );
+                                })}
+                            </group>
+                        );
                     })()}
+
+                    {/* 3. Mesomeric Cloud */}
+                    {showMesomericCloud && mesomericData && (() => {
+                        // Extract all bond pairs within the conjugated systems
+                        const conjugatedBondPairs = [];
+                        script.bonds.forEach(bond => {
+                            mesomericData.clouds.forEach(cloud => {
+                                if (cloud.includes(bond.from) && cloud.includes(bond.to)) {
+                                    conjugatedBondPairs.push([bond.from, bond.to]);
+                                }
+                            });
+                        });
+                        
+                        // Map atom IDs to their positions
+                        const positionMap = {};
+                        script.atoms.forEach(a => { positionMap[a.id] = new THREE.Vector3(...a.startPos); });
+
+                        return (
+                            <ResonanceCloud atomPositions={positionMap} bondPairs={conjugatedBondPairs} />
+                        );
+                    })()}
+
+                    {/* 4. Mesomeric Deltas (Resonance Halos) */}
+                    {(showMesomericCloud || showMesomericArrows) && mesomericData && script.atoms.map(atom => {
+                        const d = mesomericData.deltas[atom.id] || 0;
+                        if (d === 0) return null;
+                        
+                        const color = d > 0 ? '#4488ff' : '#ff3333';
+                        const baseRadius = getElementData(atom.element).radius;
+                        return (
+                            <mesh key={`meso-halo-${atom.id}`} position={atom.startPos}>
+                                <sphereGeometry args={[baseRadius * 1.8, 32, 32]} />
+                                <meshBasicMaterial color={color} transparent opacity={0.3} depthWrite={false} wireframe />
+                            </mesh>
+                        );
+                    })}
+
+                    {/* 5. Mesomeric Curved Arrows */}
+                    {showMesomericArrows && mesomericData && mesomericData.pushingArrows.map((arrow, i) => {
+                        
+                        // Find positions for the curve
+                        let startPos, endPos;
+                        
+                        if (arrow.fromCenter) {
+                            const a = script.atoms.find(at => at.id === arrow.fromCenter);
+                            if(a) startPos = new THREE.Vector3(...a.startPos).add(new THREE.Vector3(0, 0.4, 0)); // slightly offset
+                        }
+                        
+                        if (arrow.targetAtomPair) {
+                            const a1 = script.atoms.find(a => a.id === arrow.targetAtomPair[0]);
+                            const a2 = script.atoms.find(a => a.id === arrow.targetAtomPair[1]);
+                            if (a1 && a2) {
+                                endPos = new THREE.Vector3().addVectors(new THREE.Vector3(...a1.startPos), new THREE.Vector3(...a2.startPos)).multiplyScalar(0.5);
+                            }
+                        }
+
+                        if (!startPos || !endPos) return null;
+
+                        return (
+                            <CurvedPushingArrow 
+                                key={`meso-arrow-${i}`} 
+                                startPos={startPos} 
+                                endPos={endPos} 
+                                color={arrow.type === '+M' ? '#a855f7' : '#ec4899'}
+                            />
+                        );
+                    })}
 
                     {/* Render AtomNodes */}
                     {script.atoms.map(atom => {
@@ -674,15 +858,20 @@ export default function MoleculeBuilderPage() {
                         const getChargeColor = (atom) => {
                             const currentCharge = atom.charge || 0;
                             if (currentCharge !== 0) {
-                                // Instead of red/cyan, use the element's actual color
                                 return getElementData(atom.element).color;
                             }
                             return "#ffffff"; // Neutral: White
                         };
 
                         const isSelected = selectedBondId === bond.id;
-                        const colorStart = isSelected ? "#00ffff" : getChargeColor(a1);
-                        const colorEnd = isSelected ? "#00ffff" : getChargeColor(a2);
+                        let colorStart = isSelected ? "#00ffff" : getChargeColor(a1);
+                        let colorEnd = isSelected ? "#00ffff" : getChargeColor(a2);
+
+                        // If Inductive View is taking over, override all bond colors to neutral grey!
+                        if (showInductive && !isSelected) {
+                            colorStart = '#aaaaaa';
+                            colorEnd = '#aaaaaa';
+                        }
 
                         return (
                             <group
@@ -706,6 +895,7 @@ export default function MoleculeBuilderPage() {
                                     colorStart={colorStart}
                                     colorEnd={colorEnd}
                                     state="normal"
+                                    isInductiveView={showInductive}
                                 />
                             </group>
                         );
@@ -770,6 +960,72 @@ export default function MoleculeBuilderPage() {
                     />
                 </Canvas>
                 </CanvasErrorBoundary>
+
+                {/* Educational Legend UI */}
+                {(showInductive || showMesomericArrows || showMesomericCloud) && (
+                    <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-xl border border-gray-700/50 p-4 rounded-xl shadow-2xl z-20 pointer-events-none w-64 select-none">
+                        <h4 className="text-sm font-bold text-gray-200 mb-3 uppercase tracking-wider flex items-center justify-between">
+                            <span>Visual Key</span>
+                            <span className="text-xs text-blue-400 font-normal ml-2 bg-blue-500/20 px-1.5 py-0.5 rounded">Learning Mode</span>
+                        </h4>
+                        
+                        {showInductive && (
+                            <div className="space-y-3">
+                                <div className="flex items-start">
+                                    <div className="w-5 h-5 rounded-full bg-blue-500/20 border-2 border-blue-400 flex items-center justify-center font-serif text-blue-300 font-bold shrink-0 mt-0.5">δ⁻</div>
+                                    <div className="ml-3">
+                                        <div className="text-xs text-gray-200 font-medium tracking-wide">Electron Rich</div>
+                                        <div className="text-[10px] text-gray-400">Pulls electron density (–I effect)</div>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex items-start">
+                                    <div className="w-5 h-5 rounded-full bg-red-500/20 border-2 border-red-400 flex items-center justify-center font-serif text-red-300 font-bold shrink-0 mt-0.5">δ⁺</div>
+                                    <div className="ml-3">
+                                        <div className="text-xs text-gray-200 font-medium tracking-wide">Electron Deficient</div>
+                                        <div className="text-[10px] text-gray-400">Loses electron density</div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start">
+                                    <div className="w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">
+                                        <svg width="20" height="8" viewBox="0 0 20 8" fill="none">
+                                            <path d="M0 4H18M18 4L14 0.5M18 4L14 7.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                    </div>
+                                    <div className="ml-3">
+                                        <div className="text-xs text-gray-200 font-medium tracking-wide">Direction of Flow</div>
+                                        <div className="text-[10px] text-blue-300 font-medium mt-0.5">Travels through σ bonds only</div>
+                                        <div className="text-[10px] text-gray-400 italic">Opacity decreases with distance</div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start pt-1 border-t border-gray-700/50">
+                                    <div className="w-5 h-5 flex flex-col items-center justify-center shrink-0 space-y-[2px]">
+                                        <div className="w-4 h-[2.5px] bg-gray-400 rounded-full"></div>
+                                        <div className="w-4 h-[1px] bg-gray-500/50 rounded-full"></div>
+                                    </div>
+                                    <div className="ml-3">
+                                        <div className="text-xs text-gray-200 font-medium tracking-wide">σ vs π bonds</div>
+                                        <div className="text-[10px] text-gray-400">π bonds render as thin & translucent</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {!showInductive && (showMesomericCloud || showMesomericArrows) && (
+                            <div className="space-y-3">
+                                <div className="flex items-start">
+                                    <div className="w-5 h-5 rounded-full bg-purple-500/20 border-2 border-purple-400 shrink-0 mt-0.5"></div>
+                                    <div className="ml-3">
+                                        <div className="text-xs text-gray-200 font-medium tracking-wide">Delocalized π System</div>
+                                        <div className="text-[10px] text-gray-400">Conjugated electron network</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* RIGHT PANEL - JSON OUTPUT */}

@@ -21,36 +21,47 @@ const CompoundViewerPage = () => {
     const [availableGroups, setAvailableGroups] = useState([]);
 
     useEffect(() => {
-        const fetchCompounds = async () => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
                 setError(null);
         
+                // 1. Fetch Compounds
                 const q = query(collection(db, 'compounds'));
                 const querySnapshot = await getDocs(q);
-                
                 const compoundsData = querySnapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data(),
                 }));
-                
                 setCompounds(compoundsData);
-                if (compoundsData.length > 0) {
-                    setSelectedCompound(compoundsData[0]); 
+                if (compoundsData.length > 0) setSelectedCompound(compoundsData[0]);
+
+                // 2. Load electronegativity map from periodic table cache
+                const rawElements = localStorage.getItem('molecool_elements_v1');
+                if (rawElements) {
+                    const { data } = JSON.parse(rawElements);
+                    const enMap = {};
+                    data.forEach(el => {
+                        if (el.symbol && el.electronegativity !== undefined) {
+                            enMap[el.symbol] = el.electronegativity;
+                        }
+                    });
+                    setElectronegativityMap(enMap);
                 }
         
             } catch (err) {
-                console.error("Error fetching compounds: ", err);
-                setError("Failed to load compounds. Check Firebase connection/rules.");
+                console.error("Error fetching data: ", err);
+                setError("Failed to load project data. Check Firebase/Cache.");
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchCompounds();
+        fetchData();
         setIsClient(true); 
     }, []); 
 
+    const [electronegativityMap, setElectronegativityMap] = useState({});
     useEffect(() => {
         if (selectedCompound?.structure) {
             setAvailableGroups(findFunctionalGroups(selectedCompound.structure));
@@ -209,6 +220,7 @@ const CompoundViewerPage = () => {
                                         highlightedGroup={highlightedGroup}
                                         onAtomSelect={setSelectedAtomIndex}
                                         angleOverrides={selectedCompound.structure?.angleOverrides}
+                                        electronegativityMap={electronegativityMap}
                                     />
                                     <MoleculeLegend elementsUsed={elementsForLegend} />
                                     
