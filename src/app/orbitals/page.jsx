@@ -29,8 +29,8 @@ const ORBITALS_LIBRARY = [
             { id: '3dxy', label: '3dxy', n: 3, l: 2, ml: '-2, ..., 2', nodes: 2, desc: 'A four-leaf clover shape lying entirely on the XY plane, situated BETWEEN the axes.' },
             { id: '3dxz', label: '3dxz', n: 3, l: 2, ml: '-2, ..., 2', nodes: 2, desc: 'A four-leaf clover shape lying entirely on the XZ plane, situated BETWEEN the axes.' },
             { id: '3dyz', label: '3dyz', n: 3, l: 2, ml: '-2, ..., 2', nodes: 2, desc: 'A four-leaf clover shape lying entirely on the YZ plane, situated BETWEEN the axes.' },
-            { id: '3dx2-y2', label: '3dx2-y2', n: 3, l: 2, ml: '-2, ..., 2', nodes: 2, desc: 'A four-leaf clover shape lying on the XY plane, aligned DIRECTLY ON the X and Y axes.' },
-            { id: '3dz2', label: '3dz2', n: 3, l: 2, ml: '0', nodes: 2, desc: 'A unique shape consisting of two lobes along the Z axis and a doughnut-shaped torus localized in the XY plane.' },
+            { id: '3dx2-y2', label: '3dx²-y²', n: 3, l: 2, ml: '-2, ..., 2', nodes: 2, desc: 'A four-leaf clover shape lying on the XY plane, aligned DIRECTLY ON the X and Y axes.' },
+            { id: '3dz2', label: '3dz²', n: 3, l: 2, ml: '0', nodes: 2, desc: 'A unique shape consisting of two lobes along the Z axis and a doughnut-shaped torus localized in the XY plane.' },
         ]
     },
     {
@@ -44,6 +44,16 @@ const ORBITALS_LIBRARY = [
             { id: '4fx(z2-y2)', label: '4fx(z²-y²)', n: 4, l: 3, ml: '±3', nodes: 3, desc: 'Eight lobes originating along planar intersections.' },
             { id: '4fy(z2-x2)', label: '4fy(z²-x²)', n: 4, l: 3, ml: '±3', nodes: 3, desc: 'Eight lobes originating along planar intersections.' },
         ]
+    },
+    {
+        group: 'Hybridized Orbitals',
+        items: [
+            { id: 'h_sp', label: 'sp', isHybrid: true, mix: '1s + 1p', angle: '180°', shapeStr: 'Linear', desc: 'Constructed from one s and one p orbital, resulting in two large lobes extending in opposite directions.' },
+            { id: 'h_sp2', label: 'sp²', isHybrid: true, mix: '1s + 2p', angle: '120°', shapeStr: 'Trigonal Planar', desc: 'Constructed from one s and two p orbitals, resulting in three large lobes distributed symmetrically in a 2D plane.' },
+            { id: 'h_sp3', label: 'sp³', isHybrid: true, mix: '1s + 3p', angle: '109.5°', shapeStr: 'Tetrahedral', desc: 'Constructed from one s and three p orbitals, forming four lobes pointing towards the corners of a tetrahedron.' },
+            { id: 'h_sp3d', label: 'sp³d', isHybrid: true, mix: '1s + 3p + 1d', angle: '90° & 120°', shapeStr: 'Trigonal Bipyramidal', desc: 'A five-lobed hybrid system featuring three equatorial lobes (120°) and two axial lobes (90°).' },
+            { id: 'h_sp3d2', label: 'sp³d²', isHybrid: true, mix: '1s + 3p + 2d', angle: '90°', shapeStr: 'Octahedral', desc: 'A six-lobed hybrid system perfectly aligned along the primary Cartesian X, Y, and Z axes.' },
+        ]
     }
 ];
 
@@ -56,6 +66,26 @@ export default function OrbitalsPage() {
         const found = group.items.find(i => i.id === selectedId);
         if (found) activeOrbital = found;
     }
+
+    const formatOrbitalLabel = (orb) => {
+        if (orb.isHybrid) return orb.label;
+        
+        const match = orb.label.match(/([spdf])/);
+        if (!match) return orb.label; 
+        
+        const splitIdx = match.index + 1;
+        const base = orb.label.slice(0, splitIdx);
+        const sub = orb.label.slice(splitIdx);
+        
+        if (!sub) return base; // e.g. '1s'
+        
+        return (
+            <span>
+                {base}
+                <sub className="text-[0.7em] ml-[1px]">{sub}</sub>
+            </span>
+        );
+    };
 
     return (
         <div className="w-full h-[calc(100vh-64px)] bg-[#05050f] text-white flex overflow-hidden font-sans">
@@ -92,7 +122,7 @@ export default function OrbitalsPage() {
                                             // Handle grid spans safely
                                             style={orb.id.startsWith('3d') || orb.id.startsWith('4f') ? { gridColumn: 'span 2' } : {}}
                                         >
-                                            {orb.label}
+                                            {formatOrbitalLabel(orb)}
                                         </button>
                                     )
                                 })}
@@ -108,7 +138,7 @@ export default function OrbitalsPage() {
                 {/* Overlay UI */}
                 <div className="absolute top-6 left-6 z-10 pointer-events-none">
                     <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-2xl px-6 py-4 shadow-xl">
-                        <h2 className="text-3xl font-mono font-black text-white">{activeOrbital.label} <span className="text-sm font-sans text-gray-400 tracking-wide font-normal uppercase ml-2">Orbital</span></h2>
+                        <h2 className="text-3xl font-mono font-black text-white">{formatOrbitalLabel(activeOrbital)} <span className="text-sm font-sans text-gray-400 tracking-wide font-normal uppercase ml-2">Orbital</span></h2>
                     </div>
                 </div>
 
@@ -156,32 +186,57 @@ export default function OrbitalsPage() {
                 </h2>
 
                 <div className="space-y-6">
-                    {/* Quantum Numbers Grid */}
-                    <div>
-                        <h3 className="text-[10px] uppercase tracking-widest text-gray-500 mb-3 font-bold">Quantum Numbers</h3>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
-                                <div className="absolute inset-0 bg-cyan-500/5 group-hover:bg-cyan-500/10 transition-colors"></div>
-                                <span className="text-xs text-cyan-500 mb-1 font-mono italic">n</span>
-                                <span className="text-2xl font-black text-white">{activeOrbital.n}</span>
-                                <span className="text-[9px] text-gray-500 uppercase mt-1">Principal</span>
-                            </div>
-                            
-                            <div className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
-                                <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors"></div>
-                                <span className="text-xs text-blue-500 mb-1 font-mono italic">l</span>
-                                <span className="text-2xl font-black text-white">{activeOrbital.l}</span>
-                                <span className="text-[9px] text-gray-500 uppercase mt-1">Azimuthal</span>
-                            </div>
-                            
-                            <div className="bg-black/40 border border-white/5 col-span-2 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
-                                <div className="absolute inset-0 bg-purple-500/5 group-hover:bg-purple-500/10 transition-colors"></div>
-                                <span className="text-xs text-purple-500 mb-1 font-mono italic">m_l</span>
-                                <span className="text-xl font-black text-white">{activeOrbital.ml}</span>
-                                <span className="text-[9px] text-gray-500 uppercase mt-1">Magnetic</span>
+                    {/* Conditional Panel Profile */}
+                    {activeOrbital.isHybrid ? (
+                        <div>
+                            <h3 className="text-[10px] uppercase tracking-widest text-gray-500 mb-3 font-bold">Hybridization Profile</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-black/40 border border-white/5 rounded-xl p-3 col-span-2 flex flex-col items-center justify-center relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-yellow-500/5 group-hover:bg-yellow-500/10 transition-colors"></div>
+                                    <span className="text-xs text-yellow-500 mb-1 font-mono italic">Geometry</span>
+                                    <span className="text-xl font-black text-white text-center leading-tight">{activeOrbital.shapeStr}</span>
+                                </div>
+                                
+                                <div className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-green-500/5 group-hover:bg-green-500/10 transition-colors"></div>
+                                    <span className="text-xs text-green-500 mb-1 font-mono italic">Orbitals Mixed</span>
+                                    <span className="text-[14px] font-black text-white">{activeOrbital.mix}</span>
+                                </div>
+                                
+                                <div className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-pink-500/5 group-hover:bg-pink-500/10 transition-colors"></div>
+                                    <span className="text-xs text-pink-500 mb-1 font-mono italic">Bond Angle</span>
+                                    <span className="text-[14px] font-black text-white">{activeOrbital.angle}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div>
+                            <h3 className="text-[10px] uppercase tracking-widest text-gray-500 mb-3 font-bold">Quantum Numbers</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-cyan-500/5 group-hover:bg-cyan-500/10 transition-colors"></div>
+                                    <span className="text-xs text-cyan-500 mb-1 font-mono italic">n</span>
+                                    <span className="text-2xl font-black text-white">{activeOrbital.n}</span>
+                                    <span className="text-[9px] text-gray-500 uppercase mt-1">Principal</span>
+                                </div>
+                                
+                                <div className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors"></div>
+                                    <span className="text-xs text-blue-500 mb-1 font-mono italic">l</span>
+                                    <span className="text-2xl font-black text-white">{activeOrbital.l}</span>
+                                    <span className="text-[9px] text-gray-500 uppercase mt-1">Azimuthal</span>
+                                </div>
+                                
+                                <div className="bg-black/40 border border-white/5 col-span-2 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-purple-500/5 group-hover:bg-purple-500/10 transition-colors"></div>
+                                    <span className="text-xs text-purple-500 mb-1 font-mono italic">m_l</span>
+                                    <span className="text-xl font-black text-white">{activeOrbital.ml}</span>
+                                    <span className="text-[9px] text-gray-500 uppercase mt-1">Magnetic</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Theoretical Explanation */}
                     <div>
@@ -191,10 +246,12 @@ export default function OrbitalsPage() {
                         </p>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-xl">
-                        <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Angular Nodes</span>
-                        <span className="text-lg font-black text-white">{activeOrbital.nodes}</span>
-                    </div>
+                    {!activeOrbital.isHybrid && (
+                        <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-xl">
+                            <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Angular Nodes</span>
+                            <span className="text-lg font-black text-white">{activeOrbital.nodes}</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="mt-auto pt-6 border-t border-white/10">

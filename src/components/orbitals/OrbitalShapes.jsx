@@ -36,7 +36,7 @@ const CustomTeardrop = React.forwardRef(({ scale, ...props }, ref) => {
 const Lobe = ({ rotation, phasePath, materialProps, scale = [1, 1.25, 1] }) => (
     <CustomTeardrop position={[0, 0, 0]} rotation={rotation || [0,0,0]} scale={scale}>
         <meshPhysicalMaterial 
-            color={phasePath === 1 ? "#ef4444" : "#3b82f6"} // Red (+) / Blue (-)
+            color={phasePath === 1 ? "#ef4444" : phasePath === -1 ? "#3b82f6" : "#a855f7"} // Red (+), Blue (-), Purple (Hybrid)
             transparent={true} 
             opacity={0.9} 
             roughness={0.15}
@@ -218,10 +218,83 @@ export const FOrbital = ({ type }) => {
     return null;
 };
 
+// --- Hybrid Orbitals (VSEPR geometries) ---
+export const HybridOrbital = ({ type }) => {
+    // We use phasePath={2} for the clean, single-colored purple hybrid representation.
+    const hybScale = [1.1, 1.4, 1.1]; // Hybrids are slightly fatter constructively
+
+    if (type === 'sp') { // Linear
+        return (
+            <group>
+                <Lobe rotation={[0, 0, 0]} phasePath={2} scale={hybScale} />
+                <Lobe rotation={[Math.PI, 0, 0]} phasePath={2} scale={hybScale} />
+            </group>
+        );
+    }
+    
+    if (type === 'sp2') { // Trigonal Planar (on XY plane)
+        return (
+            <group>
+                <Lobe rotation={[0, 0, 0]} phasePath={2} scale={hybScale} />
+                <Lobe rotation={[0, 0, 2*Math.PI/3]} phasePath={2} scale={hybScale} />
+                <Lobe rotation={[0, 0, 4*Math.PI/3]} phasePath={2} scale={hybScale} />
+            </group>
+        );
+    }
+
+    if (type === 'sp3') { // Tetrahedral
+        const tetrahedralAngle = Math.acos(-1/3); // ~109.47 degrees
+        return (
+            <group>
+                {/* 1 Lobe pointing straight up */}
+                <Lobe rotation={[0, 0, 0]} phasePath={2} scale={hybScale} />
+                {/* 3 Lobes pointing down forming the tripod base */}
+                <SphericalLobe theta={0} phi={tetrahedralAngle} phase={2} />
+                <SphericalLobe theta={2*Math.PI/3} phi={tetrahedralAngle} phase={2} />
+                <SphericalLobe theta={4*Math.PI/3} phi={tetrahedralAngle} phase={2} />
+            </group>
+        );
+    }
+
+    if (type === 'sp3d') { // Trigonal Bipyramidal
+        return (
+            <group>
+                {/* Axial */}
+                <Lobe rotation={[0, 0, 0]} phasePath={2} scale={hybScale} />
+                <Lobe rotation={[Math.PI, 0, 0]} phasePath={2} scale={hybScale} />
+                {/* Equatorial (on XZ plane) */}
+                <SphericalLobe theta={0} phi={Math.PI/2} phase={2} />
+                <SphericalLobe theta={2*Math.PI/3} phi={Math.PI/2} phase={2} />
+                <SphericalLobe theta={4*Math.PI/3} phi={Math.PI/2} phase={2} />
+            </group>
+        );
+    }
+
+    if (type === 'sp3d2') { // Octahedral
+        return (
+            <group>
+                <Lobe rotation={[0, 0, 0]} phasePath={2} scale={hybScale} /> {/* +Y */}
+                <Lobe rotation={[Math.PI, 0, 0]} phasePath={2} scale={hybScale} /> {/* -Y */}
+                <Lobe rotation={[0, 0, -Math.PI/2]} phasePath={2} scale={hybScale} /> {/* +X */}
+                <Lobe rotation={[0, 0, Math.PI/2]} phasePath={2} scale={hybScale} /> {/* -X */}
+                <Lobe rotation={[Math.PI/2, 0, 0]} phasePath={2} scale={hybScale} /> {/* +Z */}
+                <Lobe rotation={[-Math.PI/2, 0, 0]} phasePath={2} scale={hybScale} /> {/* -Z */}
+            </group>
+        );
+    }
+
+    return null;
+}
+
 export const OrbitalViewer = ({ orbitalData }) => {
     if (!orbitalData) return null;
     
-    // Parse orbital type from the raw ID (e.g. "1s", "2px", "3dz2", "4fz3", "4fz(x2-y2)")
+    // Check if it's a hybrid orbital
+    if (orbitalData.id.startsWith('h_')) {
+        return <HybridOrbital type={orbitalData.id.split('_')[1]} />;
+    }
+    
+    // Parse pure orbital type from the raw ID (e.g. "1s", "2px", "3dz2", "4fz3", "4fz(x2-y2)")
     // We use ID instead of label because label contains unicode superscripts (³, ²) which breaks matching.
     const subshell = orbitalData.id.match(/[spdf]/)[0];
     
