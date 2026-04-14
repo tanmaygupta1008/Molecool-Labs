@@ -96,6 +96,7 @@ const NavBar = () => {
             <NavDropdown title="Tools 🛠️" name="tools" activeDropdown={activeDropdown} toggleDropdown={toggleDropdown}>
               <NavLinkItem href="/apparatus" onClick={closeDropdown}>Apparatus 🧪</NavLinkItem>
               <NavLinkItem href="/apparatus-editor" onClick={closeDropdown}>Apparatus Editor 🛠️</NavLinkItem>
+              <NavLinkItem href="/element-editor" onClick={closeDropdown} className="font-bold text-yellow-500">Element Editor 📝</NavLinkItem>
               <NavLinkItem href="/apparatus-compat" onClick={closeDropdown}>Snap Compatibility 🔗</NavLinkItem>
               <NavLinkItem href="/compounds/edit-angles" onClick={closeDropdown}>Edit Angles 📐</NavLinkItem>
               <NavLinkItem href="/reactant-config" onClick={closeDropdown}>Reactant Config 🧪</NavLinkItem>
