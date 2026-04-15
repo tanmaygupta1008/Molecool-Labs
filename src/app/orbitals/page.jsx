@@ -1,11 +1,34 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, ContactShadows, Text } from '@react-three/drei';
 import { OrbitalViewer } from '@/components/orbitals/OrbitalShapes';
 import { Info, Atom, Maximize } from 'lucide-react';
 import * as THREE from 'three';
+
+const formatOrbitalLabel = (orb) => {
+    if (!orb) return null;
+    if (orb.isHybrid) return orb.label;
+    
+    // Ensure label is a string before matching
+    const labelStr = String(orb.label || '');
+    const match = labelStr.match(/([spdf])/);
+    if (!match) return labelStr; 
+    
+    const splitIdx = match.index + 1;
+    const base = labelStr.slice(0, splitIdx);
+    const sub = labelStr.slice(splitIdx);
+    
+    if (!sub) return base; 
+    
+    return (
+        <span key={`label-${orb.id}`}>
+            {base}
+            <sub className="text-[0.7em] ml-[1px]">{sub}</sub>
+        </span>
+    );
+};
 
 const ORBITALS_LIBRARY = [
     {
@@ -64,28 +87,11 @@ export default function OrbitalsPage() {
     let activeOrbital = null;
     for(const group of ORBITALS_LIBRARY) {
         const found = group.items.find(i => i.id === selectedId);
-        if (found) activeOrbital = found;
+        if (found) {
+            activeOrbital = found;
+            break;
+        }
     }
-
-    const formatOrbitalLabel = (orb) => {
-        if (orb.isHybrid) return orb.label;
-        
-        const match = orb.label.match(/([spdf])/);
-        if (!match) return orb.label; 
-        
-        const splitIdx = match.index + 1;
-        const base = orb.label.slice(0, splitIdx);
-        const sub = orb.label.slice(splitIdx);
-        
-        if (!sub) return base; // e.g. '1s'
-        
-        return (
-            <span>
-                {base}
-                <sub className="text-[0.7em] ml-[1px]">{sub}</sub>
-            </span>
-        );
-    };
 
     return (
         <div className="w-full h-[calc(100vh-64px)] bg-[#05050f] text-white flex overflow-hidden font-sans">
@@ -138,7 +144,12 @@ export default function OrbitalsPage() {
                 {/* Overlay UI */}
                 <div className="absolute top-6 left-6 z-10 pointer-events-none">
                     <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-2xl px-6 py-4 shadow-xl">
-                        <h2 className="text-3xl font-mono font-black text-white">{formatOrbitalLabel(activeOrbital)} <span className="text-sm font-sans text-gray-400 tracking-wide font-normal uppercase ml-2">Orbital</span></h2>
+                        <h2 className="text-3xl font-mono font-black text-white">
+                            {activeOrbital ? formatOrbitalLabel(activeOrbital) : 'Select Orbital'} 
+                            <span className="text-sm font-sans text-gray-400 tracking-wide font-normal uppercase ml-2">
+                                {activeOrbital ? 'Orbital' : ''}
+                            </span>
+                        </h2>
                     </div>
                 </div>
 
@@ -156,26 +167,28 @@ export default function OrbitalsPage() {
                 </div>
 
                 <Canvas camera={{ position: [5, 4, 6], fov: 45 }}>
-                    <Environment preset="city" />
-                    <ambientLight intensity={0.5} />
-                    <pointLight position={[10, 10, 10]} intensity={2} />
-                    <pointLight position={[-10, -10, -10]} intensity={1} color="#4444ff" />
-                    
-                    {/* Visual Coordinate System */}
-                    <group>
-                        <axesHelper args={[4]} />
-                        <gridHelper args={[10, 10, '#ffffff', '#222222']} position={[0, -0.01, 0]} material-opacity={0.2} material-transparent />
-                        {/* Axis Labels */}
-                        <Text position={[4.2, 0, 0]} color="red" fontSize={0.3} font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf">X</Text>
-                        <Text position={[0, 4.2, 0]} color="green" fontSize={0.3} font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf">Y</Text>
-                        <Text position={[0, 0, 4.2]} color="blue" fontSize={0.3} font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf">Z</Text>
-                    </group>
+                    <Suspense fallback={null}>
+                        <Environment preset="city" />
+                        <ambientLight intensity={0.5} />
+                        <pointLight position={[10, 10, 10]} intensity={2} />
+                        <pointLight position={[-10, -10, -10]} intensity={1} color="#4444ff" />
+                        
+                        {/* Visual Coordinate System */}
+                        <group>
+                            <axesHelper args={[4]} />
+                            <gridHelper args={[10, 10, '#ffffff', '#222222']} position={[0, -0.01, 0]} material-opacity={0.2} material-transparent />
+                            {/* Axis Labels */}
+                            <Text position={[4.2, 0, 0]} color="red" fontSize={0.3} font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf">X</Text>
+                            <Text position={[0, 4.2, 0]} color="green" fontSize={0.3} font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf">Y</Text>
+                            <Text position={[0, 0, 4.2]} color="blue" fontSize={0.3} font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZhrib2Bg-4.ttf">Z</Text>
+                        </group>
 
-                    <group scale={1.2}>
-                        <OrbitalViewer orbitalData={activeOrbital} />
-                    </group>
-                    
-                    <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
+                        <group scale={1.2}>
+                            <OrbitalViewer orbitalData={activeOrbital} />
+                        </group>
+                        
+                        <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
+                    </Suspense>
                 </Canvas>
             </div>
 
@@ -187,7 +200,7 @@ export default function OrbitalsPage() {
 
                 <div className="space-y-6">
                     {/* Conditional Panel Profile */}
-                    {activeOrbital.isHybrid ? (
+                    {activeOrbital?.isHybrid ? (
                         <div>
                             <h3 className="text-[10px] uppercase tracking-widest text-gray-500 mb-3 font-bold">Hybridization Profile</h3>
                             <div className="grid grid-cols-2 gap-3">
@@ -217,21 +230,21 @@ export default function OrbitalsPage() {
                                 <div className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
                                     <div className="absolute inset-0 bg-cyan-500/5 group-hover:bg-cyan-500/10 transition-colors"></div>
                                     <span className="text-xs text-cyan-500 mb-1 font-mono italic">n</span>
-                                    <span className="text-2xl font-black text-white">{activeOrbital.n}</span>
+                                    <span className="text-2xl font-black text-white">{activeOrbital?.n}</span>
                                     <span className="text-[9px] text-gray-500 uppercase mt-1">Principal</span>
                                 </div>
                                 
                                 <div className="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
                                     <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors"></div>
                                     <span className="text-xs text-blue-500 mb-1 font-mono italic">l</span>
-                                    <span className="text-2xl font-black text-white">{activeOrbital.l}</span>
+                                    <span className="text-2xl font-black text-white">{activeOrbital?.l}</span>
                                     <span className="text-[9px] text-gray-500 uppercase mt-1">Azimuthal</span>
                                 </div>
                                 
                                 <div className="bg-black/40 border border-white/5 col-span-2 rounded-xl p-3 flex flex-col items-center justify-center relative overflow-hidden group">
                                     <div className="absolute inset-0 bg-purple-500/5 group-hover:bg-purple-500/10 transition-colors"></div>
                                     <span className="text-xs text-purple-500 mb-1 font-mono italic">m_l</span>
-                                    <span className="text-xl font-black text-white">{activeOrbital.ml}</span>
+                                    <span className="text-xl font-black text-white">{activeOrbital?.ml}</span>
                                     <span className="text-[9px] text-gray-500 uppercase mt-1">Magnetic</span>
                                 </div>
                             </div>
@@ -242,11 +255,11 @@ export default function OrbitalsPage() {
                     <div>
                         <h3 className="text-[10px] uppercase tracking-widest text-gray-500 mb-3 font-bold">Probability Density</h3>
                         <p className="text-sm text-gray-300 leading-relaxed bg-blue-900/10 border border-blue-900/30 p-4 rounded-xl">
-                            {activeOrbital.desc}
+                            {activeOrbital?.desc}
                         </p>
                     </div>
 
-                    {!activeOrbital.isHybrid && (
+                    {activeOrbital && !activeOrbital.isHybrid && (
                         <div className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-xl">
                             <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Angular Nodes</span>
                             <span className="text-lg font-black text-white">{activeOrbital.nodes}</span>

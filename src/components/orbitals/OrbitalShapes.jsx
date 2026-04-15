@@ -287,7 +287,7 @@ export const HybridOrbital = ({ type }) => {
 }
 
 export const OrbitalViewer = ({ orbitalData }) => {
-    if (!orbitalData) return null;
+    if (!orbitalData || !orbitalData.id) return null;
     
     // Check if it's a hybrid orbital
     if (orbitalData.id.startsWith('h_')) {
@@ -295,8 +295,10 @@ export const OrbitalViewer = ({ orbitalData }) => {
     }
     
     // Parse pure orbital type from the raw ID (e.g. "1s", "2px", "3dz2", "4fz3", "4fz(x2-y2)")
-    // We use ID instead of label because label contains unicode superscripts (³, ²) which breaks matching.
-    const subshell = orbitalData.id.match(/[spdf]/)[0];
+    const subshellMatch = orbitalData.id.match(/[spdf]/);
+    if (!subshellMatch) return null;
+    
+    const subshell = subshellMatch[0];
     
     switch(subshell) {
         case 's': return <SOrbital />;
