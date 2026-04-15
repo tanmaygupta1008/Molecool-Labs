@@ -16,17 +16,17 @@ const ELEMENTS_CACHE_KEY = "molecool_elements_v1";
 const ELEMENTS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 const CATEGORY_COLORS_LEGEND = [
-  { category: "diatomic nonmetal",   name: "Diatomic Nonmetals",      color: "#2563EB" },
-  { category: "alkali metal",         name: "Alkali Metals",            color: "#DC2626" },
-  { category: "alkaline earth metal", name: "Alkaline Earth Metals",   color: "#EA580C" },
-  { category: "transition metal",     name: "Transition Metals",        color: "#CA8A04" },
-  { category: "noble gas",            name: "Noble Gases",              color: "#9333EA" },
-  { category: "halogen",              name: "Halogens",                 color: "#0891B2" },
-  { category: "lanthanide",           name: "Lanthanides",              color: "#DB2777" },
-  { category: "actinide",             name: "Actinides",                color: "#C026D3" },
-  { category: "post-transition metal",name: "Post-Transition Metals", color: "#16A34A" },
-  { category: "metalloid",            name: "Metalloids",               color: "#65A30D" },
-  { category: "polyatomic nonmetal",  name: "Nonmetals",                color: "#3B82F6" },
+  { category: "diatomic nonmetal",   name: "Diatomic Nonmetals",      color: "#2d7a74" },
+  { category: "alkali metal",         name: "Alkali Metals",            color: "#8c3a3a" },
+  { category: "alkaline earth metal", name: "Alkaline Earth Metals",   color: "#9c683c" },
+  { category: "transition metal",     name: "Transition Metals",        color: "#8a7826" },
+  { category: "noble gas",            name: "Noble Gases",              color: "#41398c" },
+  { category: "halogen",              name: "Halogens",                 color: "#5a806c" },
+  { category: "lanthanide",           name: "Lanthanides",              color: "#80505a" },
+  { category: "actinide",             name: "Actinides",                color: "#505a80" },
+  { category: "post-transition metal",name: "Post-Transition Metals", color: "#24628a" },
+  { category: "metalloid",            name: "Metalloids",               color: "#6b640d" },
+  { category: "polyatomic nonmetal",  name: "Nonmetals",                color: "#2d4682" },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -169,6 +169,7 @@ const PeriodicTablePage = () => {
       trendValue={activeTrend ? el[activeTrend] : undefined}
       isComparisonSelected={compareSet.has(el.atomic_number)}
       isCompareMode={compareMode}
+      compareSetSize={selectedElementsToCompare.length}
     />
   );
 
@@ -285,15 +286,16 @@ const PeriodicTablePage = () => {
       </div>
 
       {/* Periodic Table Grid */}
-      <div
-        className="grid gap-1 mx-auto"
-        style={{
-          gridTemplateColumns: `repeat(18, minmax(0, 1fr))`,
-          gridTemplateRows: `repeat(10, auto)`,
-          maxWidth: "1200px",
-        }}
-      >
-        {mainElements.map(renderCell)}
+      <div className="w-full overflow-x-auto pb-16 custom-scrollbar px-4 pt-8">
+        <div
+          className="grid gap-1 mx-auto min-w-[1100px]"
+          style={{
+            gridTemplateColumns: `repeat(18, minmax(0, 1fr))`,
+            gridTemplateRows: `repeat(10, auto)`,
+            maxWidth: "1200px",
+          }}
+        >
+          {mainElements.map(renderCell)}
 
         {/* Spacer rows between main table and lanthanide/actinide rows */}
         <div style={{ gridColumn: "3 / span 15", gridRow: 6 }} />
@@ -324,6 +326,7 @@ const PeriodicTablePage = () => {
           className="gap-1 mt-1"
         >
           {actinides.map(renderCell)}
+        </div>
         </div>
       </div>
 
