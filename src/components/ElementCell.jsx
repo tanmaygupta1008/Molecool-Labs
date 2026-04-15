@@ -2,17 +2,17 @@ import React from "react";
 // import { CATEGORY_COLORS } from "@/data/elements";
 
 const CATEGORY_HEX = {
-  "diatomic nonmetal": "#2d7a74",      // Extra Muted Teal
-  "alkali metal": "#8c3a3a",           // Extra Muted Red
-  "alkaline earth metal": "#9c683c",    // Extra Muted Orange
-  "transition metal": "#8a7826",       // Extra Muted Yellow
-  "noble gas": "#41398c",              // Extra Muted Purple
-  "halogen": "#5a806c",               // Extra Muted Green
-  "lanthanide": "#80505a",             // Extra Muted Rose
-  "actinide": "#505a80",               // Extra Muted Blue
-  "post-transition metal": "#24628a",  // Extra Muted Sky Blue
-  "metalloid": "#6b640d",              // Extra Muted Gold
-  "polyatomic nonmetal": "#2d4682",    // Extra Muted Royal Blue
+  "diatomic nonmetal": "#4ade80",      // Neon Green
+  "alkali metal": "#f87171",           // Soft Red
+  "alkaline earth metal": "#fb923c",    // Orange
+  "transition metal": "#facc15",       // Bright Yellow
+  "noble gas": "#a78bfa",              // Lavender/Purple
+  "halogen": "#2dd4bf",               // Teal
+  "lanthanide": "#f472b6",             // Pink
+  "actinide": "#818cf8",               // Indigo
+  "post-transition metal": "#60a5fa",  // Sky Blue
+  "metalloid": "#fbbf24",              // Amber
+  "polyatomic nonmetal": "#3b82f6",    // Blue
 };
 
 
@@ -47,57 +47,52 @@ const ElementCell = React.memo(
     const shouldDim = (highlightedCategory && !isHighlighted) ||
                      (isCompareMode && !isComparisonSelected && compareSetSize > 0);
 
-    // Background style with hybrid solid/glossy coloring
+    // Background style: "Vivid Glass" with category-specific tints
     const getBgStyle = () => {
       const color = trendColor || catColor;
-      const opacity = shouldDim ? 0.05 : isHighlighted ? 0.95 : 0.8;
-      const borderAlpha = isHighlighted || isComparisonSelected ? 'ff' : '44';
-      
-      const rgbaColor = `${color}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
       
       if (isHighlighted || isComparisonSelected) {
         return {
-           // Selected: Solid matte core with a glossy "crystalline" rim
-           background: `radial-gradient(circle at center, ${color} 60%, ${rgbaColor} 100%)`,
+           background: `${color}cc`, // High opacity on selection
            borderColor: '#ffffff',
            boxShadow: `
-             0 0 40px -10px ${color}, 
-             inset 0 0 15px rgba(255, 255, 255, 0.4), 
-             inset 0 0 2px rgba(255, 255, 255, 0.8)
-           `
+             0 0 40px -5px ${color}, 
+             inset 0 0 15px rgba(255, 255, 255, 0.4)
+           `,
+           zIndex: 40
+        };
+      }
+
+      if (shouldDim) {
+        return {
+          background: 'rgba(255, 255, 255, 0.02)',
+          borderColor: 'rgba(255, 255, 255, 0.05)',
+          opacity: 0.2
         };
       }
 
       return {
-        // Normal: Muted solid look with subtle depth
-        background: `linear-gradient(135deg, ${rgbaColor} 0%, ${color} 100%)`,
-        borderColor: `${color}${borderAlpha}`,
-        boxShadow: `inset 0 0 12px rgba(255,255,255,0.1), 0 2px 8px rgba(0,0,0,0.2)`
+        // Base state: Tinted translucent glass
+        background: `${catColor}33`, 
+        backdropFilter: 'blur(12px) saturate(180%)',
+        border: `1px solid ${catColor}66`,
+        boxShadow: `inset 0 1px 1px rgba(255, 255, 255, 0.1)`,
       };
     };
     
-    // Explicitly override text colors for solid background contrast
-    const textContrastClass = shouldDim ? "text-white/20" : "text-white shadow-sm";
-
-
-
-
     const backgroundStyle = getBgStyle();
 
     return (
       <button
         onClick={() => onClick(element)}
         className={`
-          glass-element font-bold
-          p-2 relative rounded-2xl border
+          stealth-glass font-bold
+          p-2 relative rounded-xl
           min-w-[62px] min-h-[62px] cursor-pointer
-          transition-all duration-700 cubic-bezier(0.2, 0.8, 0.2, 1)
+          transition-all duration-500 cubic-bezier(0.2, 0.8, 0.2, 1)
           tap-animation
-          ${textContrastClass}
-          ${isHighlighted ? "z-30 scale-[1.35] shadow-[0_30px_70px_rgba(0,0,0,0.5)] !border-white/80" : ""}
-          ${isComparisonSelected ? "z-30 scale-[1.35] !border-white !border-2 shadow-[0_30px_70px_rgba(0,0,0,0.5)]" : ""}
-          ${shouldDim ? "opacity-[0.1] grayscale" : "opacity-100"}
-          ${isCompareMode && !isComparisonSelected ? "hover:scale-[1.15] hover:bg-white/20 hover:border-white/40 hover:z-20" : ""}
+          ${isHighlighted || isComparisonSelected ? "scale-[1.25]" : "hover:scale-[1.1] hover:bg-neutral-900/40 hover:border-white/20"}
+          ${shouldDim ? "grayscale" : ""}
           group
         `}
 
@@ -105,37 +100,30 @@ const ElementCell = React.memo(
           gridColumn: xpos,
           gridRow: ypos,
           aspectRatio: "1 / 1",
-          transform:
-            isHighlighted || isComparisonSelected
-              ? "translateY(-8px)"
-              : "translateY(0)",
           ...backgroundStyle,
         }}
       >
-        {/* Glow effect for highlighted/selected */}
+        {/* Glow Halo */}
         {(isHighlighted || isComparisonSelected) && (
           <div 
-            className="absolute inset-0 rounded-2xl blur-3xl opacity-60 bg-inherit -z-10 animate-pulse" 
+            className="absolute inset-0 rounded-xl blur-2xl opacity-40 -z-10 animate-glow" 
             style={{ backgroundColor: catColor }}
           />
         )}
 
 
         {/* Atomic number */}
-        <div className="absolute top-2 left-2.5 text-[11px] font-black opacity-80 tracking-widest text-white/50">
+        <div className={`absolute top-2 left-2.5 text-[10px] font-bold tracking-tighter transition-colors duration-500 ${isHighlighted || isComparisonSelected ? 'text-white' : 'text-white/60'}`}>
           {atomic_number}
         </div>
 
-
-
         {/* Symbol */}
-        <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl font-black leading-none transition-all duration-300 ${isHighlighted || isComparisonSelected ? 'scale-110 text-white brightness-150' : 'text-white/90'}`}>
+        <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl font-black transition-all duration-500 ${isHighlighted || isComparisonSelected ? 'text-white scale-110' : 'text-white/90 group-hover:text-white'}`}>
           {symbol}
         </div>
 
-
         {/* Atomic mass or Trend Value */}
-        <div className="absolute bottom-1 right-2 text-[10px] font-black tracking-widest opacity-80 uppercase text-white/50">
+        <div className={`absolute bottom-2 right-2 text-[9px] font-medium tracking-tight transition-colors duration-500 ${isHighlighted || isComparisonSelected ? 'text-white' : 'text-white/40'}`}>
           {trendValue !== undefined ? trendValue : atomic_mass?.toFixed(1)}
         </div>
 

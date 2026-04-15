@@ -174,14 +174,18 @@ const PeriodicTablePage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 sm:p-8">
-      <header className="mb-8 text-center">
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-cyan-400">
-          Molecools Lab Periodic Table
+    <div className="min-h-screen atmosphere-bg text-neutral-200 p-4 sm:p-8 relative overflow-hidden">
+      
+      {/* Subtle Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/20 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-500/20 rounded-full blur-[120px]" />
+      </div>
+
+      <header className="mb-12 text-center relative z-10">
+        <h1 className="text-4xl sm:text-6xl font-black tracking-tighter text-white uppercase">
+          PERIODIC <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-500">TABLE</span>
         </h1>
-        <p className="text-gray-400 mt-2">
-          Click an element or a legend category to explore!
-        </p>
       </header>
 
       {/* Controls Container */}
@@ -211,19 +215,19 @@ const PeriodicTablePage = () => {
         </div>
 
         {/* Periodic Trends Controls */}
-        <div className="text-center">
-          <h2 className="text-xl text-cyan-400 font-semibold mb-3">Periodic Trends</h2>
-          <div className="flex flex-wrap justify-center gap-4">
+        <div className="text-center bg-white/5 border border-white/5 backdrop-blur-md rounded-2xl p-6 max-w-4xl mx-auto shadow-2xl">
+          <h2 className="text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-bold mb-6">Periodic Trends</h2>
+          <div className="flex flex-wrap justify-center gap-2">
             {Object.values(TRENDS).map((trend) => {
               const isActive = activeTrend === trend.id;
               return (
                 <button
                   key={trend.id}
                   onClick={() => handleTrendClick(trend.id)}
-                  className={`px-4 py-2 rounded-full border transition-all duration-300 font-medium text-sm ${
+                  className={`px-4 py-2 rounded-xl border transition-all duration-500 text-xs font-bold ${
                     isActive
-                      ? "bg-cyan-900 border-cyan-400 text-cyan-100 shadow-[0_0_15px_rgba(34,211,238,0.5)]"
-                      : "bg-gray-900 border-gray-700 text-gray-400 hover:border-cyan-700 hover:text-gray-200"
+                      ? "bg-cyan-500/10 border-cyan-400 text-cyan-300 shadow-[0_0_20px_rgba(34,211,238,0.2)]"
+                      : "bg-white/5 border-white/5 text-neutral-500 hover:border-white/20 hover:text-white"
                   }`}
                 >
                   {trend.label}
@@ -232,56 +236,23 @@ const PeriodicTablePage = () => {
             })}
           </div>
           {activeTrend && (
-            <div className="mt-2 text-sm text-gray-400 animate-fadeIn">
-              Showing:{" "}
-              <span className="text-cyan-300 font-bold">
-                {TRENDS[activeTrend].label}
-              </span>
-              <span className="mx-2">|</span>
-              {TRENDS[activeTrend].description}
-              <div className="mt-1 flex justify-center items-center gap-2 text-xs">
-                <span>Low</span>
+            <div className="mt-4 p-3 bg-black/40 rounded-xl border border-white/5 animate-fadeIn">
+              <p className="text-xs text-neutral-400">
+                <span className="text-cyan-400 font-black mr-2 uppercase">{TRENDS[activeTrend].label}:</span>
+                {TRENDS[activeTrend].description}
+              </p>
+              <div className="mt-4 flex justify-center items-center gap-4 text-[9px] font-black uppercase tracking-widest text-neutral-600">
+                <span>LOW</span>
                 <div
-                  className="w-32 h-2 rounded bg-gradient-to-r from-[var(--color-start)] to-[var(--color-end)]"
+                  className="w-48 h-1.5 rounded-full bg-gradient-to-r"
                   style={{
-                    "--color-start": TRENDS[activeTrend].colorStart,
-                    "--color-end": TRENDS[activeTrend].colorEnd,
+                    background: `linear-gradient(to right, ${TRENDS[activeTrend].colorStart}, ${TRENDS[activeTrend].colorEnd})`,
                   }}
                 />
-                <span>High</span>
+                <span>HIGH</span>
               </div>
             </div>
           )}
-        </div>
-
-        {/* Categories Legend */}
-        <div className="text-center border-t border-gray-800 pt-6">
-          <h2 className="text-lg text-gray-500 font-medium mb-3">Element Categories</h2>
-          <div className="flex flex-wrap justify-center gap-3">
-            {CATEGORY_COLORS_LEGEND.map(({ category, color, name }) => {
-              const isActive = highlightedCategory === category.toLowerCase();
-              const isDimmed = activeTrend !== null;
-              return (
-                <button
-                  key={category}
-                  onClick={() => handleLegendClick(category)}
-                  disabled={!!activeTrend}
-                  className={`flex items-center px-3 py-1 rounded-md transition-all duration-300 border ${
-                    isActive
-                      ? "scale-110 border-cyan-400 shadow-lg shadow-cyan-400/40"
-                      : "border-gray-600"
-                  } ${
-                    isDimmed
-                      ? "opacity-40 cursor-not-allowed grayscale"
-                      : "hover:border-gray-400"
-                  }`}
-                >
-                  <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: color }} />
-                  <span className="ml-2 text-gray-300 text-xs sm:text-sm">{name}</span>
-                </button>
-              );
-            })}
-          </div>
         </div>
       </div>
 
@@ -337,6 +308,38 @@ const PeriodicTablePage = () => {
           onClose={handleCompareClose}
         />
       )}
+
+      {/* Floating HUD Legend */}
+      <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none">
+        <div className="stealth-glass border border-white/5 px-6 py-4 rounded-full flex gap-3 pointer-events-auto shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          {CATEGORY_COLORS_LEGEND.map(({ category, color, name }) => {
+             const isActive = highlightedCategory === category.toLowerCase();
+             const isDimmed = activeTrend !== null;
+             return (
+               <button
+                 key={category}
+                 onClick={() => handleLegendClick(category)}
+                 disabled={!!activeTrend}
+                 className={`flex items-center justify-center group relative ${isDimmed ? 'opacity-20 pointer-events-none grayscale' : ''}`}
+                 title={name}
+               >
+                 <div 
+                   className={`w-4 h-4 rounded-full transition-all duration-300 border border-white/10 ${isActive ? 'scale-150 border-white ring-4' : 'hover:scale-125'}`} 
+                   style={{ 
+                     backgroundColor: color,
+                     boxShadow: isActive ? `0 0 15px ${color}` : 'none',
+                     '--tw-ring-color': `${color}44`
+                   }} 
+                 />
+                 {/* Tooltip */}
+                 <div className="absolute bottom-full mb-3 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-black/80 backdrop-blur-md rounded border border-white/10 text-[9px] font-black uppercase text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none tracking-widest">
+                   {name}
+                 </div>
+               </button>
+             );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
