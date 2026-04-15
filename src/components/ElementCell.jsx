@@ -42,7 +42,7 @@ const ElementCell = React.memo(
           p-1 m-[2px] relative rounded-sm shadow-lg
           min-w-[60px] min-h-[60px] cursor-pointer
           transition-all duration-300 ease-out
-          ${isHighlighted ? "z-10 scale-110 animate-spin-slow border-4 border-glow" : ""}
+          ${isHighlighted ? "z-20 scale-110 border border-white/60 shadow-[inset_0_2px_10px_rgba(255,255,255,0.5),0_0_20px_rgba(255,255,255,0.5)] brightness-125 ring-1 ring-white/30" : ""}
           ${isComparisonSelected ? "z-20 scale-110 border-4 border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.8)]" : ""}
           ${shouldDim ? "opacity-30" : "opacity-100"}
           ${isCompareMode && !isComparisonSelected ? "hover:scale-105 hover:border-2 hover:border-cyan-500/50" : ""}
