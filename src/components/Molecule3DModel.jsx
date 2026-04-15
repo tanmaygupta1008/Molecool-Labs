@@ -1,7 +1,8 @@
 'use client'; 
 
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Environment, Sphere, Cylinder, Html } from '@react-three/drei';
+import { OrbitControls, Environment, Sphere, Cylinder, Html, Ring } from '@react-three/drei';
+
 import { Vector3, Color, Quaternion, TorusGeometry, Euler, CylinderGeometry, BufferAttribute } from 'three'; 
 import { useRef, useLayoutEffect, useState, useMemo, Suspense, useEffect } from 'react';
 import { calculateLonePairs } from '@/lib/cheminformatics';
@@ -28,7 +29,38 @@ const getBondAngle = (centerPos, posA, posB) => {
     return { angleRad, angleDeg: (angleRad * 180 / Math.PI).toFixed(1) };
 };
 
-const Atom = ({ position, element, sphereRef, isHighlighted, isDimmed, onSelectAtom, id }) => {
+const TargetReticle = ({ position }) => {
+  const ref = useRef();
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      ref.current.rotation.z = clock.getElapsedTime() * 0.8;
+      const pulse = 1 + Math.sin(clock.getElapsedTime() * 4) * 0.1;
+      ref.current.scale.set(pulse, pulse, pulse);
+    }
+  });
+
+  return (
+    <group position={position}>
+      {/* Outer Rotating Ring */}
+      <Ring ref={ref} args={[0.55, 0.6, 64]}>
+        <meshStandardMaterial 
+          color="#ffffff" 
+          emissive="#ffffff" 
+          emissiveIntensity={2} 
+          transparent 
+          opacity={0.3} 
+          side={2} 
+        />
+      </Ring>
+      {/* Static Inner Glow */}
+      <Ring args={[0.35, 0.38, 64]}>
+        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={5} transparent opacity={0.15} />
+      </Ring>
+    </group>
+  );
+};
+
+const Atom = ({ position, element, isHighlighted, isDimmed, onClick, isSelected }) => {
   const baseColor = getElementData(element).color || CPK_COLORS.DEFAULT;
   const radius = (getElementData(element).radius || ATOM_RADIUS) * 0.65;
   const color = new Color(baseColor);
@@ -38,24 +70,26 @@ const Atom = ({ position, element, sphereRef, isHighlighted, isDimmed, onSelectA
   const opacity = isDimmed ? 0.25 : 1;
 
   return (
-    <Sphere 
-        ref={sphereRef} 
-        position={position} 
+    <group position={position}>
+      <Sphere
         args={[radius, 32, 32]}
-        onClick={(e) => { e.stopPropagation(); onSelectAtom && onSelectAtom(id); }}
-        onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; }}
-        onPointerOut={(e) => { document.body.style.cursor = 'auto'; }}
-    >
-      <meshStandardMaterial 
-        color={color} 
-        emissive={emissiveColor} 
-        emissiveIntensity={emissiveIntensity} 
-        roughness={0.3}
-        metalness={0.1}
-        transparent={true} 
-        opacity={opacity} 
-      />
-    </Sphere>
+        onClick={onClick}
+        onPointerOver={() => (document.body.style.cursor = 'pointer')}
+        onPointerOut={() => (document.body.style.cursor = 'auto')}
+        scale={isSelected ? 1.2 : isHighlighted ? 1.1 : 1}
+      >
+        <meshStandardMaterial 
+          color={color} 
+          emissive={emissiveColor} 
+          emissiveIntensity={isSelected ? 1.5 : emissiveIntensity} 
+          roughness={0.05}
+          metalness={0.7}
+          transparent={true} 
+          opacity={opacity} 
+        />
+      </Sphere>
+      {isSelected && <TargetReticle position={[0, 0, 0]} />}
+    </group>
   );
 };
 
@@ -206,7 +240,10 @@ const Bond = ({ start, end, length, showLength, atomRefs, isHighlighted, isDimme
         emissiveIntensity={emissiveIntensity} 
         transparent={true} 
         opacity={opacity} 
+        roughness={0.1}
+        metalness={0.8}
     />
+
   );
 
   // Single bond — original renderer
@@ -348,41 +385,50 @@ const BondAngleArc = ({ centerPos, posA, posB, arcRadius, angleRad, override, is
 };
 
 const ControlPanel = ({ showBondLength, setShowBondLength, showBondAngle, setShowBondAngle, showLonePairs, setShowLonePairs }) => (
-    <div className="absolute top-4 right-4 bg-gray-700 bg-opacity-80 p-3 rounded-lg text-xs shadow-xl text-white pointer-events-auto z-10">
-        <h4 className="font-bold border-b border-gray-600 mb-2 pb-1">View Options</h4>
-        <div className="flex flex-col space-y-1">
-            <label className="flex items-center space-x-2 cursor-pointer hover:text-cyan-300">
-                <input 
-                    type="checkbox" 
-                    checked={showBondLength} 
-                    onChange={(e) => setShowBondLength(e.target.checked)}
-                    className="form-checkbox h-4 w-4 text-cyan-600 bg-gray-900 border-gray-600 rounded"
-                />
-                <span>Bond Lengths</span>
+    <div className="absolute top-6 right-6 p-6 rounded-[2rem] glass-card border-white/20 shadow-2xl text-[12px] font-bold text-white pointer-events-auto z-10 animate-fadeIn bg-black/40 backdrop-blur-xl">
+        <h4 className="font-black border-b border-white/20 mb-5 pb-2 uppercase tracking-[0.2em] text-white">View Analysis</h4>
+        <div className="flex flex-col space-y-4">
+            <label className="flex items-center space-x-4 cursor-pointer group">
+                <div className="relative flex items-center">
+                    <input 
+                        type="checkbox" 
+                        checked={showBondLength} 
+                        onChange={(e) => setShowBondLength(e.target.checked)}
+                        className="peer appearance-none h-5 w-5 border-2 border-white/30 rounded-md checked:bg-white transition-all duration-300 cursor-pointer"
+                    />
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 peer-checked:opacity-100 text-black font-black text-[12px]">✓</div>
+                </div>
+                <span className="font-black uppercase tracking-widest text-white group-hover:scale-105 transition-all">Distance</span>
             </label>
-            <label className="flex items-center space-x-2 cursor-pointer hover:text-cyan-300">
-                <input 
-                    type="checkbox" 
-                    checked={showBondAngle} 
-                    onChange={(e) => setShowBondAngle(e.target.checked)}
-                    className="form-checkbox h-4 w-4 text-cyan-600 bg-gray-900 border-gray-600 rounded"
-                />
-                <span>Bond Angles</span>
+            <label className="flex items-center space-x-4 cursor-pointer group">
+                <div className="relative flex items-center">
+                    <input 
+                        type="checkbox" 
+                        checked={showBondAngle} 
+                        onChange={(e) => setShowBondAngle(e.target.checked)}
+                        className="peer appearance-none h-5 w-5 border-2 border-white/30 rounded-md checked:bg-white transition-all duration-300 cursor-pointer"
+                    />
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 peer-checked:opacity-100 text-black font-black text-[12px]">✓</div>
+                </div>
+                <span className="font-black uppercase tracking-widest text-white group-hover:scale-105 transition-all">Angles</span>
             </label>
-            <label className="flex items-center space-x-2 cursor-pointer hover:text-cyan-300">
-                <input 
-                    type="checkbox" 
-                    checked={showLonePairs} 
-                    onChange={(e) => setShowLonePairs(e.target.checked)}
-                    className="form-checkbox h-4 w-4 text-cyan-600 bg-gray-900 border-gray-600 rounded"
-                />
-                <span>Lone Pairs (VSEPR)</span>
+            <label className="flex items-center space-x-4 cursor-pointer group">
+                <div className="relative flex items-center">
+                    <input 
+                        type="checkbox" 
+                        checked={showLonePairs} 
+                        onChange={(e) => setShowLonePairs(e.target.checked)}
+                        className="peer appearance-none h-5 w-5 border-2 border-white/30 rounded-md checked:bg-white transition-all duration-300 cursor-pointer"
+                    />
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 peer-checked:opacity-100 text-black font-black text-[12px]">✓</div>
+                </div>
+                <span className="font-black uppercase tracking-widest text-white group-hover:scale-105 transition-all">Lone Pairs</span>
             </label>
         </div>
     </div>
 );
 
-const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, onAtomSelect, angleOverrides, forceShowAngles, enableAutoRotate = true, selectedAngleKey = null }) => { 
+const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, selectedAtomIndex, onAtomSelect, angleOverrides, forceShowAngles, enableAutoRotate = true, selectedAngleKey = null }) => { 
     const [showBondLength, setShowBondLength] = useState(false);
     const [showBondAngle, setShowBondAngle] = useState(false);
     const [showLonePairs, setShowLonePairs] = useState(false);
@@ -525,13 +571,12 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
                     return (
                         <Atom 
                             key={`atom-${index}`}
-                            id={index} 
                             position={atomPositions[index]}
                             element={atom.element}
-                            sphereRef={atomMeshRefs.current[index]} 
+                            isSelected={selectedAtomIndex === index}
                             isHighlighted={isHighlighted}
                             isDimmed={isDimmed}
-                            onSelectAtom={onAtomSelect}
+                            onClick={() => onAtomSelect?.(index)}
                         />
                     );
                 })}
@@ -595,21 +640,18 @@ export const MoleculeLegend = ({ elementsUsed }) => {
     };
 
     return (
-        <div className="absolute bottom-4 left-4 bg-gray-700 bg-opacity-80 p-3 rounded-lg text-xs shadow-xl text-white pointer-events-auto z-10 border border-cyan-800">
-            <h4 className="font-bold border-b border-gray-600 mb-2 pb-1 text-cyan-300">Atom Legend</h4>
-            <ul className="space-y-1">
+        <div className="absolute bottom-6 left-6 p-6 rounded-[2rem] glass-card border-white/20 shadow-2xl text-[12px] text-white pointer-events-auto z-10 animate-fadeIn bg-black/40 backdrop-blur-xl">
+            <h4 className="font-black border-b border-white/20 mb-4 pb-2 uppercase tracking-[0.2em] text-white">Atom Legend</h4>
+            <ul className="space-y-3">
                 {elementsUsed.map((symbol) => (
-                    <li key={symbol} className="flex items-center space-x-2">
+                    <li key={symbol} className="flex items-center space-x-4 group">
                         <span 
-                            style={{ 
-                                backgroundColor: getElementData(symbol).color, 
-                                width: '12px', 
-                                height: '12px', 
-                                borderRadius: '50%',
-                                border: symbol === 'H' ? '1px solid #999' : '1px solid #222', 
-                            }}
+                            className="w-4 h-4 rounded-full border-2 border-white/30 shadow-xl transition-transform duration-500 group-hover:scale-125"
+                            style={{ backgroundColor: getElementData(symbol).color }}
                         ></span>
-                        <span className="font-medium text-gray-200">{symbol} ({getFullName(symbol)})</span>
+                        <span className="font-black uppercase tracking-widest text-white group-hover:translate-x-1 transition-all">
+                            {symbol} <span className="text-[11px] opacity-90 font-black ml-2 text-white/80">({getFullName(symbol)})</span>
+                        </span>
                     </li>
                 ))}
             </ul>

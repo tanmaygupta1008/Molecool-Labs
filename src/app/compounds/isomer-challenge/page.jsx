@@ -254,123 +254,188 @@ export default function IsomerChallengePage() {
     };
 
     return (
-        <div className="w-full h-[calc(100vh-64px)] bg-black text-white flex overflow-hidden">
-            {/* LEFT PANEL - TOOLSET (Identical to Engine/Atoms) */}
-            <div className="w-80 bg-gray-900 border-r border-cyan-800 flex flex-col z-10 shadow-2xl shrink-0">
-                <div className="p-4 border-b border-gray-800">
-                    <h1 className="text-xl font-bold text-cyan-400">Isomer Challenge</h1>
-                    <p className="text-xs text-gray-400 mt-1">Build structural isomers using tools.</p>
+        <div className="theme-internal">
+            <div className="w-full h-[calc(100vh-64px)] bg-transparent text-white flex overflow-hidden relative">
+                {/* Animated Background */}
+                <div className="bg-mesh-container">
+                    <div className="bg-mesh-blob blob-1" />
+                    <div className="bg-mesh-blob blob-2" />
+                    <div className="bg-mesh-blob blob-3" />
                 </div>
+                {/* LEFT PANEL - TOOLSET */}
+                <div className="w-80 glass-card !bg-black/40 backdrop-blur-3xl border-r border-white/10 flex flex-col z-10 shadow-2xl shrink-0 rounded-none">
+                    <div className="p-8 border-b border-white/5">
+                        <h1 className="text-3xl font-black tracking-tighter text-white uppercase leading-none">
+                            Isomer <br />
+                            <span className="text-white/40 font-light">Challenge</span>
+                        </h1>
+                        <p className="text-[12px] font-black uppercase tracking-[0.2em] text-white/60 mt-2 leading-relaxed">Master molecular connectivity.</p>
+                        <div className="flex items-center gap-2 mt-4">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Logic Hub: Active</p>
+                        </div>
+                    </div>
 
                 <div className="p-4 flex-1 overflow-y-auto flex flex-col gap-6">
 
-                    {/* TOOLS */}
-                    <div>
-                        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Tools</h2>
-                        <div className="grid grid-cols-2 gap-2">
-                            <button onClick={() => setMode('none')} className={`px-3 py-2 rounded font-semibold text-sm transition-all col-span-2 ${mode === 'none' ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>None</button>
-                            <button onClick={() => setMode('add')} className={`px-3 py-2 rounded font-semibold text-sm transition-all ${mode === 'add' ? 'bg-cyan-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>Add Atom</button>
-                            <button onClick={() => setMode('select')} className={`px-3 py-2 rounded font-semibold text-sm transition-all ${mode === 'select' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>Select/Edit</button>
-                            <button onClick={() => setMode('bond')} className={`px-3 py-2 rounded font-semibold text-sm transition-all ${mode === 'bond' ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>Draw Bond</button>
-                            <button onClick={() => setMode('group')} className={`px-3 py-2 rounded font-semibold text-sm transition-all ${mode === 'group' ? 'bg-yellow-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>Group Actions</button>
-                            <button onClick={() => setMode('delete')} className={`px-3 py-2 rounded font-semibold text-sm transition-all col-span-2 ${mode === 'delete' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>Delete</button>
-                        </div>
+                        {/* TOOLS */}
+                        <div>
+                            <h2 className="text-[12px] font-black text-white/70 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
+                                Tool Palette
+                            </h2>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={() => setMode('none')} className={`px-4 py-3 rounded-none font-black text-[12px] uppercase tracking-widest transition-all duration-500 col-span-2 relative overflow-hidden tap-animation border ${mode === 'none' ? 'bg-white text-black border-white shadow-2xl scale-105' : 'glass-pill border-white/10 text-white/70 hover:border-white/20 hover:text-white'}`}>
+                                    {mode === 'none' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent animate-shimmer" />}
+                                    None
+                                </button>
+                                <button onClick={() => setMode('add')} className={`px-4 py-3 rounded-none font-black text-[12px] uppercase tracking-widest transition-all duration-500 relative overflow-hidden tap-animation border ${mode === 'add' ? 'bg-white text-black border-white shadow-2xl scale-105' : 'glass-pill border-white/10 text-white/70 hover:border-white/20 hover:text-white'}`}>
+                                    {mode === 'add' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent animate-shimmer" />}
+                                    Add
+                                </button>
+                                <button onClick={() => setMode('select')} className={`px-4 py-3 rounded-none font-black text-[12px] uppercase tracking-widest transition-all duration-500 relative overflow-hidden tap-animation border ${mode === 'select' ? 'bg-white text-black border-white shadow-2xl scale-105' : 'glass-pill border-white/10 text-white/70 hover:border-white/20 hover:text-white'}`}>
+                                    {mode === 'select' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent animate-shimmer" />}
+                                    Select
+                                </button>
+                                <button onClick={() => setMode('bond')} className={`px-4 py-3 rounded-none font-black text-[12px] uppercase tracking-widest transition-all duration-500 relative overflow-hidden tap-animation border ${mode === 'bond' ? 'bg-white text-black border-white shadow-2xl scale-105' : 'glass-pill border-white/10 text-white/70 hover:border-white/20 hover:text-white'}`}>
+                                    {mode === 'bond' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent animate-shimmer" />}
+                                    Bond
+                                </button>
+                                <button onClick={() => setMode('group')} className={`px-4 py-3 rounded-none font-black text-[12px] uppercase tracking-widest transition-all duration-500 relative overflow-hidden tap-animation border ${mode === 'group' ? 'bg-white text-black border-white shadow-2xl scale-105' : 'glass-pill border-white/10 text-white/70 hover:border-white/20 hover:text-white'}`}>
+                                    {mode === 'group' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent animate-shimmer" />}
+                                    Group
+                                </button>
+                                <button onClick={() => setMode('delete')} className={`px-4 py-3 rounded-none font-black text-[12px] uppercase tracking-widest transition-all duration-500 col-span-2 relative overflow-hidden tap-animation border ${mode === 'delete' ? 'bg-red-500 text-white border-red-400 shadow-[0_0_30px_rgba(239,68,68,0.3)] scale-105' : 'glass-pill border-white/10 text-red-500/70 hover:border-red-400/20 hover:text-red-400'}`}>
+                                    {mode === 'delete' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />}
+                                    Delete
+                                </button>
+                            </div>
 
-                        <div className="mt-4 pt-4 border-t border-gray-800">
-                            <label className="flex items-center gap-2 cursor-pointer group" onClick={() => setAutoLayout(!autoLayout)}>
-                                <div className={`w-10 h-5 rounded-full px-1 flex items-center transition-colors ${autoLayout ? 'bg-cyan-600' : 'bg-gray-700'}`}>
-                                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${autoLayout ? 'translate-x-5' : 'translate-x-0'}`} />
+                        <div className="mt-8 pt-8 border-t border-white/5">
+                            <label className="flex items-center justify-between cursor-pointer group" onClick={() => setAutoLayout(!autoLayout)}>
+                                <span className={`text-[12px] font-black uppercase tracking-widest transition-colors ${autoLayout ? 'text-white' : 'text-white/50 group-hover:text-white/70'}`}>VSEPR Auto-Layout</span>
+                                <div className={`w-12 h-6 rounded-full px-1.5 flex items-center transition-all duration-500 border ${autoLayout ? 'bg-white border-white' : 'bg-white/10 border-white/20'}`}>
+                                    <div className={`w-3.5 h-3.5 rounded-full transition-all duration-500 ${autoLayout ? 'bg-black translate-x-5' : 'bg-white/30 translate-x-0'}`} />
                                 </div>
-                                <span className={`text-sm font-bold transition-colors ${autoLayout ? 'text-cyan-400' : 'text-gray-500 group-hover:text-gray-300'}`}>Auto-Layout (VSEPR)</span>
                             </label>
                         </div>
                     </div>
 
                     {/* CONTEXTUAL properties */}
                     {mode === 'add' && (
-                        <div className="bg-black/30 p-3 rounded-lg border border-gray-800 animate-fade-in">
-                            <h2 className="text-sm font-bold text-cyan-500 mb-3">Atom Properties</h2>
+                        <div className="bg-white/[0.03] p-6 rounded-none border border-white/10 animate-fade-in shadow-inner backdrop-blur-md">
+                            <h2 className="text-[12px] font-black text-white/70 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-white/60" />
+                                Atom Properties
+                            </h2>
 
-                            <label className="block text-xs text-gray-400 mb-1">Element</label>
-                            <select value={element} onChange={(e) => setElement(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm text-white focus:outline-none focus:border-cyan-500 mb-3">
+                            <label className="block text-[11px] font-black text-white/60 uppercase tracking-widest mb-2">Element</label>
+                            <select value={element} onChange={(e) => setElement(e.target.value)} className="w-full glass-pill !bg-white/5 border-white/5 rounded-none p-2.5 text-[11px] font-bold text-white focus:outline-none focus:border-white/20 mb-4 appearance-none custom-select">
                                 {elementList.map(el => (
-                                    <option key={el.symbol} value={el.symbol}>
+                                    <option key={el.symbol} value={el.symbol} className="bg-black">
                                         {el.number}. {el.name} ({el.symbol})
                                     </option>
                                 ))}
                             </select>
 
-                            <label className="block text-xs text-gray-400 mb-1">Charge</label>
-                            <select value={charge} onChange={(e) => setCharge(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm text-white focus:outline-none focus:border-cyan-500">
-                                <option value="0">Neutral (0)</option>
-                                <option value="1">Cation (+1)</option>
-                                <option value="2">Cation (+2)</option>
-                                <option value="-1">Anion (-1)</option>
-                                <option value="-2">Anion (-2)</option>
+                            <label className="block text-[11px] font-black text-white/60 uppercase tracking-widest mb-2">Charge</label>
+                            <select value={charge} onChange={(e) => setCharge(e.target.value)} className="w-full glass-pill !bg-white/5 border-white/5 rounded-none p-2.5 text-[11px] font-bold text-white focus:outline-none focus:border-white/20 appearance-none custom-select">
+                                <option value="0" className="bg-black">Neutral (0)</option>
+                                <option value="1" className="bg-black">Cation (+1)</option>
+                                <option value="2" className="bg-black">Cation (+2)</option>
+                                <option value="-1" className="bg-black">Anion (-1)</option>
+                                <option value="-2" className="bg-black">Anion (-2)</option>
                             </select>
                         </div>
                     )}
 
                     {mode === 'bond' && (
-                        <div className="bg-black/30 p-3 rounded-lg border border-gray-800 animate-fade-in">
-                            <h2 className="text-sm font-bold text-green-500 mb-2">Bond Order</h2>
+                        <div className="bg-white/[0.03] p-6 rounded-none border border-white/10 animate-fade-in shadow-inner backdrop-blur-md">
+                            <h2 className="text-[12px] font-black text-white/70 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-white/60" />
+                                Bond Order
+                            </h2>
+                            <p className="text-[11px] font-black text-white/60 uppercase tracking-widest mb-4">Select two atoms to connect.</p>
                             <div className="flex gap-2">
                                 {[1, 2, 3].map(order => (
-                                    <button key={order} onClick={() => setBondOrder(order)} className={`flex-1 py-1 rounded text-sm font-bold transition-all ${bondOrder === order ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>{order}</button>
+                                    <button 
+                                        key={order} 
+                                        onClick={() => setBondOrder(order)} 
+                                        className={`flex-1 py-1.5 rounded-none text-[12px] font-black transition-all border tap-animation ${bondOrder === order ? 'bg-white text-black border-white shadow-xl' : 'glass-pill border-white/10 text-white/70 hover:border-white/20'}`}
+                                    >
+                                        {order}
+                                    </button>
                                 ))}
                             </div>
                         </div>
                     )}
 
                     {mode === 'select' && (
-                        <div className="bg-black/30 p-3 rounded-lg border border-gray-800 animate-fade-in">
-                            {!selectedAtomId && !selectedBondId && <p className="text-xs text-gray-400">Click to select.</p>}
+                        <div className="bg-white/[0.03] p-6 rounded-none border border-white/10 animate-fade-in shadow-inner backdrop-blur-md">
+                            {!selectedAtomId && !selectedBondId && (
+                                <p className="text-[11px] font-black text-white/60 uppercase tracking-widest text-center py-4 leading-relaxed">Click an atom or bond in the 3D view to select it and see edit controls.</p>
+                            )}
 
                             {selectedAtomId && (() => {
                                 const activeAtom = script.atoms.find(a => a.id === selectedAtomId);
                                 const currentY = activeAtom ? activeAtom.startPos[1] : 0;
                                 return (
-                                    <>
-                                        <h2 className="text-sm font-bold text-blue-500 mb-2">Edit Selected Atom</h2>
-                                        <div className="mb-4 bg-gray-900 border border-gray-800 p-2 rounded">
-                                            <label className="block text-xs text-gray-400 mb-1">Atom Charge</label>
-                                            <select value={activeAtom.charge || 0} onChange={(e) => updateAtomCharge(selectedAtomId, e.target.value)} className="w-full bg-gray-800 rounded p-1.5 text-xs text-white">
-                                                <option value="0">Neutral (0)</option>
-                                                <option value="1">Cation (+1)</option>
-                                                <option value="-1">Anion (-1)</option>
+                                    <div className="space-y-6">
+                                        <h2 className="text-[12px] font-black text-white/70 uppercase tracking-[0.2em] flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
+                                            Edit Selected Atom
+                                        </h2>
+
+                                        <div className="glass-pill !bg-white/5 border-white/10 p-4 rounded-none">
+                                            <label className="block text-[11px] font-black text-white/60 uppercase tracking-widest mb-2">Atom Charge</label>
+                                            <select value={activeAtom.charge || 0} onChange={(e) => updateAtomCharge(selectedAtomId, e.target.value)} className="w-full bg-transparent border-none rounded p-0 text-[11px] font-bold text-white focus:outline-none appearance-none cursor-pointer">
+                                                <option value="0" className="bg-black">Neutral (0)</option>
+                                                <option value="1" className="bg-black">Cation (+1)</option>
+                                                <option value="-1" className="bg-black">Anion (-1)</option>
                                             </select>
                                         </div>
 
-                                        <div className="mb-4 bg-blue-900/20 p-2 rounded">
-                                            <label className="block text-xs text-cyan-400 mb-1">Elevation (Y): {currentY.toFixed(1)}u</label>
+                                        <div className="glass-pill !bg-white/5 border-white/10 p-4 rounded-none">
+                                            <label className="block text-[11px] font-black text-white/60 uppercase tracking-widest mb-2 leading-relaxed">Elevation (Y): {currentY.toFixed(1)}u</label>
                                             <input type="range" min="-10" max="10" step="0.1" value={currentY} onChange={(e) => {
                                                 const newY = parseFloat(e.target.value);
                                                 if (activeAtom) updateAtomPosition(selectedAtomId, [activeAtom.startPos[0], newY, activeAtom.startPos[2]]);
-                                            }} className="w-full accent-cyan-500" />
+                                            }} className="w-full accent-white" />
                                         </div>
-                                    </>
+                                    </div>
                                 );
                             })()}
 
                             {selectedBondId && (
-                                <>
-                                    <h2 className="text-sm font-bold text-green-500 mb-2">Edit Bond Order</h2>
+                                <div className="space-y-4">
+                                    <h2 className="text-[12px] font-black text-white/70 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
+                                        Edit Bond Order
+                                    </h2>
                                     <div className="flex gap-2">
                                         {[1, 2, 3].map(order => {
                                             const active = script.bonds.find(b => b.id === selectedBondId)?.order === order;
-                                            return <button key={order} onClick={() => updateBond(selectedBondId, order)} className={`flex-1 py-1 rounded text-sm transition-all ${active ? 'bg-green-600' : 'bg-gray-800 text-gray-400'}`}>{order}</button>
+                                            return (
+                                                <button
+                                                    key={order}
+                                                    onClick={() => updateBond(selectedBondId, order)}
+                                                    className={`flex-1 py-1.5 rounded-none text-[12px] font-black transition-all border tap-animation ${active ? 'bg-white text-black border-white shadow-xl' : 'glass-pill border-white/10 text-white/70 hover:border-white/20'}`}
+                                                >
+                                                    {order}
+                                                </button>
+                                            )
                                         })}
                                     </div>
-                                </>
+                                </div>
                             )}
                         </div>
                     )}
                 </div>
 
-                <div className="p-4 border-t border-gray-800">
-                    <button onClick={clearScript} className="w-full py-2 bg-red-900/30 text-red-400 border border-red-900/50 rounded transition-colors text-sm font-bold mb-2">Clear Workspace</button>
-                    <button onClick={nextChallenge} className="w-full py-2 bg-gray-800 border border-cyan-800 text-cyan-300 rounded hover:bg-gray-700 transition text-sm font-bold mb-2">Skip Challenge ⏭️</button>
-                    <Link href="/compounds/isomer-challenge/manager" className="w-full flex justify-center py-2 bg-indigo-900/30 border border-indigo-900/50 text-indigo-400 rounded hover:bg-indigo-900/60 transition text-xs font-bold">
+                <div className="p-6 border-t border-white/5 flex flex-col gap-3 bg-black/20">
+                    <button onClick={clearScript} className="w-full py-2.5 bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/30 rounded-none transition-all text-[11px] font-black uppercase tracking-widest">Clear Workspace</button>
+                    <button onClick={nextChallenge} className="w-full py-2.5 bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 rounded-none transition-all text-[11px] font-black uppercase tracking-widest">Skip Challenge</button>
+                    <Link href="/compounds/isomer-challenge/manager" className="w-full py-2 border border-white/5 bg-white/5 text-[10px] font-black text-white/40 uppercase tracking-[0.2em] flex items-center justify-center hover:bg-white/10 transition-all rounded-none">
                         ⚙️ Isomer Manager
                     </Link>
                 </div>
@@ -378,9 +443,17 @@ export default function IsomerChallengePage() {
 
             {/* CENTER PANEL - 3D CANVAS */}
             <div className="flex-1 relative cursor-crosshair">
-                <div className="absolute top-4 left-4 z-10 pointer-events-none">
-                    <span className="bg-black/80 text-white px-3 py-1 rounded-full text-xs font-mono font-bold tracking-widest border border-gray-800 uppercase shadow-lg">Mode: {mode}</span>
-                    {selectedAtomId && <span className="ml-2 bg-cyan-900/80 text-cyan-200 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase shadow-lg">Atom: {selectedAtomId}</span>}
+                <div className="absolute top-8 left-8 z-10 pointer-events-none flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                        <span className="bg-white text-black px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest border border-white uppercase shadow-2xl">
+                            SYSTEM: {mode}
+                        </span>
+                        {selectedAtomId && (
+                            <span className="bg-white/5 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest border border-white/10 uppercase animate-pulse">
+                                TARGET: ATOM-{selectedAtomId}
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <Canvas camera={{ position: [0, 5, 10], fov: 45 }} onContextMenu={(e) => e.preventDefault()} onPointerMissed={() => {
@@ -475,27 +548,32 @@ export default function IsomerChallengePage() {
             </div>
 
             {/* RIGHT PANEL - GAME PROGRESS */}
-            <div className="w-80 bg-[#0d1117] border-l border-gray-800 flex flex-col z-10 shrink-0 p-6">
-                <h2 className="text-xl font-bold mb-4 text-white text-center">Challenge Status</h2>
+            <div className="w-80 glass-card !bg-black/40 backdrop-blur-3xl border-l border-white/10 flex flex-col z-10 shadow-2xl shrink-0 p-8 space-y-8 rounded-none">
+                <h2 className="text-[12px] font-black text-white uppercase tracking-[0.3em] text-center border-b border-white/10 pb-4">Challenge Status</h2>
                 
-                <div className="p-4 bg-gray-800 border border-gray-700 rounded-lg flex flex-col items-center justify-center space-y-2 mb-6">
-                    <span className="text-gray-400 text-xs uppercase tracking-widest flex items-center gap-2">
-                        Target {isFetching && <span className="animate-spin w-3 h-3 border-2 border-cyan-500 border-t-transparent rounded-full ml-1"></span>}
+                <div className="p-8 bg-white/[0.03] border border-white/10 rounded-none flex flex-col items-center justify-center space-y-3 relative overflow-hidden shadow-inner">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-transparent opacity-50" />
+                    <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] relative z-10 flex items-center gap-2">
+                        {isFetching && <span className="animate-spin w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full"></span>}
+                        Target Formula
                     </span>
-                    <span className={`font-mono text-3xl font-bold text-cyan-400`}><FormulaText text={currentChallenge?.target || 'C'} /></span>
+                    <span className="font-mono text-4xl font-extrabold text-white tracking-widest relative z-10 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                        <FormulaText text={currentChallenge?.target || 'C'} />
+                    </span>
                 </div>
 
-                {/* Progress Bar */}
-                <div className="w-full bg-gray-800 rounded-full h-4 mb-2 border border-gray-700 overflow-hidden">
-                    <div className="bg-cyan-500 h-4 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(6,182,212,0.8)]" style={{ width: `${(foundIsomers.length / currentChallenge.expected) * 100}%` }}></div>
+                <div className="space-y-4">
+                    <div className="w-full bg-white/5 rounded-full h-1.5 border border-white/10 overflow-hidden">
+                        <div className="bg-white h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(255,255,255,0.5)]" style={{ width: `${(foundIsomers.length / currentChallenge.expected) * 100}%` }}></div>
+                    </div>
+                    <p className="text-[11px] font-black text-white/70 uppercase tracking-widest text-center leading-relaxed">
+                        Found <span className="text-white text-lg font-black mx-1">{foundIsomers.length}</span> of {currentChallenge.expected} isomers
+                    </p>
                 </div>
-                <p className="text-gray-300 font-medium mb-6 text-center text-sm">
-                    Found <span className="text-cyan-400 text-xl font-bold">{foundIsomers.length}</span> of {currentChallenge.expected} isomers
-                </p>
 
-                <div className="p-3 bg-black border border-gray-800 rounded-lg flex flex-col items-center justify-center mb-6">
-                    <span className="text-gray-500 text-[10px] uppercase mb-1">Your Formula</span>
-                    <span className={`font-mono text-xl ${formula === currentChallenge?.target ? 'text-green-500' : 'text-gray-400'}`}>
+                <div className="p-6 bg-black/40 border border-white/5 rounded-none flex flex-col items-center justify-center shadow-inner">
+                    <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-3">Your Construction</span>
+                    <span className={`font-mono text-2xl font-black tracking-widest ${formula === currentChallenge?.target ? 'text-white' : 'text-white/40'}`}>
                         <FormulaText text={formula} />
                     </span>
                 </div>
@@ -516,15 +594,17 @@ export default function IsomerChallengePage() {
                 <button 
                     onClick={handleSubmit}
                     disabled={formula !== currentChallenge.target}
-                    className={`w-full py-4 text-xl font-extrabold rounded-xl transition-all shadow-lg ${
+                    className={`w-full py-5 text-[14px] font-black rounded-none tracking-[0.3em] transition-all duration-500 shadow-2xl relative overflow-hidden uppercase ${
                         formula === currentChallenge.target 
-                        ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:scale-105 active:scale-95 shadow-cyan-900/80 cursor-pointer' 
-                        : 'bg-gray-800 text-gray-500 border border-gray-700 cursor-not-allowed'
+                        ? 'bg-white text-black border-white hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.2)]' 
+                        : 'bg-white/5 text-white/20 border border-white/5 cursor-not-allowed opacity-50'
                     }`}
                 >
-                    SUBMIT
+                    {formula === currentChallenge.target && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent animate-shimmer" />}
+                    Submit Isomer
                 </button>
             </div>
         </div>
+    </div>
     );
 }

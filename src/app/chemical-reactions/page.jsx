@@ -65,24 +65,12 @@
 //       {/* OVERLAY: Top Left Info Panel (Glass Card) */}
 //       <div className={`absolute top-20 left-6 z-10 w-80 transition-all duration-500 ${showInfo ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}>
 //         <div className="bg-black/40 backdrop-blur-xl border border-white/10 p-5 rounded-2xl shadow-2xl">
-//           <div className="flex items-center gap-2 mb-4 text-cyan-400">
+//           <div className="flex items-center gap-2 mb-4 text-blue-400">
 //             <FlaskConical size={20} />
-//             <span className="text-xs font-bold tracking-widest uppercase">Experiment Protocol</span>
-//           </div>
-
-//           {/* Reaction Selector (Styled) */}
-//           <div className="relative mb-4 group">
-//             <select 
-//                 className="w-full bg-black/50 border border-white/10 text-white p-3 rounded-lg appearance-none cursor-pointer hover:border-cyan-500/50 transition-colors focus:outline-none focus:ring-1 focus:ring-cyan-500 font-medium"
-//                 onChange={(e) => handleReactionChange(e.target.value)}
-//                 value={Object.keys(REACTIONS).find(key => REACTIONS[key].id === currentReaction.id)}
-//             >
-//                 <option value="methane_combustion">Methane Combustion</option>
-//                 <option value="haber_process">Haber Process</option>
 //                 <option value="contact_process">Contact Process</option>
 //                 <option value="solvay_process">Solvay Process</option>
 //             </select>
-//             <ChevronDown className="absolute right-3 top-3.5 text-gray-400 pointer-events-none group-hover:text-cyan-400 transition-colors" size={16} />
+//             <ChevronDown className="absolute right-3 top-3.5 text-gray-400 pointer-events-none group-hover:text-blue-400 transition-colors" size={16} />
 //           </div>
 
 //           <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
@@ -111,7 +99,7 @@
 //                     onClick={() => setViewMode(mode)}
 //                     className={`px-4 py-2 rounded-lg text-xs font-bold transition-all duration-300 ${
 //                         viewMode === mode 
-//                         ? 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)]' 
+//                         ? 'bg-blue-500 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)]' 
 //                         : 'text-gray-400 hover:text-white hover:bg-white/5'
 //                     }`}
 //                 >
@@ -312,7 +300,7 @@ const ChemicalReactionsPage = () => {
   if (!currentReaction) return <div className="text-white text-center mt-20">Loading Reactions...</div>;
 
   return (
-    <div className="fixed inset-0 w-full h-full bg-black overflow-hidden font-sans text-white">
+    <div className="fixed inset-0 w-full h-full bg-black overflow-hidden font-sans text-white z-[30]">
 
       {/* BACKGROUND: 3D SCENE */}
       <div className="absolute inset-0 z-0">
@@ -325,6 +313,13 @@ const ChemicalReactionsPage = () => {
         />
       </div>
 
+      {/* Animated Background Mesh */}
+      <div className="bg-mesh-container pointer-events-none opacity-40">
+        <div className="bg-mesh-blob blob-1 will-change-transform" />
+        <div className="bg-mesh-blob blob-2 will-change-transform" />
+        <div className="bg-mesh-blob blob-3 will-change-transform" />
+      </div>
+
       {/* Explanation Overlay Logic */}
       {viewMode === 'MACRO' && currentReaction?.macroView?.visualRules?.explanationTimeline && (() => {
           const activeExplanation = currentReaction.macroView.visualRules.explanationTimeline.find(block => {
@@ -334,13 +329,13 @@ const ChemicalReactionsPage = () => {
           
           if (activeExplanation) {
               return (
-                  <div className="absolute bottom-36 left-1/2 -translate-x-1/2 w-4/5 max-w-xl pointer-events-none animate-in fade-in slide-in-from-bottom-4 duration-300 z-20">
-                      <div className="bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-4 shadow-2xl flex items-start gap-4">
-                          <div className="mt-1 bg-purple-500/20 p-2 rounded-lg border border-purple-500/30">
-                              <MessageSquareText size={16} className="text-purple-400" />
+                  <div className="absolute bottom-40 left-1/2 -translate-x-1/2 w-4/5 max-w-xl pointer-events-none animate-in fade-in slide-in-from-bottom-4 duration-300 z-40">
+                      <div className="bg-mesh-solid border border-white/10 rounded-none p-5 shadow-3xl flex items-start gap-4">
+                          <div className="mt-1 bg-white/5 p-2 rounded-none border border-white/10 text-blue-400">
+                              <MessageSquareText size={16} />
                           </div>
                           <div className="flex-1 pointer-events-auto">
-                              <p className="text-sm text-gray-200 font-medium leading-relaxed whitespace-pre-wrap">
+                              <p className="text-sm font-black text-white leading-relaxed whitespace-pre-wrap uppercase tracking-wider">
                                   {activeExplanation.text || "..."}
                               </p>
                           </div>
@@ -351,10 +346,19 @@ const ChemicalReactionsPage = () => {
           return null;
       })()}
 
-      {/* LEFT PANEL: Reaction Library */}
-      {/* ⬅️ FIX: Changed 'top-6' to 'top-24' to clear Navbar */}
-      <div className="absolute top-24 left-6 bottom-28 w-80 z-20 flex flex-col pointer-events-none">
-        <div className="h-full pointer-events-auto shadow-2xl rounded-2xl overflow-hidden">
+      {/* LEFT SIDEBAR: Lab Navigation & Library */}
+      <div className="fixed top-16 left-0 bottom-0 w-80 bg-mesh-solid border-r border-white/10 z-40 flex flex-col shadow-2xl">
+        <div className="p-8 border-b border-white/5 bg-black/40">
+            <h1 className="text-3xl font-black tracking-tighter text-white">
+                REACTION <span className="text-white/40 font-light uppercase">LAB</span>
+            </h1>
+            <p className="text-[13px] font-black uppercase tracking-[0.2em] text-blue-300 mt-4 flex items-center gap-3">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)] animate-pulse" />
+                Laboratory Simulation [Online]
+            </p>
+        </div>
+
+        <div className="flex-1 overflow-hidden">
           <ReactionLibrary
             reactions={reactionsList}
             currentReaction={currentReaction}
@@ -363,19 +367,18 @@ const ChemicalReactionsPage = () => {
         </div>
       </div>
 
-      {/* RIGHT SIDEBAR: Mode Switcher + Controls */}
-      {/* ⬅️ FIX: Changed 'top-6' to 'top-24' to clear Navbar */}
-      <div className="absolute top-24 right-6 bottom-28 w-72 z-20 flex flex-col gap-3 pointer-events-none">
-
-        {/* Mode Switcher */}
-        <div className="bg-black/60 backdrop-blur-md p-1 rounded-xl border border-white/10 flex gap-1 shadow-lg pointer-events-auto self-end shrink-0">
+      {/* RIGHT SIDEBAR: Environmental Controls & Telemetry */}
+      <div className="fixed top-16 right-0 bottom-0 w-80 bg-mesh-solid border-l border-white/10 z-40 flex flex-col shadow-2xl">
+        
+        {/* Mode Switcher - Integrated at the top */}
+        <div className="p-6 border-b border-white/5 flex gap-1.5 bg-black/40">
           {['MACRO', 'MICRO'].map(mode => (
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all duration-300 ${viewMode === mode
-                ? 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)]'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
+              className={`flex-1 py-4 rounded-none text-[11px] font-black transition-all duration-300 uppercase tracking-widest border ${viewMode === mode
+                ? 'bg-white text-black border-white shadow-xl'
+                : 'text-white/40 border-white/10 hover:border-white/20 hover:bg-white/5'
                 }`}
             >
               {mode} VIEW
@@ -383,39 +386,47 @@ const ChemicalReactionsPage = () => {
           ))}
         </div>
 
-        {/* Controls Area */}
-        <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-y-auto custom-scrollbar pointer-events-auto pb-2">
-          <ReactorConditions
-            conditions={envConditions}
-            setConditions={setEnvConditions}
-            optimalConditions={{
-              temp: currentReaction.optimalTemp,
-              pressure: currentReaction.optimalPressure,
-              desc: currentReaction.conditionsDesc
-            }}
-          />
-          <div className="bg-black/60 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-xl shrink-0">
+        {/* Telemetry & Conditions Scrollable Area */}
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 space-y-8">
+          <div className="rounded-none">
+            <ReactorConditions
+              conditions={envConditions}
+              setConditions={setEnvConditions}
+              optimalConditions={{
+                temp: currentReaction.optimalTemp,
+                pressure: currentReaction.optimalPressure,
+                desc: currentReaction.conditionsDesc
+              }}
+            />
+          </div>
+          <div className="pt-8 border-t border-white/5">
             <EnergyProfile progress={progress} activationEnergy={currentReaction.activationEnergy} />
           </div>
+        </div>
+
+        {/* Tactical Support Hook */}
+        <div className="p-5 border-t border-white/10 bg-black/40">
+            <p className="text-[12px] font-black text-white uppercase tracking-[0.3em] text-center">AI Diagnostics Active</p>
         </div>
       </div>
 
       {/* BOTTOM CENTER: Playback Control Deck */}
-      <div className="absolute bottom-6 left-0 right-0 z-30 flex justify-center px-4 pointer-events-none">
-        <div className="w-full max-w-2xl pointer-events-auto">
-          <ReactionControls
-            progress={progress}
-            setProgress={(val) => { setProgress(val); setIsPlaying(false); playingRef.current = false; }}
-            isPlaying={isPlaying}
-            togglePlay={togglePlay}
-            speed={simulationSpeed}
-            setSpeed={setSimulationSpeed}
-          />
-        </div>
+      <div className="fixed bottom-10 left-80 right-80 z-40 flex justify-center px-8 pointer-events-none">
+         <div className="w-full max-w-2xl pointer-events-auto bg-mesh-solid border border-white/10 p-4 shadow-3xl">
+            <ReactionControls 
+                progress={progress} 
+                setProgress={(val) => { setProgress(val); setIsPlaying(false); playingRef.current = false; }} 
+                isPlaying={isPlaying} 
+                togglePlay={togglePlay} 
+                simulationSpeed={simulationSpeed}
+                setSimulationSpeed={setSimulationSpeed}
+            />
+         </div>
       </div>
 
       <ReactionChatbot currentReaction={currentReaction} />
     </div>
+
   );
 };
 

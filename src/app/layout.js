@@ -3,6 +3,9 @@ import { AuthProvider } from '../context/AuthContext';
 import NavbarWrapper from '../components/NavbarWrapper';
 import { ReactionEditorProvider } from '../context/ReactionEditorContext';
 import NextTopLoader from 'nextjs-toploader';
+import Footer from '../components/Footer';
+import ThemeWrapper from '../components/ThemeWrapper';
+
 
 export const metadata = {
   title: 'Molecools Lab',
@@ -22,12 +25,16 @@ export default function RootLayout({ children }) {
           showSpinner={true}
           easing="ease"
           speed={200}
-          shadow="0 0 10px #22d3ee,0 0 5px #22d3ee"
+          shadow="0 0 10px rgba(255,255,255,0.4),0 0 5px rgba(255,255,255,0.2)"
+
         />
         <AuthProvider>
           <ReactionEditorProvider>
-            <NavbarWrapper />
-            {children}
+            <ThemeWrapper>
+              <NavbarWrapper />
+              {children}
+              <Footer />
+            </ThemeWrapper>
           </ReactionEditorProvider>
         </AuthProvider>
       </body>

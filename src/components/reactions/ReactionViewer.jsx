@@ -53,7 +53,7 @@ const ReactionViewer = ({ reaction, viewMode, progress, isPlaying, environment }
       {/* - dpr={[1, 2]}: Handles high-DPI screens (Retina)
          - antialias: true: Smooth edges
       */}
-      <Canvas dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
+      <Canvas dpr={[1, 1.5]} gl={{ antialias: true, alpha: false }}>
 
         {/* 🎥 CAMERA ADJUSTMENT:
            - position: [0, 0, 20] -> Moved back (was 12) to fit content between sidebars.

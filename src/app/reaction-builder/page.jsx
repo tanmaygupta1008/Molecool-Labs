@@ -97,14 +97,15 @@ export default function ReactionBuilderPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
-                        <Link href="/engine/reactions" className="p-2 rounded-full border border-white/10 hover:bg-white/10 hover:border-white/30 transition-all">
-                            <ArrowLeft size={20} className="text-gray-400" />
+                        <Link href="/engine/reactions" className="p-3 rounded-xl border border-white/20 hover:bg-white/10 hover:border-white/40 transition-all bg-white/5 backdrop-blur-md">
+                            <ArrowLeft size={24} className="text-white" />
                         </Link>
                         <div>
-                            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
-                                Reaction Builder
+                            <h1 className="text-4xl font-black tracking-tighter">
+                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">Reaction</span>
+                                <span className="text-white/40 font-light ml-3 uppercase text-[32px]">Builder</span>
                             </h1>
-                            <p className="text-gray-500 text-sm mt-1">Design and balance new chemical equations.</p>
+                            <p className="text-white font-black tracking-widest uppercase text-xs mt-2 opacity-80">Design and balance new chemical equations.</p>
                         </div>
                     </div>
                 </div>
@@ -115,42 +116,42 @@ export default function ReactionBuilderPage() {
                     {/* Left Column: Input Form */}
                     <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 flex flex-col gap-6 shadow-2xl">
                         
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold text-gray-400 tracking-wider uppercase">Reaction Name</label>
+                        <div className="flex flex-col gap-3">
+                            <label className="text-[13px] font-black text-white tracking-[0.2em] uppercase">Reaction Name</label>
                             <input 
                                 type="text" 
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="e.g. Water Synthesis"
-                                className="bg-black/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-medium"
+                                className="bg-white/5 border border-white/20 rounded-2xl px-6 py-4 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/50 transition-all font-bold text-white placeholder:text-white/20"
                             />
                         </div>
 
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold text-gray-400 tracking-wider uppercase flex items-center justify-between">
+                        <div className="flex flex-col gap-3">
+                            <label className="text-[13px] font-black text-white tracking-[0.2em] uppercase flex items-center justify-between">
                                 <span>Reactants</span>
-                                <span className="text-gray-600 font-normal normal-case">e.g. 2H2 + O2</span>
+                                <span className="text-white/40 font-bold normal-case text-[11px]">H₂ + O₂ Example</span>
                             </label>
                             <input 
                                 type="text" 
                                 value={reactants}
                                 onChange={(e) => setReactants(e.target.value)}
                                 placeholder="Reactants formula..."
-                                className="bg-black/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono text-lg"
+                                className="bg-white/5 border border-white/20 rounded-2xl px-6 py-4 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/50 transition-all font-mono text-xl text-white placeholder:text-white/10"
                             />
                         </div>
 
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold text-gray-400 tracking-wider uppercase flex items-center justify-between">
+                        <div className="flex flex-col gap-3">
+                            <label className="text-[13px] font-black text-white tracking-[0.2em] uppercase flex items-center justify-between">
                                 <span>Products</span>
-                                <span className="text-gray-600 font-normal normal-case">e.g. 2H2O</span>
+                                <span className="text-white/40 font-bold normal-case text-[11px]">H₂O Example</span>
                             </label>
                             <input 
                                 type="text" 
                                 value={products}
                                 onChange={(e) => setProducts(e.target.value)}
                                 placeholder="Products formula..."
-                                className="bg-black/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono text-lg"
+                                className="bg-white/5 border border-white/20 rounded-2xl px-6 py-4 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/50 transition-all font-mono text-xl text-white placeholder:text-white/10"
                             />
                         </div>
 
@@ -184,10 +185,10 @@ export default function ReactionBuilderPage() {
                         {/* Decorative background grid */}
                         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_10%,transparent_100%)] pointer-events-none"></div>
 
-                        <Beaker size={48} className="text-cyan-500/30 mb-8" />
+                        <Beaker size={56} className="text-cyan-400 mb-8 blur-[0.5px]" />
                         
-                        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6 border-b border-white/10 pb-2 border-dashed">
-                            Live Equation Preview
+                        <h3 className="text-[13px] font-black text-white uppercase tracking-[0.3em] mb-6 border-b border-white/20 pb-3">
+                            Equation Preview
                         </h3>
 
                         <div className="text-center w-full max-w-md mx-auto">
@@ -198,8 +199,8 @@ export default function ReactionBuilderPage() {
                             </div>
                         </div>
 
-                        <div className="mt-8 text-center max-w-xs text-sm text-gray-500 leading-relaxed">
-                            Numbers following element symbols will automatically format as <span className="text-cyan-400 font-mono">subscripts</span>. Coefficients placed at the beginning remain normal size.
+                        <div className="mt-8 text-center max-w-xs text-[13px] text-white font-bold leading-relaxed opacity-90">
+                            Numbers following symbols will automatically format as <span className="text-cyan-400 font-mono">subscripts</span>. Coefficients remain normal size.
                         </div>
                     </div>
                 </div>

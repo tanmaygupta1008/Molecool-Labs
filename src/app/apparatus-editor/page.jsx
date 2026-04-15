@@ -2319,51 +2319,63 @@ export default function ApparatusEditorPage() {
     };
 
     return (
-        <div className="flex h-screen w-full bg-[#0a0a0a] text-white selection:bg-blue-500/30 overflow-hidden font-sans">
+        <div className="flex h-[calc(100vh-4rem)] w-full bg-transparent text-white selection:bg-blue-500/30 overflow-hidden font-sans relative">
+            {/* Animated blue mesh background */}
+            <div className="bg-mesh-container" style={{position:'absolute',zIndex:0}}>
+                <div className="bg-mesh-blob blob-1" />
+                <div className="bg-mesh-blob blob-2" />
+                <div className="bg-mesh-blob blob-3" />
+            </div>
             {/* Sidebar */}
-            <div className="w-[350px] flex flex-col border-r border-white/5 bg-[#111111] shadow-2xl z-10 shrink-0">
+            <div className="w-[380px] flex flex-col border-r border-white/10 bg-[#020617]/80 backdrop-blur-xl shadow-2xl z-10 shrink-0 relative">
                 {/* Header */}
-                <div className="px-5 py-4 border-b border-white/5 bg-gradient-to-r from-blue-900/10 to-transparent">
-                    <h1 className="text-lg font-bold text-blue-400 flex items-center gap-2">
-                        <span>🧪</span> Apparatus Editor
+                <div className="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-blue-900/30 to-transparent">
+                    <h1 className="text-2xl font-black text-white tracking-tighter flex items-center gap-3">
+                        <span className="w-3 h-3 rounded-full bg-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.9)]" />
+                        <span>Apparatus</span>
+                        <span className="text-white/30 font-light text-xl">Editor</span>
                     </h1>
+                    <p className="text-white/50 font-black tracking-[0.15em] uppercase text-[10px] mt-1.5 ml-6">3D Lab Equipment Builder</p>
                 </div>
 
                 {/* Tab Navigation */}
-                <div className="flex bg-[#161616] p-2 border-b border-white/5 shrink-0">
+                <div className="flex bg-white/[0.03] p-2 border-b border-white/10 shrink-0 gap-2">
                     <button 
                         onClick={() => setActiveTab('library')} 
-                        className={`flex-1 text-xs py-2 rounded-md font-bold transition-all ${activeTab === 'library' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        className={`flex-1 text-[12px] py-2.5 rounded-xl font-black uppercase tracking-[0.15em] transition-all ${activeTab === 'library' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]' : 'text-white/30 hover:text-white/60 border border-transparent hover:border-white/10'}`}
                     >
                         Library
                     </button>
                     <button 
                         onClick={() => setActiveTab('properties')} 
-                        className={`flex-1 text-xs py-2 rounded-md font-bold transition-all ${activeTab === 'properties' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        className={`flex-1 text-[12px] py-2.5 rounded-xl font-black uppercase tracking-[0.15em] transition-all ${activeTab === 'properties' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)]' : 'text-white/30 hover:text-white/60 border border-transparent hover:border-white/10'}`}
                     >
                         Properties
                     </button>
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-6 custom-scrollbar">
 
                     {activeTab === 'library' && (
-                        <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+                        <div className="flex flex-col gap-7 animate-in fade-in duration-300">
                             {APPARATUS_CATEGORIES.map((category) => (
                                 <div key={category.name} className="flex flex-col gap-3">
-                                    <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest border-b border-white/5 pb-1">{category.name}</h3>
-                                    <div className="grid grid-cols-3 gap-2">
+                                    <h3 className="text-[12px] font-black text-white/60 uppercase tracking-[0.2em] border-b border-white/10 pb-2 flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+                                        {category.name}
+                                    </h3>
+                                    <div className="grid grid-cols-3 gap-2.5">
                                         {category.items.map(item => {
                                             if (!APPARATUS_MAP[item.id]) return null;
                                             return (
                                                 <button
                                                     key={item.id}
                                                     onClick={() => handleAddItem(item.id)}
-                                                    className="flex flex-col items-center justify-start gap-1 p-2 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-blue-600/10 hover:border-blue-500/30 hover:scale-[1.02] transition-all aspect-square group"
+                                                    className="flex flex-col items-center justify-start gap-1.5 p-3 bg-white/[0.04] border border-white/10 rounded-2xl hover:bg-blue-600/15 hover:border-blue-500/40 hover:scale-[1.03] transition-all aspect-square group shadow-lg"
                                                 >
                                                     <span className="text-2xl mt-1 mb-0.5 group-hover:scale-110 transition-transform">{item.icon}</span>
-                                                    <span className="text-[9px] text-neutral-400 text-center leading-tight w-full break-words">{item.name}</span>
+                                                    <span className="text-[10px] text-white/50 font-bold text-center leading-tight w-full break-words group-hover:text-white/80 transition-colors">{item.name}</span>
                                                 </button>
                                             )
                                         })}
@@ -2378,50 +2390,53 @@ export default function ApparatusEditorPage() {
                         <div className="flex flex-col gap-6 animate-in fade-in duration-300">
                             
                             {/* Reaction Selector */}
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Reaction Context</label>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[12px] font-black text-white/60 uppercase tracking-[0.2em]">Reaction Context</label>
                         <select
-                            className="bg-black/40 border border-white/10 rounded-md p-2.5 text-sm text-neutral-200 outline-none focus:border-blue-500/50 transition-colors cursor-pointer"
+                            className="bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white font-bold outline-none focus:border-blue-500/50 transition-colors cursor-pointer"
                             value={selectedReactionId || ''}
                             onChange={(e) => setSelectedReactionId(e.target.value)}
                         >
                             {reactions.map(r => (
-                                <option key={r.id} value={r.id}>{r.name}</option>
+                                <option key={r.id} value={r.id} className="bg-black">{r.name}</option>
                             ))}
                         </select>
                     </div>
 
                     {/* ── Global Table Environment (always visible) ── */}
-                    <div className="flex flex-col gap-2 p-4 bg-[#161616] border border-white/5 rounded-xl">
+                    <div className="flex flex-col gap-3 p-5 bg-white/[0.04] border border-white/10 rounded-2xl shadow-xl">
                         <div className="flex items-center justify-between mb-1">
-                            <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Table Environment</h3>
+                            <h3 className="text-[12px] font-black text-white/60 uppercase tracking-[0.2em] flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/60" />
+                                Table Environment
+                            </h3>
                             <button
                                 onClick={() => setShowTable(v => !v)}
-                                className={`text-[9px] px-2 py-0.5 rounded border transition-colors ${
-                                    showTable ? 'bg-green-600/20 text-green-400 border-green-500/30' : 'bg-white/5 text-neutral-500 border-white/10'
+                                className={`text-[10px] font-black px-3 py-1 rounded-lg border transition-colors uppercase tracking-wider ${
+                                    showTable ? 'bg-green-600/20 text-green-400 border-green-500/30' : 'bg-white/5 text-white/30 border-white/10'
                                 }`}
                             >
                                 {showTable ? '✓ Visible' : 'Hidden'}
                             </button>
                         </div>
-                        <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-4">
                             <div>
-                                <div className="flex justify-between items-center text-xs text-blue-300 mb-1">
+                                <div className="flex justify-between items-center text-[13px] font-black text-white uppercase tracking-tight mb-2">
                                     <label>Table Width (m)</label>
-                                    <span className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5">{globalTableWidth.toFixed(1)}</span>
+                                    <span className="font-mono bg-blue-600/15 px-3 py-1 rounded-lg border border-blue-500/30 text-blue-400 text-[12px]">{globalTableWidth.toFixed(1)}</span>
                                 </div>
-                                <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-blue-500 shadow-inner"
+                                <input type="range" className="w-full h-2 bg-white/5 border border-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500 shadow-inner"
                                     min="8" max="25" step="0.5"
                                     value={globalTableWidth}
                                     onChange={(e) => handleTableWidthChange(parseFloat(e.target.value))}
                                 />
                             </div>
                             <div>
-                                <div className="flex justify-between items-center text-xs text-blue-300 mb-1">
+                                <div className="flex justify-between items-center text-[13px] font-black text-white uppercase tracking-tight mb-2">
                                     <label>Table Depth (m)</label>
-                                    <span className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5">{globalTableDepth.toFixed(1)}</span>
+                                    <span className="font-mono bg-blue-600/15 px-3 py-1 rounded-lg border border-blue-500/30 text-blue-400 text-[12px]">{globalTableDepth.toFixed(1)}</span>
                                 </div>
-                                <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-blue-500 shadow-inner"
+                                <input type="range" className="w-full h-2 bg-white/5 border border-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500 shadow-inner"
                                     min="6" max="18" step="0.5"
                                     value={globalTableDepth}
                                     onChange={(e) => handleTableDepthChange(parseFloat(e.target.value))}
@@ -2431,12 +2446,15 @@ export default function ApparatusEditorPage() {
                     </div>
 
                     {/* Stage Manager */}
-                    <div className="flex flex-col gap-2 bg-gradient-to-r from-blue-900/10 to-transparent p-4 border border-blue-500/20 rounded-xl">
-                        <div className="flex justify-between items-center mb-1">
-                            <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Reaction Stages</label>
+                    <div className="flex flex-col gap-2 bg-gradient-to-br from-blue-900/20 to-transparent p-5 border border-blue-500/20 rounded-2xl shadow-xl">
+                        <div className="flex justify-between items-center mb-3">
+                            <label className="text-[13px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_6px_rgba(96,165,250,0.8)]" />
+                                Reaction Stages
+                            </label>
                             <button 
                                 onClick={() => setShowNewStageModal(true)}
-                                className="text-[9px] bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30 transition-colors"
+                                className="text-[11px] bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 px-4 py-2 rounded-xl border border-blue-500/30 font-black uppercase tracking-wider transition-all shadow-lg hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]"
                             >+ Add Stage</button>
                         </div>
                         <div className="flex flex-col gap-1.5">
@@ -2447,12 +2465,12 @@ export default function ApparatusEditorPage() {
                                     onClick={() => { setSelectedStageIndex(idx); setSelectedApparatusId(null); }}
                                 >
                                     <div className="flex items-center gap-2 flex-1">
-                                        <span className={`text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold ${selectedStageIndex === idx ? 'bg-blue-500 text-white' : 'bg-white/10 text-neutral-400'}`}>{idx + 1}</span>
+                                        <span className={`text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-black ${selectedStageIndex === idx ? 'bg-blue-500 text-white' : 'bg-white/10 text-white/40'}`}>{idx + 1}</span>
                                         <input 
                                             value={stage.name || `Stage ${idx + 1}`}
                                             onChange={(e) => handleRenameStage(idx, e.target.value)}
                                             onClick={(e) => { e.stopPropagation(); setSelectedStageIndex(idx); }}
-                                            className="bg-transparent text-xs text-neutral-200 outline-none hover:bg-white/5 focus:bg-black/40 focus:px-1 rounded flex-1 transition-all"
+                                            className="bg-transparent text-[12px] font-black text-white/80 uppercase tracking-wider outline-none hover:bg-white/5 focus:bg-black/40 focus:px-1 rounded flex-1 transition-all"
                                         />
                                     </div>
                                     {currentReaction.stages.length > 1 && (
@@ -2469,19 +2487,22 @@ export default function ApparatusEditorPage() {
                     </div>
 
                     {/* Tools Section */}
-                    <div className="flex flex-col gap-3 p-4 bg-white/[0.02] border border-white/5 rounded-xl">
-                        <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Transform Tools</h3>
+                    <div className="flex flex-col gap-4 p-5 bg-white/[0.04] border border-white/10 rounded-2xl shadow-2xl">
+                        <h3 className="text-[13px] font-black text-white uppercase tracking-[0.2em] mb-1 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400/60" />
+                            Transform Tools
+                        </h3>
 
                         {/* Transform Modes */}
                         <div className="flex gap-1 p-1 bg-black/40 rounded-lg">
                             <button
-                                className={`flex-1 text-xs py-1.5 rounded-md transition-all duration-200 ${!builderState.active && transformMode === 'translate' ? 'bg-blue-600 text-white shadow-md' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+                                className={`flex-1 text-[12px] font-black uppercase tracking-widest py-2 rounded-lg transition-all duration-200 ${!builderState.active && transformMode === 'translate' ? 'bg-blue-600/30 text-white border border-blue-500/40 shadow-md' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                                 onClick={() => { setTubeBuilderState({ ...builderState, active: false }); setTransformMode('translate'); }}
                             >
                                 Move
                             </button>
                             <button
-                                className={`flex-1 text-xs py-1.5 rounded-md transition-all duration-200 ${!builderState.active && transformMode === 'rotate' ? 'bg-blue-600 text-white shadow-md' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+                                className={`flex-1 text-[12px] font-black uppercase tracking-widest py-2 rounded-lg transition-all duration-200 ${!builderState.active && transformMode === 'rotate' ? 'bg-blue-600/30 text-white border border-blue-500/40 shadow-md' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
                                 onClick={() => { setTubeBuilderState({ ...builderState, active: false }); setTransformMode('rotate'); }}
                             >
                                 Rotate
@@ -2489,29 +2510,29 @@ export default function ApparatusEditorPage() {
                         </div>
 
                         {/* Snapping & Environment Toggles */}
-                        <div className="flex items-center justify-between bg-black/30 p-2 rounded-lg mt-1 border border-white/5">
-                            <label className="text-[11px] font-semibold text-blue-300">Snap to Grid (0.5m / 15°)</label>
+                        <div className="flex items-center justify-between bg-white/5 p-3 rounded-xl mt-1 border border-white/10">
+                            <label className="text-[12px] font-black text-white/70 uppercase tracking-widest">Snap to Grid</label>
                             <input
                                 type="checkbox"
                                 checked={gridSnap}
                                 onChange={(e) => setGridSnap(e.target.checked)}
-                                className="accent-blue-500 w-3.5 h-3.5 cursor-pointer"
+                                className="accent-blue-400 w-4 h-4 cursor-pointer"
                             />
                         </div>
-                        <div className="flex items-center justify-between bg-black/30 p-2 rounded-lg mt-1 border border-white/5">
-                            <label className="text-[11px] font-semibold text-neutral-300">Show Lab Table</label>
+                        <div className="flex items-center justify-between bg-white/5 p-3 rounded-xl mt-1 border border-white/10">
+                            <label className="text-[12px] font-black text-white/70 uppercase tracking-widest">Show Lab Table</label>
                             <input
                                 type="checkbox"
                                 checked={showTable}
                                 onChange={(e) => setShowTable(e.target.checked)}
-                                className="accent-neutral-500 w-3.5 h-3.5 cursor-pointer"
+                                className="accent-white w-4 h-4 cursor-pointer"
                             />
                         </div>
 
                         {/* Tube Builder Toggle */}
-                        <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-white/5">
+                        <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-white/10">
                             <div className="flex items-center justify-between">
-                                <label className="text-[11px] font-semibold text-purple-400">Smart Tube Builder</label>
+                                <label className="text-[12px] font-black text-purple-400 uppercase tracking-wider">Smart Tube Builder</label>
                                 <div className="flex items-center gap-1.5 bg-black/30 px-2 py-1 rounded-full border border-white/5">
                                     <label className="text-[9px] text-neutral-400 uppercase tracking-widest cursor-pointer">2D Planar</label>
                                     <input
@@ -2525,21 +2546,21 @@ export default function ApparatusEditorPage() {
                             
                             <div className="flex gap-1 p-1 bg-black/40 rounded-lg">
                                 <button
-                                    className={`flex-1 text-xs py-1.5 rounded-md transition-all duration-200 ${builderState.active && builderState.mode === 'straight' ? 'bg-purple-600 text-white shadow-md' : 'text-purple-300/50 hover:text-purple-200 hover:bg-purple-900/20'}`}
+                                    className={`flex-1 text-[12px] font-black uppercase tracking-widest py-2 rounded-lg transition-all duration-200 ${builderState.active && builderState.mode === 'straight' ? 'bg-purple-600/30 text-white border border-purple-500/40 shadow-md' : 'text-white/30 hover:text-purple-200 hover:bg-purple-900/20'}`}
                                     onClick={() => setTubeBuilderState({ active: true, mode: 'straight', startAnchor: null, points: [] })}
                                 >
                                     Polyline
                                 </button>
                                 <button
-                                    className={`flex-1 text-xs py-1.5 rounded-md transition-all duration-200 ${builderState.active && builderState.mode === 'curved' ? 'bg-purple-600 text-white shadow-md' : 'text-purple-300/50 hover:text-purple-200 hover:bg-purple-900/20'}`}
+                                    className={`flex-1 text-[12px] font-black uppercase tracking-widest py-2 rounded-lg transition-all duration-200 ${builderState.active && builderState.mode === 'curved' ? 'bg-purple-600/30 text-white border border-purple-500/40 shadow-md' : 'text-white/30 hover:text-purple-200 hover:bg-purple-900/20'}`}
                                     onClick={() => setTubeBuilderState({ active: true, mode: 'curved', startAnchor: null, points: [] })}
                                 >
                                     Curved
                                 </button>
                             </div>
                             {builderState.active && (
-                                <div className="bg-purple-900/20 border border-purple-500/20 rounded p-2 mt-1">
-                                    <p className="text-[10px] text-purple-200 text-center leading-relaxed">
+                                <div className="bg-purple-900/20 border border-purple-500/20 rounded-xl p-3 mt-1">
+                                    <p className="text-[11px] font-black text-purple-300/80 text-center leading-relaxed uppercase tracking-wider">
                                         {builderState.startAnchor
                                             ? "Click empty space to add points, or anchor to finish."
                                             : "Click 1st anchor to start."}
@@ -2550,28 +2571,34 @@ export default function ApparatusEditorPage() {
                     </div>
 
                     {/* Apparatus List (Flat) */}
-                    <div className="flex flex-col border border-white/5 bg-white/[0.02] rounded-xl overflow-hidden flex-1 min-h-[180px]">
-                        <div className="p-3 border-b border-white/5 bg-black/20 flex justify-between items-center">
-                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Scene Objects</span>
-                            <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-neutral-300">{currentStage?.apparatus?.length || 0}</span>
+                    <div className="flex flex-col border border-white/10 bg-white/[0.04] rounded-2xl overflow-hidden flex-1 min-h-[220px] shadow-2xl">
+                        <div className="p-4 border-b border-white/10 bg-gradient-to-r from-blue-900/15 to-transparent flex justify-between items-center">
+                            <span className="text-[12px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
+                                Scene Objects
+                            </span>
+                            <span className="text-[12px] font-black bg-blue-600/25 text-blue-400 px-3 py-1 rounded-xl shadow-lg border border-blue-500/30">{currentStage?.apparatus?.length || 0}</span>
                         </div>
                         <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1 custom-scrollbar">
                             {currentStage?.apparatus?.map(item => (
                                 <div
                                     key={item.id}
-                                    className={`px-3 py-2 rounded-lg cursor-pointer flex justify-between items-center transition-all ${
+                                    className={`px-3 py-2.5 rounded-xl cursor-pointer flex justify-between items-center transition-all ${
                                         selectedApparatusId === item.id 
-                                        ? 'bg-blue-600/20 border border-blue-500/30 shadow-inner' 
-                                        : 'border border-transparent hover:bg-white/5 hover:border-white/5'
+                                        ? 'bg-blue-600/20 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.1)]' 
+                                        : 'border border-transparent hover:bg-white/5 hover:border-white/10'
                                     }`}
                                     onClick={() => setSelectedApparatusId(item.id)}
                                 >
-                                    <span className={`text-xs font-mono truncate w-1/2 ${selectedApparatusId === item.id ? 'text-blue-300 font-semibold' : 'text-neutral-300'}`}>{item.id}</span>
-                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/40 text-neutral-400 truncate max-w-[45%] border border-white/5">{item.model}</span>
+                                    <span className={`text-[11px] font-mono font-bold truncate w-1/2 ${selectedApparatusId === item.id ? 'text-blue-300' : 'text-white/70'}`}>{item.id}</span>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white/5 text-white/40 truncate max-w-[45%] border border-white/10">{item.model}</span>
                                 </div>
                             ))}
                             {(!currentStage?.apparatus || currentStage.apparatus.length === 0) && (
-                                <div className="text-center py-8 text-xs text-neutral-500 italic">No objects in scene</div>
+                                <div className="text-center py-10 flex flex-col items-center gap-2">
+                                    <span className="text-3xl opacity-20">🔬</span>
+                                    <p className="text-[11px] font-black text-white/25 uppercase tracking-widest">No objects in scene</p>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -2581,12 +2608,15 @@ export default function ApparatusEditorPage() {
                         const item = currentStage?.apparatus?.find(i => i.id === selectedApparatusId);
                         if (!item) return null;
                         return (
-                            <div className="flex flex-col gap-2 mt-4 border-t border-white/10 pt-4">
+                            <div className="flex flex-col gap-4 mt-6 border-t border-white/15 pt-6">
                                 <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]"></div><h3 className="text-[11px] font-bold text-orange-400 uppercase tracking-widest truncate max-w-[140px]">{item.id}</h3></div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-3 h-3 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)] animate-pulse"></div>
+                                        <h3 className="text-[14px] font-black text-white uppercase tracking-[0.15em] truncate max-w-[180px]">{item.id}</h3>
+                                    </div>
                                     <button
                                         onClick={() => handleDeleteItem(item.id)}
-                                        className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-red-900/30 rounded border border-red-900/50"
+                                        className="text-red-400 hover:text-red-300 text-[11px] font-black uppercase tracking-wider px-3 py-1.5 bg-red-900/30 rounded-xl border border-red-900/50 transition-all hover:bg-red-900/50"
                                     >
                                         Delete
                                     </button>
@@ -2594,17 +2624,17 @@ export default function ApparatusEditorPage() {
 
                                 {/* ATTACHMENT INFO */}
                                 {item.parentId && (
-                                    <div className="flex flex-col gap-2 mt-2 bg-black/20 p-2 rounded-lg border border-white/5">
-                                        <h4 className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                                    <div className="flex flex-col gap-2 mt-2 bg-white/[0.03] p-3 rounded-xl border border-white/10">
+                                        <h4 className="text-[11px] font-black text-white/50 uppercase tracking-[0.15em] flex items-center gap-2">
                                             <span>🔗</span> Attachment
                                         </h4>
-                                        <div className="flex justify-between items-center text-xs mt-1">
-                                            <span className="text-green-400 font-mono truncate max-w-[150px]" title={item.parentId}>
+                                        <div className="flex justify-between items-center text-[11px] mt-1">
+                                            <span className="text-green-400 font-mono font-bold truncate max-w-[150px]" title={item.parentId}>
                                                 Connected: {item.parentId.slice(0, 15)}...
                                             </span>
                                             <button 
                                                 onClick={() => detachItem(item.id)}
-                                                className="px-2 py-1 bg-red-900/40 text-red-300 hover:bg-red-900/60 rounded border border-red-500/30 transition-all font-semibold"
+                                                className="px-3 py-1.5 bg-red-900/30 text-red-300 hover:bg-red-900/50 rounded-xl border border-red-500/30 transition-all font-black text-[10px] uppercase tracking-wider"
                                             >
                                                 Detach
                                             </button>
@@ -2615,8 +2645,8 @@ export default function ApparatusEditorPage() {
                                 {/* SPECIAL CONTROLS */}
                                 {item.model === 'TripodStand' && (
                                     <div className="flex flex-col gap-1 mt-2">
-                                        <div className="flex justify-between items-center text-xs text-blue-300">
-                                            <label>Ring Radius (m)</label>
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-[12px] font-black text-white/60 uppercase tracking-widest">Ring Radius (m)</label>
                                             <input 
                                                 type="number" step="0.05"
                                                 className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-16 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -2634,7 +2664,7 @@ export default function ApparatusEditorPage() {
 
                                 {item.model === 'Tongs' && (
                                     <div className="flex flex-col gap-1 mt-2">
-                                        <label className="text-xs text-yellow-300">Tongs Opening</label>
+                                        <label className="text-[12px] font-black text-white/60 uppercase tracking-widest">Tongs Opening</label>
                                         <input type="range" className="w-full h-1.5 bg-black/40 border border-white/5 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-inner" 
                                             min="0" max="1" step="0.05"
                                             value={item.angle || 0}
@@ -2646,8 +2676,8 @@ export default function ApparatusEditorPage() {
 
                                 {item.model === 'Clamp' && (
                                     <div className="flex flex-col gap-1 mt-2">
-                                        <div className="flex justify-between items-center text-xs text-blue-300">
-                                            <label>Clamp Opening</label>
+                                        <div className="flex justify-between items-center">
+                                            <label className="text-[12px] font-black text-white/60 uppercase tracking-widest">Clamp Opening</label>
                                             <input 
                                                 type="number" step="0.05"
                                                 className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-16 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -2661,8 +2691,8 @@ export default function ApparatusEditorPage() {
                                             onChange={(e) => handleUpdateItem(item.id, { angle: parseFloat(e.target.value) })}
                                             
                                         />
-                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
-                                            <label>Head Rotation (°)</label>
+                                        <div className="flex justify-between items-center mt-1">
+                                            <label className="text-[12px] font-black text-white/60 uppercase tracking-widest">Head Rotation (°)</label>
                                             <input 
                                                 type="number" step="1"
                                                 className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-20 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -2676,8 +2706,8 @@ export default function ApparatusEditorPage() {
                                             onChange={(e) => handleUpdateItem(item.id, { headAngle: parseFloat(e.target.value) })}
                                             
                                         />
-                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
-                                            <label>Pipe Length (m)</label>
+                                        <div className="flex justify-between items-center mt-1">
+                                            <label className="text-[12px] font-black text-white/60 uppercase tracking-widest">Pipe Length (m)</label>
                                             <input 
                                                 type="number" step="0.1"
                                                 className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-20 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -2723,8 +2753,8 @@ export default function ApparatusEditorPage() {
                                             }}
                                             
                                         />
-                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
-                                            <label>Stand Rotation (°)</label>
+                                        <div className="flex justify-between items-center mt-1">
+                                            <label className="text-[12px] font-black text-white/60 uppercase tracking-widest">Stand Rotation (°)</label>
                                             <input 
                                                 type="number" step="1"
                                                 className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-20 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -2779,8 +2809,8 @@ export default function ApparatusEditorPage() {
                                             }}
                                             
                                         />
-                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
-                                            <label>Vertical Position (m)</label>
+                                        <div className="flex justify-between items-center mt-1">
+                                            <label className="text-[12px] font-black text-white/60 uppercase tracking-widest">Vertical Position (m)</label>
                                             <input 
                                                 type="number" step="0.1"
                                                 className="font-mono bg-black/40 px-1.5 py-0.5 rounded border border-white/5 w-20 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -2841,7 +2871,7 @@ export default function ApparatusEditorPage() {
                                             </>
                                         )}
 
-                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
+                                        <div className="flex justify-between items-center text-[12px] font-black text-white uppercase tracking-tight mt-3 mb-2">
                                             <label>Vertical Position (m)</label>
                                             <input 
                                                 type="number" step="0.1"
@@ -2864,7 +2894,7 @@ export default function ApparatusEditorPage() {
                                             }}
                                         />
 
-                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
+                                        <div className="flex justify-between items-center text-[12px] font-black text-white uppercase tracking-tight mt-3 mb-2">
                                             <label>Pipe Length (m)</label>
                                             <input 
                                                 type="number" step="0.1"
@@ -2911,7 +2941,7 @@ export default function ApparatusEditorPage() {
                                             }}
                                         />
 
-                                        <div className="flex justify-between items-center text-xs text-blue-300 mt-1">
+                                        <div className="flex justify-between items-center text-[12px] font-black text-white uppercase tracking-tight mt-3 mb-2">
                                             <label>Stand Rotation (°)</label>
                                             <input 
                                                 type="number" step="1"
@@ -2976,10 +3006,10 @@ export default function ApparatusEditorPage() {
 
                                         {item.isOn && (<>
                                             {/* Gas Supply (size) */}
-                                            <div className="flex flex-col gap-0.5">
-                                                <div className="flex justify-between text-xs text-neutral-400">
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex justify-between text-[12px] font-black text-white uppercase tracking-tight">
                                                     <span>Gas Supply</span>
-                                                    <span className="font-mono text-orange-300">{Math.round((item.gasFlow ?? 0.6) * 100)}%</span>
+                                                    <span className="font-mono text-orange-400">{Math.round((item.gasFlow ?? 0.6) * 100)}%</span>
                                                 </div>
                                                 <input type="range" min="0.1" max="1.0" step="0.05"
                                                     className="w-full h-1.5 appearance-none cursor-pointer accent-orange-500"
@@ -2992,10 +3022,10 @@ export default function ApparatusEditorPage() {
                                             </div>
 
                                             {/* Air Supply (luminous vs non-luminous) */}
-                                            <div className="flex flex-col gap-0.5">
-                                                <div className="flex justify-between text-xs text-neutral-400">
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex justify-between text-[12px] font-black text-white uppercase tracking-tight">
                                                     <span>Air Supply</span>
-                                                    <span className="font-mono" style={{color: (item.airFlow ?? 0.8) > 0.5 ? '#88aaff' : '#ff8844'}}>
+                                                    <span className="font-mono" style={{color: (item.airFlow ?? 0.8) > 0.5 ? '#88aaff' : '#ffb088'}}>
                                                         {(item.airFlow ?? 0.8) > 0.65 ? 'Non-luminous 🔵' : (item.airFlow ?? 0.8) < 0.35 ? 'Luminous 🟡' : 'Mixed 🔴'}
                                                     </span>
                                                 </div>
@@ -3014,8 +3044,8 @@ export default function ApparatusEditorPage() {
 
                                 {item.model === 'GasJar' && (
                                     <div className="flex flex-col gap-2 mt-2 border-t border-white/10 pt-2">
-                                        <div className="flex items-center justify-between">
-                                            <label className="text-xs text-blue-300">Lid Attached</label>
+                                        <div className="flex items-center justify-between py-2">
+                                            <label className="text-[12px] font-black text-white uppercase tracking-tight">Lid Attached</label>
                                             <input type="checkbox" className="w-4 h-4 accent-orange-500 bg-black/40 border-white/10 rounded cursor-pointer" 
                                                 checked={item.hasLid !== false}
                                                 onChange={(e) => handleUpdateItem(item.id, { hasLid: e.target.checked })}
@@ -3207,8 +3237,8 @@ export default function ApparatusEditorPage() {
                                         </div>
 
                                         {item.isLockedStraight && (
-                                            <div className="flex flex-col gap-1 bg-white/5 p-2 rounded border border-white/10">
-                                                <p className="text-[10px] text-neutral-400 text-center mb-1">Length Adjustments</p>
+                                            <div className="flex flex-col gap-1 bg-white/5 p-3 rounded-xl border border-white/10 mt-2">
+                                                <p className="text-[11px] font-black text-white/50 text-center mb-2 uppercase tracking-widest">Length Adjustments</p>
 
                                                 {/* Helper Function for Extension */}
                                                 {(() => {
@@ -3335,11 +3365,11 @@ export default function ApparatusEditorPage() {
                                 <div className="flex flex-col gap-3 mt-3 p-2 bg-black/20 rounded border border-white/5">
                                     {/* Position */}
                                     <div>
-                                        <label className="text-[10px] text-neutral-400 mb-1 block">Position (m)</label>
+                                        <label className="text-[12px] font-black text-white/60 mb-2 block uppercase tracking-[0.15em]">Position (m)</label>
                                         <div className="grid grid-cols-3 gap-1 text-center">
-                                            <span className="text-[10px] text-neutral-500">X</span>
-                                            <span className="text-[10px] text-neutral-500">Y</span>
-                                            <span className="text-[10px] text-neutral-500">Z</span>
+                                            <span className="text-[10px] font-bold text-white/30">X</span>
+                                            <span className="text-[10px] font-bold text-white/30">Y</span>
+                                            <span className="text-[10px] font-bold text-white/30">Z</span>
                                             {['x', 'y', 'z'].map((axis, i) => (
                                                 <input
                                                     key={`pos-${axis}`}
@@ -3361,11 +3391,11 @@ export default function ApparatusEditorPage() {
                                     
                                     {/* Rotation */}
                                     <div>
-                                        <label className="text-[10px] text-neutral-400 mb-1 block">Rotation (°)</label>
+                                        <label className="text-[12px] font-black text-white/60 mb-2 block uppercase tracking-[0.15em]">Rotation (°)</label>
                                         <div className="grid grid-cols-3 gap-1 text-center">
-                                            <span className="text-[10px] text-neutral-500">X</span>
-                                            <span className="text-[10px] text-neutral-500">Y</span>
-                                            <span className="text-[10px] text-neutral-500">Z</span>
+                                            <span className="text-[10px] font-bold text-white/30">X</span>
+                                            <span className="text-[10px] font-bold text-white/30">Y</span>
+                                            <span className="text-[10px] font-bold text-white/30">Z</span>
                                             {['x', 'y', 'z'].map((axis, i) => (
                                                 <input
                                                     key={`rot-${axis}`}
@@ -3444,9 +3474,9 @@ export default function ApparatusEditorPage() {
                             </div>
                         );
                     })() : (
-                        <div className="flex flex-col items-center justify-center py-10 text-center text-neutral-600 gap-2">
-                            <span className="text-3xl opacity-30">🎯</span>
-                            <p className="text-xs">Click an apparatus in the 3D view to edit its properties</p>
+                        <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
+                            <span className="text-4xl opacity-20">🎯</span>
+                            <p className="text-[11px] font-black text-white/25 uppercase tracking-widest leading-relaxed">Click an apparatus in the 3D view<br/>to edit its properties</p>
                         </div>
                     )}
                         </div>
@@ -3454,17 +3484,17 @@ export default function ApparatusEditorPage() {
                 </div> {/* End Scrollable Content */}
 
                 {/* Bottom Actions - Fixed to Bottom */}
-                <div className="p-5 bg-[#0a0a0a] border-t border-white/10 z-20 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+                <div className="p-5 bg-[#020617]/90 backdrop-blur-xl border-t border-blue-500/10 z-20 shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.7)]">
                     <div className="flex gap-2 mb-3">
                         <button
                             onClick={() => setTubeBuilderState(prev => ({ ...prev, active: !prev.active, mode: 'straight' }))}
-                            className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all border ${builderState.active && builderState.mode !== 'wire' ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white border-blue-400/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-white/[0.03] text-neutral-300 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white hover:shadow-lg'}`}
+                            className={`flex-1 py-3 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all border ${builderState.active && builderState.mode !== 'wire' ? 'bg-blue-600/25 text-blue-300 border-blue-500/40 shadow-[0_0_20px_rgba(59,130,246,0.25)]' : 'bg-white/[0.03] text-white/50 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white'}`}
                         >
                             {builderState.active && builderState.mode !== 'wire' ? 'Cancel Tube' : 'Add Tube'}
                         </button>
                         <button
                             onClick={() => setTubeBuilderState(prev => ({ ...prev, active: !prev.active, mode: 'wire' }))}
-                            className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all border ${builderState.active && builderState.mode === 'wire' ? 'bg-gradient-to-r from-red-600 to-red-500 text-white border-red-400/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'bg-white/[0.03] text-neutral-300 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white hover:shadow-lg'}`}
+                            className={`flex-1 py-3 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all border ${builderState.active && builderState.mode === 'wire' ? 'bg-red-600/25 text-red-300 border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.25)]' : 'bg-white/[0.03] text-white/50 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white'}`}
                         >
                             {builderState.active && builderState.mode === 'wire' ? 'Cancel Wire' : 'Add Wire'}
                         </button>
@@ -3472,18 +3502,18 @@ export default function ApparatusEditorPage() {
 
                     <button
                         onClick={handleSave}
-                        className="w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 border border-green-500/50 text-white rounded-lg py-3 font-bold tracking-wider uppercase transition-all shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:shadow-[0_4px_25px_rgba(16,185,129,0.5)] flex justify-center items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0"
+                        className="w-full bg-gradient-to-r from-blue-600/30 to-cyan-600/30 hover:from-blue-600/50 hover:to-cyan-600/50 border border-blue-500/30 text-blue-300 rounded-xl py-3.5 font-black tracking-[0.15em] uppercase text-[12px] transition-all shadow-[0_4px_25px_rgba(59,130,246,0.2)] hover:shadow-[0_4px_30px_rgba(59,130,246,0.4)] flex justify-center items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0"
                     >
                         <span className="text-base">💾</span> Save All Changes
                     </button>
                     <div className="h-4 mt-3">
-                        {status && <p className="text-center text-xs text-green-400 font-bold uppercase tracking-widest animate-pulse">{status}</p>}
+                        {status && <p className="text-center text-[11px] text-green-400 font-black uppercase tracking-widest animate-pulse">{status}</p>}
                     </div>
                 </div>
             </div>
 
             {/* 3D Viewport */}
-            <div className="flex-1 relative bg-gradient-to-br from-neutral-800 to-neutral-900">
+            <div className="flex-1 relative bg-[#010b1a]/60 z-10">
                 <CanvasErrorBoundary>
                 <Canvas 
                     camera={{ position: [5, 5, 5], fov: 50 }} 
@@ -3493,12 +3523,11 @@ export default function ApparatusEditorPage() {
                     onCreated={({ gl }) => {
                         gl.domElement.addEventListener('webglcontextlost', (e) => {
                             e.preventDefault();
-                            console.error('WebGL Context Lost - Forcing reload to recover...');
-                            window.location.reload();
+                            console.warn('WebGL Context Lost — waiting for browser to restore it automatically.');
                         });
                     }}
                 >
-                    <color attach="background" args={['#1a1a1a']} />
+                    <color attach="background" args={['#010a18']} />
 
                     {/* Controls */}
                     <OrbitControls makeDefault />
@@ -3550,7 +3579,7 @@ export default function ApparatusEditorPage() {
                 </Canvas>
                 </CanvasErrorBoundary>
 
-                <div className="absolute top-4 right-4 bg-black/50 p-2 rounded text-xs text-white/50 pointer-events-none">
+                <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md p-4 rounded-2xl text-[11px] text-white/40 pointer-events-none border border-white/10 space-y-0.5 font-bold">
                     <p>Left Click: Orbit</p>
                     <p>Right Click: Pan</p>
                     <p>Scroll: Zoom</p>
@@ -3559,40 +3588,40 @@ export default function ApparatusEditorPage() {
                     <p>Click Object: Select</p>
                     <p>Drag Arrows/Rings: Transform</p>
                     {builderState.active && (
-                        <p className="text-purple-400 mt-2 font-bold">MODE: TUBE BUILDER ({builderState.mode})</p>
+                        <p className="text-purple-400 mt-2 font-black uppercase tracking-widest">MODE: TUBE BUILDER ({builderState.mode})</p>
                     )}
                 </div>
             </div>
 
             {/* New Stage Modal */}
             {showNewStageModal && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
-                    <div className="bg-[#111] border border-white/10 p-6 rounded-xl w-[400px] shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-                        <h2 className="text-lg font-bold text-white mb-2">Create New Stage</h2>
-                        <p className="text-sm text-neutral-400 mb-6">How would you like to build the apparatus setup for this new stage?</p>
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-md">
+                    <div className="bg-black/90 backdrop-blur-2xl border border-white/15 p-8 rounded-3xl w-[420px] shadow-[0_40px_100px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-200">
+                        <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Create New Stage</h2>
+                        <p className="text-[12px] font-bold text-white/40 mb-6 uppercase tracking-wider">How would you like to build the apparatus setup?</p>
                         
                         <div className="flex flex-col gap-3">
                             <button 
                                 onClick={() => handleAddStage(true)}
-                                className="w-full text-left p-4 rounded-lg bg-blue-600/10 border border-blue-500/30 hover:bg-blue-600/20 transition-colors group"
+                                className="w-full text-left p-5 rounded-2xl bg-blue-600/10 border border-blue-500/30 hover:bg-blue-600/20 transition-all group hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]"
                             >
-                                <span className="block text-sm font-bold text-blue-400 group-hover:text-blue-300">Copy Previous Setup</span>
-                                <span className="block text-xs text-neutral-500 mt-1">Start with all the equipment currently on the table.</span>
+                                <span className="block text-[13px] font-black text-blue-400 group-hover:text-blue-300 uppercase tracking-wider">Copy Previous Setup</span>
+                                <span className="block text-[11px] text-white/30 mt-1.5 font-bold">Start with all the equipment currently on the table.</span>
                             </button>
                             
                             <button 
                                 onClick={() => handleAddStage(false)}
-                                className="w-full text-left p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors group"
+                                className="w-full text-left p-5 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
                             >
-                                <span className="block text-sm font-bold text-neutral-300 group-hover:text-white">Start Blank</span>
-                                <span className="block text-xs text-neutral-500 mt-1">Start with an empty lab table.</span>
+                                <span className="block text-[13px] font-black text-white/70 group-hover:text-white uppercase tracking-wider">Start Blank</span>
+                                <span className="block text-[11px] text-white/30 mt-1.5 font-bold">Start with an empty lab table.</span>
                             </button>
                         </div>
 
                         <div className="flex justify-end mt-6 pt-4 border-t border-white/10">
                             <button 
                                 onClick={() => setShowNewStageModal(false)}
-                                className="text-sm text-neutral-400 hover:text-white px-4 py-2"
+                                className="text-[12px] font-black text-white/40 hover:text-white px-5 py-2.5 rounded-xl hover:bg-white/5 transition-all uppercase tracking-wider"
                             >
                                 Cancel
                             </button>

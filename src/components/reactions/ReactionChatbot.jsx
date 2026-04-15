@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Bot, Sparkles, Zap, ZapOff } from 'lucide-react';
 
@@ -173,66 +174,71 @@ const ReactionChatbot = ({ currentReaction }) => {
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Floating Button - Crystalline Action */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="absolute bottom-6 right-6 z-50 bg-cyan-600 hover:bg-cyan-500 text-white p-4 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.6)] transition-all duration-300 hover:scale-110 flex items-center justify-center pointer-events-auto border border-cyan-400/50 group"
-          title="Ask AI Assistant"
+          className="absolute bottom-6 right-6 z-50 bg-white text-black p-4 rounded-none shadow-3xl transition-all duration-300 hover:scale-105 flex items-center justify-center pointer-events-auto border border-white group"
+          title="TACTICAL AI SUPPORT"
         >
           <div className="relative">
-            <Bot size={28} />
-            <Sparkles size={12} className="absolute -top-1 -right-1 text-cyan-200" />
+            <Bot size={24} />
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-black border border-white animate-pulse" />
           </div>
         </button>
       )}
 
-      {/* Chat Window */}
+      {/* Chat Window - Crystalline Matrix */}
       {isOpen && (
-        <div className="absolute bottom-6 right-6 z-50 w-80 md:w-96 h-[500px] max-h-[80vh] flex flex-col bg-black/80 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto transition-all duration-300 transform origin-bottom-right">
+        <div className="absolute bottom-6 right-6 z-50 w-80 md:w-96 h-[500px] max-h-[80vh] flex flex-col bg-black/95 backdrop-blur-md border border-white/20 rounded-none shadow-3xl overflow-hidden pointer-events-auto transition-all duration-300 transform origin-bottom-right">
 
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-cyan-900/40 to-black/40">
-            <div className="flex items-center gap-2">
-              <Bot className="text-cyan-400" size={24} />
+          <div className="flex items-center justify-between p-5 border-b border-white/10 bg-white/[0.02]">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white text-black rounded-none">
+                <Bot size={18} />
+              </div>
               <div>
-                <h3 className="text-white font-bold tracking-wide text-sm">AI Lab Assistant</h3>
-                <p className="text-cyan-400/60 text-xs">Molecools Lab</p>
+                <h3 className="text-[10px] font-black tracking-[0.2em] text-white uppercase">Lab Assistant</h3>
+                <p className="text-[8px] font-black tracking-[0.2em] text-white/20 mt-1 uppercase">Tactical Support [Active]</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               <StatusDot />
-              <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-lg">
-                <X size={18} />
+              <button 
+                onClick={() => setIsOpen(false)} 
+                className="text-white/40 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-2 rounded-none border border-white/5"
+              >
+                <X size={14} />
               </button>
             </div>
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5 custom-scrollbar bg-gradient-to-b from-white/[0.01] to-transparent">
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && (
-                  <div className="w-6 h-6 rounded-full bg-cyan-900/50 flex items-center justify-center mr-2 mt-1 shrink-0 border border-cyan-500/30">
-                    <Bot size={14} className="text-cyan-400" />
+                  <div className="w-5 h-5 rounded-none bg-white text-black flex items-center justify-center mr-3 mt-1 shrink-0">
+                    <Bot size={12} />
                   </div>
                 )}
-                <div className={`max-w-[80%] p-3 rounded-2xl text-sm leading-relaxed ${
+                <div className={`max-w-[85%] p-4 rounded-none text-[11px] leading-relaxed font-bold tracking-wide ${
                   msg.role === 'user'
-                    ? 'bg-cyan-600 text-white rounded-br-none shadow-md shadow-cyan-900/20'
-                    : 'bg-white/10 text-gray-200 border border-white/5 rounded-bl-none shadow-md'
+                    ? 'bg-white text-black shadow-2xl uppercase'
+                    : 'bg-white/5 text-white/60 border border-white/10 shadow-inner'
                 }`}>
                   <div>{renderMessageContent(msg.content)}</div>
                   {msg.docs && msg.docs.length > 0 && (
-                    <div className="mt-3 text-xs border-t border-white/10 pt-2">
+                    <div className="mt-4 text-[9px] border-t border-white/5 pt-3">
                         <details className="group">
-                            <summary className="cursor-pointer text-cyan-300/80 hover:text-cyan-300 font-medium flex items-center gap-1 select-none">
-                                <span className="transform group-open:rotate-90 transition-transform">▶</span>
-                                Retrieved Context ({msg.docs.length})
+                            <summary className="cursor-pointer text-white/40 hover:text-white font-black flex items-center gap-2 select-none uppercase tracking-widest">
+                                <span className="text-[7px] transform group-open:rotate-90 transition-transform">▶</span>
+                                DATA_STREAM [{msg.docs.length}]
                             </summary>
-                            <div className="mt-2 flex flex-col gap-2 relative">
+                            <div className="mt-3 flex flex-col gap-2 relative">
                                 {msg.docs.map((doc, dIdx) => (
-                                    <div key={dIdx} className="bg-black/30 p-2 rounded border border-white/5 text-[11px] text-gray-300 leading-relaxed max-h-40 overflow-y-auto custom-scrollbar">
+                                    <div key={dIdx} className="bg-black/30 p-3 rounded-none border border-white/5 text-[9px] text-white/40 leading-relaxed font-mono">
                                         {doc.content}
                                     </div>
                                 ))}
@@ -241,8 +247,8 @@ const ReactionChatbot = ({ currentReaction }) => {
                     </div>
                   )}
                   {msg.source === 'offline' && (
-                    <div className="mt-2 text-[10px] text-amber-400/60 flex items-center gap-1">
-                      <ZapOff size={8} /> Offline response
+                    <div className="mt-2 text-[8px] font-black text-white/20 flex items-center gap-1 uppercase tracking-widest">
+                      <ZapOff size={8} /> Local Cache
                     </div>
                   )}
                 </div>
@@ -250,13 +256,13 @@ const ReactionChatbot = ({ currentReaction }) => {
             ))}
             {isTyping && (
               <div className="flex justify-start">
-                <div className="w-6 h-6 rounded-full bg-cyan-900/50 flex items-center justify-center mr-2 mt-1 shrink-0 border border-cyan-500/30">
-                  <Bot size={14} className="text-cyan-400" />
+                <div className="w-5 h-5 rounded-none bg-white/10 flex items-center justify-center mr-3 mt-1 shrink-0">
+                  <Bot size={12} className="text-white/40" />
                 </div>
-                <div className="bg-white/10 border border-white/5 p-3 rounded-2xl rounded-bl-none flex gap-1.5 items-center h-10 w-16 justify-center">
-                  <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="bg-white/5 border border-white/5 p-4 rounded-none flex gap-1.5 items-center h-8 justify-center">
+                  <div className="w-1 h-1 bg-white/40 rounded-none animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1 h-1 bg-white/40 rounded-none animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1 h-1 bg-white/40 rounded-none animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             )}
@@ -264,20 +270,20 @@ const ReactionChatbot = ({ currentReaction }) => {
           </div>
 
           {/* Input Area */}
-          <form onSubmit={handleSend} className="p-3 border-t border-white/10 bg-black/40 flex gap-2">
+          <form onSubmit={handleSend} className="p-4 border-t border-white/10 bg-white/[0.02] flex gap-3">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about any reaction..."
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50 transition-colors placeholder:text-gray-500"
+              placeholder="INPUT QUERY..."
+              className="flex-1 bg-white/5 border border-white/10 rounded-none px-4 py-2.5 text-[10px] font-bold text-white focus:outline-none focus:border-white/30 transition-all placeholder:text-white/20 uppercase tracking-[0.2em]"
             />
             <button
               type="submit"
               disabled={!input.trim() || isTyping}
-              className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:hover:bg-cyan-600 text-white p-2.5 rounded-xl transition-colors flex items-center justify-center shrink-0 border border-cyan-400/30"
+              className="bg-white hover:bg-gray-200 disabled:opacity-20 text-black px-4 py-2 rounded-none transition-all flex items-center justify-center shrink-0 border border-white shadow-2xl tap-animation"
             >
-              <Send size={18} />
+              <Send size={16} />
             </button>
           </form>
         </div>

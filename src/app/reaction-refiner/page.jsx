@@ -285,14 +285,22 @@ const ReactionRefinerPage = () => {
     }, [isPlaying, totalDuration, playbackSpeed, isLooping]);
 
 
-    if (!currentReaction) return <div className="text-white p-10">Loading Refiner...</div>;
+    if (!currentReaction) return (
+        <div className="flex h-screen w-full bg-black text-white items-center justify-center">
+            <div className="bg-mesh-container">
+                <div className="bg-mesh-blob blob-1" />
+                <div className="bg-mesh-blob blob-2" />
+            </div>
+            <p className="text-xl text-white font-black animate-pulse tracking-widest uppercase z-10">Initializing Reaction Refiner...</p>
+        </div>
+    );
 
     return (
-        <div className="flex h-screen w-full bg-[#111] text-white overflow-hidden font-sans">
+        <div className="flex h-screen w-full bg-black text-white overflow-hidden font-sans">
             {/* 3-Column Layout */}
 
-            {/* --- LEFT PANEL: TIMELINE (20-25%) --- */}
-            <div className="flex-shrink-0 flex flex-col border-r border-white/10 bg-[#1a1a1a] relative group/left-sidebar" style={{ width: leftSidebarWidth }}>
+            {/* --- LEFT PANEL: EXPLANATION TIMELINE --- */}
+            <div className="flex-shrink-0 flex flex-col border-r border-white/10 bg-black/60 backdrop-blur-xl relative group/left-sidebar" style={{ width: leftSidebarWidth }}>
                 {/* Resizer Handle */}
                 <div 
                     className="absolute top-0 right-0 bottom-0 w-[6px] translate-x-1/2 bg-transparent cursor-col-resize z-50 flex justify-center items-center group-hover/left-sidebar:bg-cyan-500/10 active:bg-cyan-500/30 transition-colors"
@@ -301,25 +309,28 @@ const ReactionRefinerPage = () => {
                     <div className={`w-[2px] h-12 rounded-full transition-colors ${isDraggingLeft ? 'bg-cyan-400' : 'bg-white/10 group-hover/left-sidebar:bg-cyan-500/50'}`} />
                 </div>
 
-                <div className="p-3 border-b border-white/10 bg-[#222] flex justify-between items-center">
-                    <h2 className="font-bold text-cyan-400 text-sm flex items-center gap-2">
-                        ⏱️ Timeline
+                {/* Panel Header */}
+                <div className="px-5 py-4 border-b border-white/10 bg-gradient-to-r from-blue-900/20 to-transparent flex justify-between items-center shrink-0">
+                    <h2 className="font-black text-white text-[12px] flex items-center gap-3 uppercase tracking-[0.2em]">
+                        <span className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
+                        Explanation Timeline
                     </h2>
                     <select
-                        className="bg-black/50 border border-white/20 rounded px-2 py-0.5 text-[10px] w-32"
+                        className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[10px] font-black text-white/70 outline-none focus:border-cyan-500/50 transition-colors cursor-pointer"
                         value={selectedReactionId || ''}
                         onChange={(e) => setSelectedReactionId(e.target.value)}
                     >
                         {reactions.map(r => (
-                            <option key={r.id} value={r.id}>{r.name}</option>
+                            <option key={r.id} value={r.id} className="bg-black">{r.name}</option>
                         ))}
                     </select>
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-0 flex flex-col">
                     {viewMode === 'JSON' ? (
-                        <div className="p-4 text-xs text-gray-500 text-center mt-10">
-                            Switch to Visual Mode to edit Explanations
+                        <div className="p-8 text-center flex flex-col items-center justify-center gap-3 mt-10">
+                            <span className="text-3xl opacity-20">💬</span>
+                            <p className="text-[11px] font-black text-white/30 uppercase tracking-widest">Switch to Visual Mode to edit Explanations</p>
                         </div>
                     ) : (
                         <ExplanationEditor
@@ -337,15 +348,19 @@ const ReactionRefinerPage = () => {
 
 
             {/* --- CENTER PANEL: 3D PREVIEW (Flex - Fill) --- */}
-            <div className="flex-1 flex flex-col relative bg-black min-w-0">
+            <div className="flex-1 flex flex-col relative bg-gradient-to-br from-zinc-900 to-black min-w-0">
                 <div className="flex-1 relative min-h-0">
                     <div className="absolute top-4 left-4 z-10 flex gap-2">
                         <button
                             onClick={() => setViewMode(viewMode === 'VISUAL' ? 'JSON' : 'VISUAL')}
-                            className="bg-black/60 backdrop-blur border border-white/10 text-white/70 hover:text-white px-3 py-1.5 rounded-md text-xs flex items-center gap-2 transition-all"
+                            className={`backdrop-blur-xl border text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-3 transition-all shadow-2xl ${
+                                viewMode === 'JSON'
+                                    ? 'bg-cyan-600/20 border-cyan-500/40 hover:bg-cyan-600/30 shadow-[0_0_20px_rgba(6,182,212,0.2)]'
+                                    : 'bg-black/70 border-white/20 hover:bg-white/10 hover:border-white/40'
+                            }`}
                         >
-                            {viewMode === 'VISUAL' ? <Code size={14} /> : <LayoutTemplate size={14} />}
-                            {viewMode === 'VISUAL' ? 'View JSON' : 'Visual Editor'}
+                            {viewMode === 'VISUAL' ? <Code size={16} /> : <LayoutTemplate size={16} />}
+                            {viewMode === 'VISUAL' ? 'SOURCE ACCESS' : 'VISUAL INTERFACE'}
                         </button>
                     </div>
 
@@ -396,7 +411,7 @@ const ReactionRefinerPage = () => {
                                                     <MessageSquareText size={16} className="text-purple-400" />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="text-sm text-gray-200 font-medium leading-relaxed whitespace-pre-wrap">
+                                                    <p className="text-base text-white font-black leading-relaxed whitespace-pre-wrap uppercase tracking-tight">
                                                         {activeExplanation.text || "..."}
                                                     </p>
                                                 </div>
@@ -414,10 +429,10 @@ const ReactionRefinerPage = () => {
                     <>
                         {/* Timeline Resizer Bar */}
                         <div 
-                            className="w-full h-[6px] bg-[#222] border-t border-b border-white/10 cursor-ns-resize hover:bg-cyan-500/20 active:bg-cyan-500/40 relative flex items-center justify-center transition-colors shrink-0 z-50 group"
+                            className="w-full h-[6px] bg-white/5 border-t border-b border-white/10 cursor-ns-resize hover:bg-cyan-500/20 active:bg-cyan-500/40 relative flex items-center justify-center transition-colors shrink-0 z-50 group"
                             onMouseDown={(e) => { e.preventDefault(); setIsDraggingTimeline(true); }}
                         >
-                            <div className={`w-16 h-1 rounded-full pointer-events-none transition-colors ${isDraggingTimeline ? 'bg-cyan-400' : 'bg-gray-600 group-hover:bg-cyan-500/50'}`} />
+                            <div className={`w-16 h-1 rounded-full pointer-events-none transition-colors ${isDraggingTimeline ? 'bg-cyan-400' : 'bg-white/20 group-hover:bg-cyan-500/50'}`} />
                         </div>
 
                         <div className="flex-shrink-0" style={{ height: `${timelineHeight}px` }}>
@@ -452,8 +467,8 @@ const ReactionRefinerPage = () => {
             </div>
 
 
-            {/* --- RIGHT PANEL: PROPERTIES (20-25%) --- */}
-            <div className="flex-shrink-0 flex flex-col border-l border-white/10 bg-[#1a1a1a] relative group/right-sidebar" style={{ width: rightSidebarWidth }}>
+            {/* --- RIGHT PANEL: PROPERTIES --- */}
+            <div className="flex-shrink-0 flex flex-col border-l border-white/10 bg-black/60 backdrop-blur-xl relative group/right-sidebar" style={{ width: rightSidebarWidth }}>
                 {/* Resizer Handle */}
                 <div 
                     className="absolute top-0 left-0 bottom-0 w-[6px] -translate-x-1/2 bg-transparent cursor-col-resize z-50 flex justify-center items-center group-hover/right-sidebar:bg-cyan-500/10 active:bg-cyan-500/30 transition-colors"
@@ -462,28 +477,35 @@ const ReactionRefinerPage = () => {
                     <div className={`w-[2px] h-12 rounded-full transition-colors ${isDraggingRight ? 'bg-cyan-400' : 'bg-white/10 group-hover/right-sidebar:bg-cyan-500/50'}`} />
                 </div>
 
-                <div className="p-3 border-b border-white/10 bg-[#222] flex justify-between items-center">
-                    <h2 className="font-bold text-cyan-400 text-sm flex items-center gap-2">
-                        🛠️ Properties
+                {/* Panel Header */}
+                <div className="px-5 py-4 border-b border-white/10 bg-gradient-to-r from-blue-900/20 to-transparent flex justify-between items-center shrink-0">
+                    <h2 className="font-black text-white text-[12px] flex items-center gap-3 uppercase tracking-[0.2em]">
+                        <span className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
+                        Component Properties
                     </h2>
                     <button
                         onClick={handleSave}
                         disabled={saveStatus === 'saving'}
                         className={`
-                            px-3 py-1 rounded text-[10px] font-bold transition-colors flex items-center gap-1.5
-                            ${saveStatus === 'success' ? 'bg-green-600 text-white' : 'bg-cyan-700 hover:bg-cyan-600'}
-                            ${saveStatus === 'error' ? 'bg-red-600' : ''}
+                            px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-xl flex items-center gap-2
+                            ${saveStatus === 'success'
+                                ? 'bg-green-600/20 text-green-400 border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.2)]'
+                                : saveStatus === 'error'
+                                ? 'bg-red-600/20 text-red-400 border border-red-500/30'
+                                : 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                            }
                         `}
                     >
-                        <Save size={12} />
-                        {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'success' ? 'Saved' : 'Save'}
+                        <Save size={14} />
+                        {saveStatus === 'saving' ? 'SYNCING...' : saveStatus === 'success' ? 'SYNCED ✓' : 'COMMIT SAVE'}
                     </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
                     {viewMode === 'JSON' ? (
-                        <div className="text-xs text-gray-500 text-center mt-10">
-                            Switch to Visual Mode to edit Properties
+                        <div className="p-8 text-center flex flex-col items-center justify-center gap-3 mt-10">
+                            <span className="text-3xl opacity-20">🛠</span>
+                            <p className="text-[11px] font-black text-white/30 uppercase tracking-widest">Switch to Visual Mode to edit Properties</p>
                         </div>
                     ) : (
                         <>
@@ -496,22 +518,29 @@ const ReactionRefinerPage = () => {
 
                             {/* Section: Step Details (Visible only when a step is selected) */}
                             {selectedExplanationId !== null ? (
-                                <div className="bg-[#111] rounded-lg border border-white/5 overflow-hidden flex flex-col min-h-[200px]">
-                                    <div className="bg-[#1f1f1f] px-3 py-2 border-b border-white/5 font-semibold text-xs text-purple-400 flex justify-between">
-                                        <span>Explanation Block Properties</span>
-                                        <span className="text-white/30 font-mono">#{selectedExplanationId.split('_').pop()}</span>
+                                <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden flex flex-col min-h-[200px] shadow-xl">
+                                    <div className="bg-gradient-to-r from-purple-900/30 to-transparent px-4 py-3 border-b border-white/10 flex justify-between items-center">
+                                        <span className="text-[11px] font-black text-purple-400 uppercase tracking-[0.15em] flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_6px_rgba(192,132,252,0.8)]" />
+                                            Explanation Block
+                                        </span>
+                                        <span className="text-white/30 font-mono text-[10px] bg-white/5 px-2 py-0.5 rounded-lg border border-white/10">#{selectedExplanationId.split('_').pop()}</span>
                                     </div>
-                                    <div className="p-4 space-y-4">
-                                        <div className="text-gray-400 text-xs text-center border border-dashed border-white/5 p-4 rounded bg-white/[0.02]">
-                                            Explanations are pure visual overlays. 
-                                            Adjust their timing by dragging the track blocks in the timeline below.
+                                    <div className="p-5">
+                                        <div className="text-white/60 text-[12px] font-black text-center border border-dashed border-white/15 p-5 rounded-xl bg-white/[0.03] uppercase tracking-wide leading-relaxed">
+                                            Explanations are pure visual overlays.
+                                            <br />
+                                            <span className="text-purple-400">Drag track blocks</span> in the timeline below to adjust timing.
                                         </div>
                                     </div>
                                 </div>
                             ) : selectedReactantBlockId !== null ? (
-                                <div className="bg-[#111] rounded-lg border border-white/5 overflow-hidden flex flex-col min-h-[400px]">
-                                    <div className="bg-[#1f1f1f] px-3 py-2 border-b border-white/5 font-semibold text-xs text-pink-400 flex justify-between">
-                                        <span>Reactant Track Details</span>
+                                <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden flex flex-col min-h-[400px] shadow-xl">
+                                    <div className="bg-gradient-to-r from-pink-900/30 to-transparent px-4 py-3 border-b border-white/10 flex justify-between items-center">
+                                        <span className="text-[11px] font-black text-pink-400 uppercase tracking-[0.15em] flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-pink-400 shadow-[0_0_6px_rgba(244,114,182,0.8)]" />
+                                            Reactant Track Details
+                                        </span>
                                     </div>
                                     <div className="flex-1">
                                         <ReactantBlockEditor
@@ -529,8 +558,9 @@ const ReactionRefinerPage = () => {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="border border-dashed border-white/10 rounded-lg p-6 text-center text-gray-600 text-xs bg-white/5">
-                                    Select a step or reactant track to edit its properties.
+                                <div className="border border-dashed border-white/15 rounded-2xl p-10 text-center flex flex-col items-center justify-center gap-3 bg-white/[0.02]">
+                                    <span className="text-4xl opacity-20">🎯</span>
+                                    <p className="text-[11px] font-black text-white/30 uppercase tracking-widest leading-relaxed">Select a block or reactant track to edit its properties</p>
                                 </div>
                             )}
                         </>

@@ -135,108 +135,129 @@ const ElectronConfigBuilder = ({ element }) => {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-900 border border-gray-700 rounded-lg p-6 overflow-y-auto">
-      <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+    <div className="h-full flex flex-col bg-[#0f0f15] border border-white/10 rounded-[2.5rem] p-6 relative shadow-2xl overflow-hidden">
+      <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
         <div>
-          <h3 className="text-xl font-bold text-cyan-300">Configuration Builder</h3>
-          <p className="text-sm text-gray-400 mt-1">
-            Allocate the valence electrons for <span className="text-white font-semibold">{element.name}</span>!
+          <h3 className="text-xl font-black text-white tracking-widest uppercase italic">Orbital Matrix</h3>
+          <p className="text-[10px] text-white/60 mt-1 font-black uppercase tracking-[0.2em]">
+            Align valence electrons for <span className="text-white underline decoration-white/30">{element.name}</span>
           </p>
         </div>
+
+
         <div className="flex gap-2">
           <button 
             onClick={() => setShowHint(!showHint)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm transition"
+            className="flex items-center gap-2 px-4 py-1.5 glass-pill border-white/20 text-white/50 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all hover:bg-white hover:text-black tap-animation"
           >
-            <HelpCircle size={16} /> Hint
+            <HelpCircle size={12} /> Matrix Hint
           </button>
           <button 
             onClick={handleReset}
-            className="flex items-center gap-1 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm transition"
+            className="flex items-center gap-2 px-4 py-1.5 glass-pill border-white/20 text-white/50 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all hover:bg-white hover:text-black tap-animation"
           >
-            <RotateCcw size={16} /> Reset
+            <RotateCcw size={12} /> Reset
           </button>
         </div>
+
+
       </div>
 
+
+
       {showHint && (
-        <div className="mb-4 p-3 bg-cyan-900/30 border border-cyan-800 rounded text-cyan-200 text-sm flex justify-between items-center animate-fadeIn">
-          <span>Target Configuration:</span>
-          <span className="font-mono text-white tracking-widest bg-black/50 px-2 py-1 rounded">
+        <div className="mb-4 p-3 bg-white/10 border border-white/20 rounded-xl text-white font-black uppercase tracking-widest flex justify-between items-center animate-fadeIn backdrop-blur-xl">
+          <span className="text-[9px] text-white/60">Target Logic:</span>
+          <span className="font-mono text-white tracking-[0.3em] bg-black/40 px-3 py-1.5 rounded-lg border border-white/10">
              {corePrefix} {targetConfig.map(t => `${t.subshell}${t.targetCount}`).join(' ')}
           </span>
         </div>
       )}
 
+
+
       {/* Electron Pool */}
-      <div className="mb-8 text-center bg-gray-800 p-4 rounded-lg shadow-inner shadow-black/50 border border-gray-700 relative overflow-hidden">
+      <div className="mb-6 text-center bg-black/40 p-4 rounded-[2rem] shadow-inner border border-white/10 relative overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
         {isSuccess && (
-          <div className="absolute inset-0 bg-green-500/20 backdrop-blur-sm flex items-center justify-center animate-pulse z-10">
-            <div className="flex items-center gap-2 text-green-400 font-bold text-xl bg-gray-900 px-6 py-2 rounded-full border border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]">
-               <CheckCircle2 size={24} /> Configuration Complete!
+          <div className="absolute inset-0 bg-white/20 backdrop-blur-2xl flex items-center justify-center animate-shimmer z-10 font-black">
+            <div className="flex items-center gap-2 text-black text-[10px] uppercase tracking-[0.3em] bg-white px-8 py-3 rounded-full shadow-2xl transition-all scale-105">
+               <CheckCircle2 size={16} /> Matrix Authenticated
             </div>
           </div>
         )}
-        <h4 className="text-gray-400 text-sm mb-2 uppercase tracking-wider font-semibold">Available Electrons</h4>
-        <div className="text-5xl font-extrabold text-cyan-400 mb-2 font-mono">
+        <h4 className="text-white font-black text-[10px] mb-2 uppercase tracking-[0.2em] opacity-30">Valence Population Status</h4>
+        <div className="text-6xl font-black text-white mb-1 tracking-tighter">
           {availableElectrons}
         </div>
-        <p className="text-xs text-gray-500 mt-1 italic">Click '+' to allocate an electron to a subshell below.</p>
+        <p className="text-[9px] text-white mt-1 uppercase tracking-widest font-black opacity-20">Select Access Nodes to Allocate</p>
+
+
       </div>
 
+
+
       {/* Subshells */}
-      <div className="flex-1 flex flex-col justify-center items-center gap-6">
-        <div className="flex items-center justify-center flex-wrap gap-4 bg-black/40 p-6 rounded-xl border border-gray-800 w-full">
+      <div className="flex-1 flex flex-col justify-center items-center gap-6 pb-2">
+        <div className="flex items-center justify-center flex-wrap gap-4 bg-white/[0.05] p-6 rounded-[2.5rem] border border-white/10 w-full shadow-inner overflow-y-auto custom-scrollbar">
           
           {/* Core Prefix display */}
           {corePrefix && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-purple-900/30 border border-purple-500/50 rounded-lg shadow-lg">
-               <span className="text-purple-300 font-bold text-lg">{corePrefix}</span>
-               <span className="text-xs text-purple-400/80 uppercase tracking-widest">(Core)</span>
+            <div className="flex items-center gap-3 px-6 py-3 glass-card border-white/20 rounded-xl shadow-2xl opacity-80 border-dashed">
+               <span className="text-white font-black text-lg tracking-widest">{corePrefix}</span>
+               <span className="text-[8px] text-white/40 uppercase tracking-[0.2em] font-black">Core Node</span>
             </div>
           )}
 
           {targetConfig.map((t, idx) => {
              const maxCapacity = MAX_ELECTRONS[t.type] || 2;
              const isFull = currentAllocation[t.subshell] === maxCapacity;
-             const isCorrect = currentAllocation[t.subshell] === t.targetCount;
+             const isFinished = availableElectrons === 0;
+             const isCorrect = isFinished && currentAllocation[t.subshell] === t.targetCount;
+             const isWrong = isFinished && currentAllocation[t.subshell] > 0 && !isCorrect;
              
              return (
-               <div key={idx} className={`p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-colors duration-300 shadow-xl ${
+               <div key={idx} className={`p-4 rounded-[2rem] border transition-all duration-700 flex flex-col items-center gap-4 shadow-xl relative overflow-hidden group/shell ${
                  isSuccess 
-                  ? 'border-green-500 bg-green-900/20 shadow-green-900/40' 
+                  ? 'border-green-400 bg-green-400 text-black scale-105 z-20 shadow-[0_0_40px_rgba(74,222,128,0.4)]' 
                   : isCorrect 
-                    ? 'border-cyan-700 bg-cyan-900/10' 
-                    : 'border-gray-700 bg-gray-800'
+                    ? 'border-green-500/50 bg-green-500/10' 
+                    : isWrong
+                      ? 'border-red-500/50 bg-red-500/10 scale-95'
+                      : 'border-white/10 glass-card'
                }`}>
-                  <div className="text-2xl font-bold font-mono min-w-16 text-center text-white">
-                     {t.subshell}<sup className="text-cyan-400 ml-0.5">{currentAllocation[t.subshell]}</sup>
+                  <div className={`text-2xl font-black tracking-tighter min-w-16 text-center transition-colors duration-500 ${isSuccess ? 'text-black' : isCorrect ? 'text-green-400' : isWrong ? 'text-red-400' : 'text-white'}`}>
+                     {t.subshell}<sup className={`text-xs ml-0.5 ${isSuccess ? 'text-black/60' : isCorrect ? 'text-green-400/60' : isWrong ? 'text-red-400/60' : 'text-white/60'}`}>{currentAllocation[t.subshell]}</sup>
                   </div>
                   
-                  <div className="flex items-center gap-2 bg-black/60 p-1.5 rounded-full border border-gray-700">
+                  <div className={`flex items-center gap-2 p-1.5 rounded-full border transition-all duration-500 ${isSuccess ? 'bg-black/5 border-black/10' : 'bg-white/5 border-white/10'}`}>
                     <button 
                       onClick={() => handleRemoveElectron(t.subshell)}
                       disabled={currentAllocation[t.subshell] === 0 || isSuccess}
-                      className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-700 hover:bg-gray-600 active:bg-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 tap-animation ${isSuccess ? 'bg-black/10 text-black' : 'bg-white/10 text-white hover:bg-white/20 shadow-lg'}`}
                     >
-                      <span className="text-white font-bold text-lg leading-none">-</span>
+                      <span className="font-black text-lg leading-none">-</span>
                     </button>
-                    <div className="w-10 text-center font-mono text-gray-300 text-sm">
-                      {currentAllocation[t.subshell]}/{maxCapacity}
+                    <div className={`w-10 text-center font-black text-[9px] uppercase tracking-widest ${isSuccess ? 'text-black/60' : isCorrect ? 'text-green-400' : isWrong ? 'text-red-400' : 'text-white/80'}`}>
+                      {currentAllocation[t.subshell]}
                     </div>
                     <button 
                       onClick={() => handleAddElectron(t.subshell, maxCapacity)}
                       disabled={availableElectrons === 0 || isFull || isSuccess}
-                      className="w-8 h-8 rounded-full flex items-center justify-center bg-cyan-700 hover:bg-cyan-600 active:bg-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 tap-animation ${isSuccess ? 'bg-black/10 text-black' : 'bg-white text-black shadow-xl'}`}
                     >
-                      <span className="text-white font-bold text-lg leading-none">+</span>
+                      <span className="font-black text-lg leading-none">+</span>
                     </button>
                   </div>
+
+
                </div>
              )
           })}
         </div>
       </div>
+
+
       
     </div>
   );

@@ -64,18 +64,27 @@ const EnergyProfile = ({ progress, activationEnergy }) => {
 
     return (
         <div className="w-full">
-            <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
-                    <Zap size={10} className="text-yellow-500" /> Potential Energy
+            <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <Zap size={10} className="text-white/20" /> Potential Energy
                 </span>
             </div>
             
-            <div className="relative h-20 w-full border-l border-b border-gray-700 bg-gradient-to-tr from-gray-900/50 to-transparent rounded-tr-lg">
-                {/* Grid Lines */}
-                <div className="absolute inset-0 grid grid-rows-4 grid-cols-4 opacity-10 pointer-events-none">
-                    <div className="border-t border-white/50 w-full" />
-                    <div className="border-t border-white/50 w-full row-start-2" />
-                    <div className="border-t border-white/50 w-full row-start-3" />
+            <div className="relative h-24 w-full border-l border-b border-white/10 bg-gradient-to-tr from-white/[0.02] to-transparent rounded-none">
+                {/* Horizontal Gridlines */}
+                <div className="absolute inset-0 flex flex-col justify-between py-0 pointer-events-none">
+                    <div className="border-t border-white/5 w-full h-px" />
+                    <div className="border-t border-white/5 w-full h-px" />
+                    <div className="border-t border-white/5 w-full h-px" />
+                    <div className="border-t border-white/5 w-full h-px" />
+                </div>
+
+                {/* Vertical Gridlines */}
+                <div className="absolute inset-0 flex justify-between px-0 pointer-events-none">
+                    <div className="border-l border-white/5 h-full w-px" />
+                    <div className="border-l border-white/5 h-full w-px" />
+                    <div className="border-l border-white/5 h-full w-px" />
+                    <div className="border-l border-white/5 h-full w-px" />
                 </div>
 
                 {/* The Curve (SVG) */}
@@ -83,36 +92,36 @@ const EnergyProfile = ({ progress, activationEnergy }) => {
                     <path 
                         d={`M 0 100 Q 50 ${100 - humpHeightPercent} 100 80`} 
                         fill="none" 
-                        stroke="#4b5563" 
-                        strokeWidth="2" 
+                        stroke="rgba(255,255,255,0.1)" 
+                        strokeWidth="1" 
                         strokeDasharray="4,4"
                     />
-                    {/* Active Path (fills up to progress) - Advanced aesthetic touch */}
+                    {/* Active Path (white crystalline flow) */}
                     <path 
                         d={`M 0 100 Q 50 ${100 - humpHeightPercent} 100 80`} 
                         fill="none" 
-                        stroke="#22d3ee" 
-                        strokeWidth="2"
+                        stroke="white" 
+                        strokeWidth="1.5"
                         strokeDasharray="300"
                         strokeDashoffset={300 - (progress * 300)}
-                        className="transition-all duration-75 ease-linear"
+                        className="transition-all duration-75 ease-linear shadow-white shadow-2xl"
                     />
                 </svg>
 
-                {/* The "Ball" Indicator */}
+                {/* The "Ball" Indicator - Crystalline Dot */}
                 <div 
-                    className="absolute w-2 h-2 bg-white rounded-full shadow-[0_0_10px_#ffffff] z-10 transition-all duration-75"
+                    className="absolute w-2.5 h-2.5 bg-white rounded-none shadow-[0_0_15px_#ffffff] z-10 transition-all duration-75 border border-white"
                     style={{ 
                         left: `${progress * 100}%`, 
                         bottom: `${currentEnergy * 80 + 20}%`, 
-                        transform: 'translate(-50%, 50%)'
+                        transform: 'translate(-50%, 50%) rotate(45deg)'
                     }}
                 />
             </div>
             
-            <div className="flex justify-between text-[9px] text-gray-600 mt-1 font-mono uppercase">
+            <div className="flex justify-between text-[8px] font-black text-white/20 mt-3 font-mono uppercase tracking-[0.2em]">
                 <span>Reactants</span>
-                <span>Transition State</span>
+                <span>Transition</span>
                 <span>Products</span>
             </div>
         </div>

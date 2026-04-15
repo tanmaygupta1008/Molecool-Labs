@@ -120,31 +120,39 @@ export default function IsomerChallengeManager() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#0a0a1a] via-[#11112b] to-[#0d1430] text-gray-200 p-8 font-sans">
-            
-            {/* Header */}
-            <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center mb-10 pb-6 border-b border-white/10">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-cyan-900/30 rounded-2xl border border-cyan-800/50 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
-                        <Database className="w-8 h-8 text-cyan-400" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 tracking-tight">
-                            Isomer Database Manager
-                        </h1>
-                        <p className="text-sm text-gray-400 font-medium mt-1">Manage cloud-synced compounds for the Isomer Challenge.</p>
-                    </div>
+        <div className="theme-internal">
+            <div className="min-h-screen bg-transparent text-white p-8 relative overflow-hidden">
+                {/* Animated Background */}
+                <div className="bg-mesh-container">
+                    <div className="bg-mesh-blob blob-1" />
+                    <div className="bg-mesh-blob blob-2" />
+                    <div className="bg-mesh-blob blob-3" />
                 </div>
                 
-                <div className="mt-6 md:mt-0 flex gap-3">
-                    <button 
-                        onClick={() => router.push('/compounds/isomer-challenge')}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-semibold transition-all backdrop-blur-md"
-                    >
-                        <ArrowLeft className="w-4 h-4" /> Go to Game
-                    </button>
+                {/* Header */}
+                <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center mb-16 pb-8 border-b border-white/10 relative z-10">
+                    <div className="flex items-center gap-6">
+                        <div className="p-4 glass-card !bg-white/5 border-white/10 rounded-none shadow-[0_0_30px_rgba(255,255,255,0.05)]">
+                            <Database className="w-8 h-8 text-white animate-pulse" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-black tracking-tighter text-white uppercase leading-none">
+                                Isomer <br />
+                                <span className="text-white/40 font-light text-2xl">Database Manager</span>
+                            </h1>
+                            <p className="text-[12px] font-black uppercase tracking-[0.2em] text-white/60 mt-2 leading-relaxed">System-wide compound repository administrator.</p>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-8 md:mt-0 flex gap-4">
+                        <button 
+                            onClick={() => router.push('/compounds/isomer-challenge')}
+                            className="flex items-center gap-3 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] font-black uppercase tracking-widest transition-all tap-animation backdrop-blur-md rounded-none"
+                        >
+                            <ArrowLeft className="w-4 h-4" /> Exit to Lab
+                        </button>
+                    </div>
                 </div>
-            </div>
 
             {/* Notification Toast */}
             {message && (
@@ -160,141 +168,148 @@ export default function IsomerChallengeManager() {
                 </div>
             )}
 
-            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                {/* Left Column: Form & Tools */}
-                <div className="lg:col-span-1 space-y-6">
+                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12 relative z-10">
                     
-                    {/* Add Form Card */}
-                    <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-                        {/* Decorative glow */}
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                    {/* Left Column: Form & Tools */}
+                    <div className="lg:col-span-1 space-y-8">
                         
-                        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                            <Plus className="w-5 h-5 text-cyan-500" />
-                            Add Compound
-                        </h2>
-
-                        <form onSubmit={handleAddChallenge} className="space-y-5 relative z-10">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Chemical Formula</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="e.g. C6H14" 
-                                    value={target}
-                                    onChange={(e) => setTarget(e.target.value)}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono text-white text-lg"
-                                    required
-                                />
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Number of Isomers</label>
-                                <input 
-                                    type="number" 
-                                    min="1"
-                                    value={expected}
-                                    onChange={(e) => setExpected(e.target.value)}
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono text-white text-lg"
-                                    required
-                                />
-                            </div>
-
-                            <button 
-                                type="submit" 
-                                disabled={isAdding || !target}
-                                className="w-full mt-4 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] transition-all"
-                            >
-                                {isAdding ? (
-                                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                                ) : (
-                                    <>Append to Database</>
-                                )}
-                            </button>
-                        </form>
-                    </div>
-
-                    {/* Data Tools Card */}
-                    <div className="bg-gradient-to-br from-indigo-950/30 to-purple-900/20 backdrop-blur-xl border border-indigo-500/20 rounded-3xl p-6 shadow-xl">
-                        <h2 className="text-sm font-bold text-indigo-300 uppercase tracking-widest mb-4">Database Utilities</h2>
-                        <p className="text-sm text-indigo-200/60 mb-5 leading-relaxed">
-                            Initialize your Firestore database with the foundational set of isomer challenges if it's currently empty.
-                        </p>
-                        <button 
-                            onClick={handleSeedDefaults}
-                            disabled={isSeeding}
-                            className="w-full flex items-center justify-center gap-2 py-3 border border-indigo-500/50 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(99,102,241,0.1)]"
-                        >
-                            <RotateCcw className={`w-4 h-4 ${isSeeding ? 'animate-spin' : ''}`} />
-                            {isSeeding ? 'Seeding...' : 'Seed Default Compounds'}
-                        </button>
-                    </div>
-
-                </div>
-
-                {/* Right Column: Interactive Table */}
-                <div className="lg:col-span-2">
-                    <div className="bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col h-full min-h-[500px]">
-                        
-                        <div className="p-6 border-b border-white/5 bg-white/[0.01] flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                Cloud Synced Compounds
-                                <span className="px-2.5 py-0.5 rounded-full bg-cyan-900/50 text-cyan-400 text-xs border border-cyan-800">
-                                    {challenges.length} active
-                                </span>
+                        {/* Add Form Card */}
+                        <div className="glass-card !bg-black/40 backdrop-blur-3xl border border-white/10 rounded-none p-8 shadow-2xl relative overflow-hidden">
+                            <h2 className="text-[12px] font-black text-white/70 uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
+                                <Plus className="w-5 h-5 text-white/60" />
+                                Add Compound
                             </h2>
-                            <button onClick={fetchChallenges} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white transition-colors" title="Refresh Data">
-                                <RotateCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+
+                            <form onSubmit={handleAddChallenge} className="space-y-8 relative z-10">
+                                <div className="space-y-3">
+                                    <label className="text-[12px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                        Chemical Formula
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="e.g. C6H14" 
+                                        value={target}
+                                        onChange={(e) => setTarget(e.target.value)}
+                                        className="w-full glass-pill !bg-white/5 border border-white/10 rounded-none px-5 py-4 placeholder-white/40 focus:outline-none focus:border-white/30 transition-all font-mono text-white text-xl font-black"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[12px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                        Expected Isomers
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        min="1"
+                                        value={expected}
+                                        onChange={(e) => setExpected(e.target.value)}
+                                        className="w-full glass-pill !bg-white/5 border border-white/10 rounded-none px-5 py-4 focus:outline-none focus:border-white/30 transition-all font-mono text-white text-xl font-black"
+                                        required
+                                    />
+                                </div>
+
+                                <button 
+                                    type="submit" 
+                                    disabled={isAdding || !target}
+                                    className="w-full mt-4 flex items-center justify-center gap-3 py-5 rounded-none bg-white text-black hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed font-black text-[12px] uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] relative overflow-hidden"
+                                >
+                                    {isAdding ? (
+                                        <span className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"></span>
+                                    ) : (
+                                        <>
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent animate-shimmer" />
+                                            Append to Database
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        </div>
+
+                        {/* Data Tools Card */}
+                        <div className="glass-card !bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-none p-8 shadow-xl">
+                            <h2 className="text-[12px] font-black text-white uppercase tracking-[0.2em] mb-4">Database Utilities</h2>
+                            <p className="text-[11px] font-black text-white/50 uppercase tracking-widest leading-relaxed mb-6">
+                                Initialize your cloud database with the foundational set of challenges.
+                            </p>
+                            <button 
+                                onClick={handleSeedDefaults}
+                                disabled={isSeeding}
+                                className="w-full flex items-center justify-center gap-3 py-4 border border-white/20 bg-white/10 hover:bg-white/20 text-[11px] font-black text-white uppercase tracking-widest rounded-none transition-all tap-animation"
+                            >
+                                <RotateCcw className={`w-4 h-4 ${isSeeding ? 'animate-spin' : ''}`} />
+                                {isSeeding ? 'Syncing...' : 'Seed Defaults'}
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-auto p-6">
-                            {isLoading ? (
-                                <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 space-y-4">
-                                    <div className="w-10 h-10 border-4 border-cyan-900 border-t-cyan-500 rounded-full animate-spin"></div>
-                                    <p className="font-medium animate-pulse">Syncing with Firestore...</p>
-                                </div>
-                            ) : challenges.length === 0 ? (
-                                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                                    <Database className="w-16 h-16 text-gray-700 mb-4" />
-                                    <h3 className="text-xl font-bold text-white mb-2">No Challenges Found</h3>
-                                    <p className="text-center max-w-sm mb-6 text-sm">Your isomer database is empty. You can add one manually or seed the default dataset.</p>
-                                    <button onClick={handleSeedDefaults} className="px-6 py-2 rounded-full bg-cyan-600/20 text-cyan-400 border border-cyan-800 font-semibold hover:bg-cyan-600/40 transition">
-                                        Seed Database Now
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {challenges.map((c) => (
-                                        <div key={c.id} className="group relative bg-[#090b14] border border-white/5 hover:border-cyan-500/30 rounded-2xl p-5 shadow-lg transition-all hover:shadow-[0_8px_30px_rgba(6,182,212,0.1)] hover:-translate-y-1 overflow-hidden">
-                                            {/* Hover Glow Effect */}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                                            
-                                            <div className="flex justify-between items-start relative z-10">
-                                                <div>
-                                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Target</p>
-                                                    <h3 className="font-mono text-2xl font-extrabold text-white tracking-wide"><FormulaText text={c.target} /></h3>
+                    </div>
+
+                    {/* Right Column: Interactive Table */}
+                    <div className="lg:col-span-2">
+                        <div className="glass-card !bg-black/40 backdrop-blur-3xl border border-white/10 rounded-none overflow-hidden shadow-2xl flex flex-col h-full min-h-[600px]">
+                            
+                            <div className="p-8 border-b border-white/10 bg-white/[0.05] flex justify-between items-center">
+                                <h2 className="text-[14px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-4">
+                                    Cloud Database
+                                    <span className="px-3 py-1 rounded-none bg-white text-black text-[11px] font-black">
+                                        {challenges.length} ENTRIES
+                                    </span>
+                                </h2>
+                                <button onClick={fetchChallenges} className="p-3 rounded-none bg-white font-black text-black hover:bg-white/90 transition-all tap-animation shadow-2xl" title="Refresh Sync">
+                                    <RotateCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-auto p-8 custom-scrollbar">
+                                {isLoading ? (
+                                    <div className="w-full h-full flex flex-col items-center justify-center text-white/20 space-y-6">
+                                        <div className="w-12 h-12 border-4 border-white/5 border-t-white rounded-full animate-spin"></div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Synchronizing Firestore...</p>
+                                    </div>
+                                ) : challenges.length === 0 ? (
+                                    <div className="w-full h-full flex flex-col items-center justify-center">
+                                        <Database className="w-20 h-20 mb-6 text-white animate-pulse" />
+                                        <h3 className="text-[18px] font-black text-white uppercase tracking-[0.3em] mb-3">No Data Entries</h3>
+                                        <p className="text-center text-[11px] font-black uppercase tracking-widest max-w-sm mb-8 text-white/60">The repository is currently empty. Initialize a seed or manually append compounds to begin.</p>
+                                        <button onClick={handleSeedDefaults} className="px-12 py-4 bg-white text-black text-[12px] font-black uppercase tracking-[0.2em] hover:scale-105 transition-all tap-animation shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                                            Seed Repository
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {challenges.map((c) => (
+                                            <div key={c.id} className="group relative glass-pill !bg-white/[0.03] border-white/10 hover:border-white/30 rounded-none p-8 transition-all hover:shadow-[0_0_40px_rgba(255,255,255,0.05)] hover:-translate-y-1 overflow-hidden">
+                                                {/* Hover Glow Effect */}
+                                                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/[0.02] to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                                                
+                                                <div className="flex justify-between items-start relative z-10">
+                                                    <div>
+                                                        <p className="text-[11px] font-black text-white uppercase tracking-[0.2em] mb-2">Structure</p>
+                                                        <h3 className="font-mono text-3xl font-black text-white tracking-widest filter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"><FormulaText text={c.target} /></h3>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => handleDelete(c.id, c.target)}
+                                                        className="p-3 bg-white text-black opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white border border-transparent shadow-2xl"
+                                                        title="Delete entry"
+                                                    >
+                                                        <Trash2 className="w-5 h-5" />
+                                                    </button>
                                                 </div>
-                                                <button 
-                                                    onClick={() => handleDelete(c.id, c.target)}
-                                                    className="p-2.5 rounded-xl bg-red-500/10 text-red-400 opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all hover:bg-red-500 hover:text-white"
-                                                    title="Delete Compound"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                            <div className="mt-4 pt-4 border-t border-white/5 flex items-end justify-between relative z-10">
-                                                <div>
-                                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Isomers</p>
-                                                    <p className="text-lg font-bold text-cyan-400 flex items-center gap-1.5">
-                                                        {c.expected} <span className="text-xs text-gray-600 font-normal ml-1">variants required</span>
-                                                    </p>
+                                                <div className="mt-8 pt-6 border-t border-white/10 flex items-end justify-between relative z-10">
+                                                    <div>
+                                                        <p className="text-[11px] text-white font-black uppercase tracking-widest mb-2">Challenge Constraints</p>
+                                                        <p className="text-2xl font-black text-white flex items-center gap-3">
+                                                            {c.expected} <span className="text-[11px] text-white/40 font-black uppercase tracking-widest">Known Isomers</span>
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

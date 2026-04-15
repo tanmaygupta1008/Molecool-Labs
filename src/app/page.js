@@ -104,7 +104,7 @@ export default function LandingPage() {
         </h1>
 
         {/* Sub */}
-        <p className="max-w-2xl text-lg sm:text-xl text-sky-100/90 leading-relaxed mb-10 drop-shadow-lg font-medium">
+        <p className="max-w-2xl text-xl sm:text-2xl text-white leading-relaxed mb-10 drop-shadow-lg font-black tracking-tight">
           An immersive, AI-powered virtual chemistry lab. Simulate reactions, explore
           molecules in 3D, and run experiments — all in your browser.
         </p>
@@ -120,9 +120,9 @@ export default function LandingPage() {
         )}
 
         {/* Scroll indicator */}
-        <div className="mt-auto pb-12 flex flex-col items-center gap-2 text-sky-200/60 text-xs animate-bounce drop-shadow-lg uppercase tracking-widest font-semibold">
+        <div className="mt-auto pb-12 flex flex-col items-center gap-2 text-white text-[14px] animate-bounce drop-shadow-lg uppercase tracking-[0.3em] font-black">
           <span>Scroll to explore the micro world</span>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </div>
@@ -133,8 +133,8 @@ export default function LandingPage() {
       ═══════════════════════════════════════════════════════════ */}
       <section className="relative max-w-7xl mx-auto px-4 min-h-[110vh] flex flex-col justify-center py-20 pointer-events-auto z-10">
         <div className="text-center mb-16">
-          <h2 className="text-5xl font-extrabold text-white mb-3 drop-shadow-lg">Everything in one lab</h2>
-          <p className="text-gray-300 text-lg max-w-xl mx-auto drop-shadow-md">
+          <h2 className="text-6xl font-black text-white mb-4 drop-shadow-lg tracking-tighter">Everything in one lab</h2>
+          <p className="text-white text-xl font-bold max-w-xl mx-auto drop-shadow-md opacity-90">
             Every tool a chemistry student or enthusiast could need, built for the web.
           </p>
         </div>
@@ -160,8 +160,8 @@ export default function LandingPage() {
 
               {/* Text */}
               <div>
-                <h3 className="text-lg font-bold text-white mb-1 drop-shadow-md">{f.title}</h3>
-                <p className="text-gray-300 text-sm leading-relaxed drop-shadow-md">{f.desc}</p>
+                <h3 className="text-xl font-black text-white mb-2 drop-shadow-md uppercase tracking-tight">{f.title}</h3>
+                <p className="text-white text-[15px] leading-relaxed drop-shadow-md font-bold opacity-90">{f.desc}</p>
               </div>
 
               {/* Arrow */}
@@ -190,10 +190,10 @@ export default function LandingPage() {
 
           <div className="relative z-10">
             <div className="text-5xl mb-5 drop-shadow-2xl">🧪</div>
-            <h2 className="text-4xl font-extrabold text-white mb-4 drop-shadow-lg">
+            <h2 className="text-5xl font-black text-white mb-5 drop-shadow-lg tracking-tight">
               Start your first experiment
             </h2>
-            <p className="text-blue-100 text-lg mb-8 max-w-lg mx-auto drop-shadow-md">
+            <p className="text-white text-xl mb-10 max-w-lg mx-auto drop-shadow-md font-bold">
               No equipment needed. No safety goggles required. Just pure chemistry in your browser.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -213,14 +213,7 @@ export default function LandingPage() {
       ═══════════════════════════════════════════════════════════ */}
       <TeamSection />
 
-      {/* ═══════════════════════════════════════════════════════════
-          FOOTER
-      ═══════════════════════════════════════════════════════════ */}
-      <footer className="border-t border-gray-800/60 py-8 px-4 text-center mt-20 relative z-10 bg-black/50 backdrop-blur-md">
-        <p className="text-gray-500 text-sm">
-          <span className="text-cyan-500 font-semibold">Molecools Lab</span> — Built for curious minds.
-        </p>
-      </footer>
+
 
       {/* Gradient animation keyframe */}
       <style>{`
