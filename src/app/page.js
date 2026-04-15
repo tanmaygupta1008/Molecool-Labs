@@ -77,7 +77,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════
           HERO (Macro Level)
       ═══════════════════════════════════════════════════════════ */}
-      <section className="relative flex flex-col items-center justify-center text-center min-h-[110vh] px-4">
+      <section className="relative flex flex-col items-center justify-center text-center min-h-[110vh] pt-40 px-4">
 
         {/* Pill badge */}
         <div className="mb-8 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-sky-400/50 bg-sky-950/40 text-cyan-200 text-xs font-semibold tracking-widest uppercase backdrop-blur-md shadow-lg shadow-sky-900/50">
