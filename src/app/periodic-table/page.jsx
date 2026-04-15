@@ -16,18 +16,63 @@ const ELEMENTS_CACHE_KEY = "molecool_elements_v1";
 const ELEMENTS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 const CATEGORY_COLORS_LEGEND = [
-  { category: "diatomic nonmetal",   name: "Diatomic Nonmetals",      color: "#2d7a74" },
-  { category: "alkali metal",         name: "Alkali Metals",            color: "#8c3a3a" },
-  { category: "alkaline earth metal", name: "Alkaline Earth Metals",   color: "#9c683c" },
-  { category: "transition metal",     name: "Transition Metals",        color: "#8a7826" },
-  { category: "noble gas",            name: "Noble Gases",              color: "#41398c" },
-  { category: "halogen",              name: "Halogens",                 color: "#5a806c" },
-  { category: "lanthanide",           name: "Lanthanides",              color: "#80505a" },
-  { category: "actinide",             name: "Actinides",                color: "#505a80" },
-  { category: "post-transition metal",name: "Post-Transition Metals", color: "#24628a" },
-  { category: "metalloid",            name: "Metalloids",               color: "#6b640d" },
-  { category: "polyatomic nonmetal",  name: "Nonmetals",                color: "#2d4682" },
+  { category: "diatomic nonmetal",   name: "Diatomic Nonmetals",      color: "#4ade80" },
+  { category: "alkali metal",         name: "Alkali Metals",            color: "#f87171" },
+  { category: "alkaline earth metal", name: "Alkaline Earth Metals",   color: "#fb923c" },
+  { category: "transition metal",     name: "Transition Metals",        color: "#facc15" },
+  { category: "noble gas",            name: "Noble Gases",              color: "#a78bfa" },
+  { category: "halogen",              name: "Halogens",                 color: "#2dd4bf" },
+  { category: "lanthanide",           name: "Lanthanides",              color: "#f472b6" },
+  { category: "actinide",             name: "Actinides",                color: "#818cf8" },
+  { category: "post-transition metal",name: "Post-Transition Metals", color: "#60a5fa" },
+  { category: "metalloid",            name: "Metalloids",               color: "#fbbf24" },
+  { category: "polyatomic nonmetal",  name: "Nonmetals",                color: "#3b82f6" },
 ];
+
+// ── Trend Indicator Helper ────────────────────────────────────────────────────
+const TrendArrow = ({ label, direction, color, position, labelPosition = "center" }) => {
+  const isHorizontal = direction === 'left' || direction === 'right';
+  const labelPlacement = {
+    center: 'justify-center',
+    start: isHorizontal ? 'justify-start' : 'justify-start pt-12',
+    end: isHorizontal ? 'justify-end' : 'justify-end pb-12'
+  }[labelPosition] || 'justify-center';
+  
+  return (
+    <div className={`absolute flex items-center ${labelPlacement} pointer-events-none z-10 ${position}`}>
+      <div className={`relative flex ${isHorizontal ? 'flex-row w-full px-4' : 'flex-col h-full py-4'} items-center ${labelPlacement}`}>
+        {/* The Line */}
+        <div 
+          className={`absolute ${isHorizontal ? 'h-[1px] w-[calc(100%-32px)]' : 'w-[1px] h-[calc(100%-32px)]'}`}
+          style={{ 
+            backgroundColor: `${color}44`,
+            boxShadow: `0 0 10px ${color}22`
+          }} 
+        />
+        
+        {/* The Head */}
+        <div 
+          className="absolute text-lg font-black leading-none"
+          style={{ 
+            color,
+            textShadow: `0 0 15px ${color}`,
+            [direction === 'right' ? 'right' : direction === 'left' ? 'left' : direction === 'up' ? 'top' : 'bottom']: '8px'
+          }}
+        >
+          {{ right: '▶', left: '◀', up: '▲', down: '▼' }[direction]}
+        </div>
+
+        {/* The Label */}
+        <div 
+          className="relative px-2 py-0.5 rounded-md stealth-glass border border-white/10 text-[8px] font-black uppercase tracking-tighter whitespace-nowrap shadow-2xl z-20"
+          style={{ boxShadow: `0 0 20px ${color}33`, color }}
+        >
+          {label}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ── Component ─────────────────────────────────────────────────────────────────
 const PeriodicTablePage = () => {
@@ -256,48 +301,58 @@ const PeriodicTablePage = () => {
         </div>
       </div>
 
-      {/* Periodic Table Grid */}
-      <div className="w-full overflow-x-auto pb-16 custom-scrollbar px-4 pt-8">
-        <div
-          className="grid gap-1 mx-auto min-w-[1100px]"
-          style={{
-            gridTemplateColumns: `repeat(18, minmax(0, 1fr))`,
-            gridTemplateRows: `repeat(10, auto)`,
-            maxWidth: "1200px",
-          }}
-        >
-          {mainElements.map(renderCell)}
+      {/* Periodic Table Grid Wrapper - Increased padding to create a safe zone for arrows */}
+      <div className="w-full overflow-x-auto pb-40 custom-scrollbar px-32 pt-32 relative">
+        <div className="relative mx-auto" style={{ maxWidth: '1200px' }}>
+          
+          {/* Top Trends - Centered staggered */}
+          <TrendArrow label="Electronegativity Increases" direction="right" color="#f87171" position="-top-24 left-0 w-full" labelPosition="center" />
+          <TrendArrow label="Atomic Radius Increases" direction="left" color="#4ade80" position="-top-14 left-0 w-full" labelPosition="center" />
 
-        {/* Spacer rows between main table and lanthanide/actinide rows */}
-        <div style={{ gridColumn: "3 / span 15", gridRow: 6 }} />
-        <div style={{ gridColumn: "3 / span 15", gridRow: 7 }} />
+          {/* Bottom Trends - Centered staggered */}
+          <TrendArrow label="Ionization Energy Increases" direction="right" color="#facc15" position="-bottom-24 left-0 w-full" labelPosition="center" />
+          <TrendArrow label="Electron Affinity Increases" direction="right" color="#a78bfa" position="-bottom-14 left-0 w-full" labelPosition="center" />
 
-        {/* Lanthanides */}
-        <div
-          style={{
-            gridColumn: "4 / span 14",
-            gridRow: 9,
-            display: "grid",
-            gridTemplateColumns: "repeat(14, 1fr)",
-            marginTop: "1.5rem",
-          }}
-          className="gap-1"
-        >
-          {lanthanides.map(renderCell)}
-        </div>
+          <div
+            className="grid gap-1 min-w-[1100px]"
+            style={{
+              gridTemplateColumns: `repeat(18, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(10, auto)`,
+            }}
+          >
+            {mainElements.map(renderCell)}
 
-        {/* Actinides */}
-        <div
-          style={{
-            gridColumn: "4 / span 14",
-            gridRow: 10,
-            display: "grid",
-            gridTemplateColumns: "repeat(14, 1fr)",
-          }}
-          className="gap-1 mt-1"
-        >
-          {actinides.map(renderCell)}
-        </div>
+          {/* Spacer rows between main table and lanthanide/actinide rows */}
+          <div style={{ gridColumn: "3 / span 15", gridRow: 6 }} />
+          <div style={{ gridColumn: "3 / span 15", gridRow: 7 }} />
+
+          {/* Lanthanides */}
+          <div
+            style={{
+              gridColumn: "4 / span 14",
+              gridRow: 9,
+              display: "grid",
+              gridTemplateColumns: "repeat(14, 1fr)",
+              marginTop: "1.5rem",
+            }}
+            className="gap-1"
+          >
+            {lanthanides.map(renderCell)}
+          </div>
+
+          {/* Actinides */}
+          <div
+            style={{
+              gridColumn: "4 / span 14",
+              gridRow: 10,
+              display: "grid",
+              gridTemplateColumns: "repeat(14, 1fr)",
+            }}
+            className="gap-1 mt-1"
+          >
+            {actinides.map(renderCell)}
+          </div>
+          </div>
         </div>
       </div>
 
