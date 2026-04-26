@@ -553,7 +553,9 @@ const TubePointEditor = ({ points, position, rotation, scale, onUpdatePoints, se
 const SceneSync = ({ hasAnims }) => {
     const { invalidate } = useThree();
     // Flush after every React re-render so prop changes show immediately.
-    useEffect(() => { invalidate(); });
+    // REMOVED: useEffect(() => { invalidate(); }); 
+    // ^ This causes infinite loops and destroys performance when combined with 60fps useFrames.
+    
     // Keep the render loop alive while animated items exist.
     useFrame(state => { if (hasAnims) state.invalidate(); });
     return null;
@@ -1764,8 +1766,6 @@ const TubeBuilderTool = ({ allItems, builderState, setBuilderState, onCreateTube
                     key={i}
                     position={anchor.position}
                     onClick={(e) => handleAnchorClick(e, anchor)}
-                    onPointerOver={(e) => { e.stopPropagation(); setHoveredAnchor(anchor); document.body.style.cursor = 'pointer'; }}
-                    onPointerOut={(e) => { setHoveredAnchor(null); document.body.style.cursor = 'default'; }}
                 >
                     <sphereGeometry args={[0.08, 16, 16]} />
                     <meshBasicMaterial
@@ -3493,8 +3493,8 @@ export default function ApparatusEditorPage() {
                     onCreated={({ gl }) => {
                         gl.domElement.addEventListener('webglcontextlost', (e) => {
                             e.preventDefault();
-                            console.error('WebGL Context Lost - Forcing reload to recover...');
-                            window.location.reload();
+                            console.error('WebGL Context Lost.');
+                            setStatus('WebGL crashed! Resource limit exceeded. Please refresh the page manually.');
                         });
                     }}
                 >
