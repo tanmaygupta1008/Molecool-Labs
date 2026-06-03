@@ -2,7 +2,8 @@
 // src/app/engine/atoms/page.jsx
 
 import React, { useState, useRef, useMemo, useEffect, Suspense } from 'react';
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { useThree, useFrame } from '@react-three/fiber';
+import SafeCanvas from '@/components/SafeCanvas';
 import { OrbitControls, Environment, Grid, Plane, TransformControls } from '@react-three/drei';
 import * as THREE from 'three';
 import AnimatedDashedLine from '@/components/reactions/engine/AnimatedDashedLine';
@@ -572,9 +573,9 @@ export default function Phase1ReactantEditorPage() {
                     </ul>
                 </div>
 
-                <Canvas
+                <SafeCanvas
                     camera={{ position: [0, 5, 10], fov: 45 }}
-                    onContextMenu={(e) => e.preventDefault()} // Block browser right-click menu
+                    onContextMenu={(e) => e.preventDefault()}
                     onPointerMissed={() => {
                         if (mode === 'bond' || mode === 'select') {
                             setSelectedAtomId(null);
@@ -773,7 +774,7 @@ export default function Phase1ReactantEditorPage() {
                             RIGHT: THREE.MOUSE.PAN
                         }}
                     />
-                </Canvas>
+                </SafeCanvas>
             </div>
 
             {/* RIGHT PANEL - JSON OUTPUT */}

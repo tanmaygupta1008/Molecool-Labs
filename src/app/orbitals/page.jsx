@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Canvas } from '@react-three/fiber';
+import SafeCanvas from '@/components/SafeCanvas';
 import { OrbitControls, Environment, ContactShadows, Text } from '@react-three/drei';
 import { OrbitalViewer } from '@/components/orbitals/OrbitalShapes';
 import { Info, Atom, Maximize } from 'lucide-react';
@@ -155,7 +155,7 @@ export default function OrbitalsPage() {
                     </div>
                 </div>
 
-                <Canvas camera={{ position: [5, 4, 6], fov: 45 }}>
+                <SafeCanvas camera={{ position: [5, 4, 6], fov: 45 }}>
                     <Environment preset="city" />
                     <ambientLight intensity={0.5} />
                     <pointLight position={[10, 10, 10]} intensity={2} />
@@ -176,7 +176,7 @@ export default function OrbitalsPage() {
                     </group>
                     
                     <OrbitControls makeDefault enableDamping dampingFactor={0.05} />
-                </Canvas>
+                </SafeCanvas>
             </div>
 
             {/* R-PANEL: Quantum Analytics */}

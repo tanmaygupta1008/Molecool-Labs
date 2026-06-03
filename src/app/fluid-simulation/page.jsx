@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import SafeCanvas from '../../components/SafeCanvas';
 import { OrbitControls, Environment, Grid, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -97,7 +97,7 @@ const FluidSimulationPage = () => {
                 </div>
             </div>
 
-            <Canvas camera={{ position: [0, 2, 12], fov: 45 }}>
+            <SafeCanvas camera={{ position: [0, 2, 12], fov: 45 }}>
                 <color attach="background" args={['#1a1a1a']} />
 
                 {/* Lighting */}
@@ -266,7 +266,7 @@ const FluidSimulationPage = () => {
                 </group>
 
                 <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 2} />
-            </Canvas>
+            </SafeCanvas>
         </div>
     );
 };

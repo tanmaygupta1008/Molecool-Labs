@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import SafeCanvas from '@/components/SafeCanvas';
 import { OrbitControls, Stage, Environment, ContactShadows } from '@react-three/drei';
 import * as Apparatus from '@/components/apparatus';
 
@@ -73,7 +73,7 @@ const ApparatusGallery = () => {
                     )}
                 </div>
 
-                <Canvas shadows camera={{ position: [3, 3, 3], fov: 45 }}>
+                <SafeCanvas shadows camera={{ position: [3, 3, 3], fov: 45 }}>
                     <Suspense fallback={null}>
                         <Environment preset="city" />
                         <Stage environment="city" intensity={0.6} contactShadow={false}>
@@ -82,7 +82,7 @@ const ApparatusGallery = () => {
                         <ContactShadows position={[0, -0.01, 0]} opacity={0.5} scale={10} blur={1.5} far={0.8} />
                         <OrbitControls makeDefault autoRotate autoRotateSpeed={0.5} />
                     </Suspense>
-                </Canvas>
+                </SafeCanvas>
             </div>
         </div>
     );

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Save, Plus, Trash2, FlaskConical, TestTube, Thermometer, Gauge, Eye, Layers } from 'lucide-react';
 import { CHEMICALS } from '@/data/chemicals';
-import { Canvas } from '@react-three/fiber';
+import SafeCanvas from '@/components/SafeCanvas';
 import { OrbitControls, Environment, ContactShadows, Center } from '@react-three/drei';
 import * as Apparatus from '@/components/apparatus';
 import { detectApparatusTypeAbove } from '@/utils/apparatus-logic';
@@ -25,7 +25,7 @@ const ApparatusPreview = ({ apparatus }) => {
             <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur px-2 py-1 rounded text-xs font-mono text-cyan-400 border border-cyan-500/20 flex items-center gap-1">
                 <Eye size={12} /> Live Preview
             </div>
-            <Canvas camera={{ position: [0, 2, 5], fov: 45 }}>
+            <SafeCanvas camera={{ position: [0, 2, 5], fov: 45 }}>
                 <ambientLight intensity={0.5} />
                 <pointLight position={[10, 10, 10]} intensity={1} />
                 <Suspense fallback={null}>
@@ -36,7 +36,7 @@ const ApparatusPreview = ({ apparatus }) => {
                 </Center>
                 <ContactShadows position={[0, -0.5, 0]} opacity={0.4} scale={10} blur={2.5} far={4} />
                 <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 1.8} />
-            </Canvas>
+            </SafeCanvas>
         </div>
     );
 };
@@ -83,7 +83,7 @@ const FullSetupPreview = ({ reaction }) => {
             <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur px-2 py-1 rounded text-xs font-mono text-purple-400 border border-purple-500/20 flex items-center gap-1">
                 <Layers size={12} /> Full Setup
             </div>
-            <Canvas camera={{ position: [0, 5, 10], fov: 45 }}>
+            <SafeCanvas camera={{ position: [0, 5, 10], fov: 45 }}>
                 <ambientLight intensity={0.5} />
                 <pointLight position={[10, 10, 10]} intensity={1} />
                 <Suspense fallback={null}>
@@ -102,7 +102,7 @@ const FullSetupPreview = ({ reaction }) => {
                 />
                 <ContactShadows position={[0, -0.05, 0]} opacity={0.4} scale={20} blur={2.5} far={4} />
                 <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 1.8} />
-            </Canvas>
+            </SafeCanvas>
         </div>
     );
 };

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { useThree, useFrame } from '@react-three/fiber';
+import SafeCanvas from '@/components/SafeCanvas';
 import { OrbitControls, Environment, Grid, Plane, TransformControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import AnimatedDashedLine from '@/components/reactions/engine/AnimatedDashedLine';
@@ -19,25 +20,7 @@ import { AnimatedInductiveArrow, ResonanceCloud, CurvedPushingArrow } from '@/co
 /**
  * Invisible plane that captures clicks to place atoms.
  */
-// Simple Error Boundary to catch Canvas crashes
-class CanvasErrorBoundary extends React.Component {
-    constructor(props) { super(props); this.state = { hasError: false, error: null }; }
-    static getDerivedStateFromError(error) { return { hasError: true, error }; }
-    componentDidCatch(error, errorInfo) { console.error("Canvas crashed:", error, errorInfo); }
-    render() {
-        if (this.state.hasError) {
-            return (
-                <div className="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-8 text-center text-red-500 font-mono">
-                    <span className="text-4xl mb-4">💥 WebGL Crash</span>
-                    <h2 className="text-xl font-bold mb-2">The 3D Scene encountered a critical error:</h2>
-                    <p className="bg-red-900/30 p-4 rounded text-sm max-w-2xl overflow-auto select-all">{this.state.error?.toString()}</p>
-                    <button onClick={() => this.setState({hasError: false})} className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-500">Attempt Recovery</button>
-                </div>
-            );
-        }
-        return this.props.children;
-    }
-}
+
 const ClickablePlane = ({ onPlaceAtom }) => {
     return (
         <Plane
@@ -553,11 +536,8 @@ export default function MoleculeBuilderPage() {
                     </ul>
                 </div>
 
-                <CanvasErrorBoundary>
-                <Canvas
+                <SafeCanvas
                     camera={{ position: [0, 5, 10], fov: 45 }}
-                    dpr={[1, 1.5]}
-                    gl={{ antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
                     onContextMenu={(e) => e.preventDefault()}
                     onPointerMissed={() => {
                         if (mode === 'bond' || mode === 'select') {
@@ -958,8 +938,7 @@ export default function MoleculeBuilderPage() {
                             RIGHT: THREE.MOUSE.PAN
                         }}
                     />
-                </Canvas>
-                </CanvasErrorBoundary>
+                </SafeCanvas>
 
                 {/* Educational Legend UI */}
                 {(showInductive || showMesomericArrows || showMesomericCloud) && (

@@ -3,7 +3,8 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { Plus, Trash2, Clock, Play, Pause, RotateCw, Eye, EyeOff } from 'lucide-react';
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { useThree, useFrame } from '@react-three/fiber';
+import SafeCanvas from '@/components/SafeCanvas';
 import * as THREE from 'three';
 import { OrbitControls, Environment, Grid } from '@react-three/drei';
 import { useReactionEditor } from '@/context/ReactionEditorContext';
@@ -502,7 +503,7 @@ export default function Phase2ActionEditorPage() {
                         </div>
                     )}
 
-                    <Canvas
+                    <SafeCanvas
                         camera={{ position: [0, 5, 10], fov: 45 }}
                         onContextMenu={(e) => e.preventDefault()}
                         onPointerMissed={() => setEventMode('none')}
@@ -678,7 +679,7 @@ export default function Phase2ActionEditorPage() {
                                 />
                             );
                         })}
-                    </Canvas>
+                    </SafeCanvas>
                 </div>
 
                 {/* BOTTOM PLAYBACK BAR - TIMELINE */}

@@ -1,6 +1,6 @@
 'use client';
 import React, { Suspense, useState, useEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
+import SafeCanvas from '../../components/SafeCanvas';
 import { OrbitControls, Stars, Float } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import DNAModel from '../../components/DNAModel';
@@ -111,7 +111,7 @@ export default function DNAPage() {
       
       {/* FULL SCREEN 3D CANVAS */}
       <div className="absolute inset-0 z-0 h-full w-full">
-        <Canvas camera={{ position: [0, 0, 30], fov: 40 }} style={{ height: '100%', width: '100%' }}>
+        <SafeCanvas camera={{ position: [0, 0, 30], fov: 40 }} style={{ height: '100%', width: '100%' }}>
           <color attach="background" args={['#02040a']} />
           
           <ambientLight intensity={0.6} />
@@ -165,7 +165,7 @@ export default function DNAPage() {
             autoRotate={false}
             dampingFactor={0.05}
           />
-        </Canvas>
+        </SafeCanvas>
       </div>
 
       {/* FOREGROUND UI OVERLAYS (Glassmorphism Dashboard) */}

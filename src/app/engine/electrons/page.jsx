@@ -1,7 +1,7 @@
 'use client';
 // src/app/engine/electrons/page.jsx
 import { useState, Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import SafeCanvas from '@/components/SafeCanvas';
 import { OrbitControls, Environment, Text } from '@react-three/drei';
 import AtomNode from '@/components/reactions/engine/AtomNode';
 import ElectronNode from '@/components/reactions/engine/ElectronNode';
@@ -40,7 +40,7 @@ export default function Phase4ElectronsPage() {
             </div>
 
             <div className="flex-1 relative">
-                <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
+                <SafeCanvas camera={{ position: [0, 0, 8], fov: 45 }}>
                     <Suspense fallback={null}>
                         <Environment preset="city" />
                     </Suspense>
@@ -73,7 +73,7 @@ export default function Phase4ElectronsPage() {
                     />
 
                     <OrbitControls makeDefault />
-                </Canvas>
+                </SafeCanvas>
             </div>
         </div>
     );

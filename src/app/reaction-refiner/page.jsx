@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import SafeCanvas from '@/components/SafeCanvas';
 import { OrbitControls, Environment, PerspectiveCamera, Grid } from '@react-three/drei';
 import MacroView from '@/components/reactions/views/MacroView';
 import { Save, Play, Pause, RefreshCw, Code, LayoutTemplate, MessageSquareText } from 'lucide-react';
@@ -367,7 +367,7 @@ const ReactionRefinerPage = () => {
                         />
                     ) : (
                         <div className="relative w-full h-full">
-                            <Canvas dpr={[1, 2]} gl={{ antialias: true }}>
+                            <SafeCanvas dpr={[1, 2]} gl={{ antialias: true }}>
                                 <PerspectiveCamera makeDefault position={[0, 2, 8]} fov={50} />
                                 <OrbitControls makeDefault />
                                 <Suspense fallback={null}>
@@ -379,7 +379,7 @@ const ReactionRefinerPage = () => {
                                     reaction={currentReaction}
                                     progress={progress}
                                 />
-                            </Canvas>
+                            </SafeCanvas>
                             
                             {/* Explanation Overlay Logic */}
                             {currentReaction.macroView?.visualRules?.explanationTimeline && (() => {

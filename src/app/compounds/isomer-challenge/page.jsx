@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, Suspense } from 'react';
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { useThree, useFrame } from '@react-three/fiber';
+import SafeCanvas from '@/components/SafeCanvas';
 import { OrbitControls, Environment, Grid, Plane, TransformControls } from '@react-three/drei';
 import * as THREE from 'three';
 import AnimatedDashedLine from '@/components/reactions/engine/AnimatedDashedLine';
@@ -383,7 +384,7 @@ export default function IsomerChallengePage() {
                     {selectedAtomId && <span className="ml-2 bg-cyan-900/80 text-cyan-200 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase shadow-lg">Atom: {selectedAtomId}</span>}
                 </div>
 
-                <Canvas camera={{ position: [0, 5, 10], fov: 45 }} onContextMenu={(e) => e.preventDefault()} onPointerMissed={() => {
+                <SafeCanvas camera={{ position: [0, 5, 10], fov: 45 }} onContextMenu={(e) => e.preventDefault()} onPointerMissed={() => {
                         if (mode === 'bond' || mode === 'select') { setSelectedAtomId(null); setSelectedBondId(null); }
                         if (mode === 'group') setSelectedGroupAtoms([]);
                     }}>
@@ -471,7 +472,7 @@ export default function IsomerChallengePage() {
                     {(script.groups || []).map(group => ( <RadicalGroupUI key={`groupUI-${group.id}`} group={group} atoms={script.atoms} /> ))}
 
                     <OrbitControls makeDefault enablePan={true} enabled={orbitEnabled} maxPolarAngle={Math.PI / 2.1} mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }} />
-                </Canvas>
+                </SafeCanvas>
             </div>
 
             {/* RIGHT PANEL - GAME PROGRESS */}
