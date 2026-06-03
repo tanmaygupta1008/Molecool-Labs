@@ -210,6 +210,11 @@ const ChemicalReactionsPage = () => {
     setEnvConditions({ temp: 25, pressure: 1 });
   }, [currentReaction]);
 
+  // Extract explicit optimal conditions with room-temperature defaults
+  const optimalTemp = currentReaction?.optimalTemp ?? 25;
+  const optimalPressure = currentReaction?.optimalPressure ?? 1;
+  const conditionsDesc = currentReaction?.conditionsDesc ?? "Reacts at room temperature and standard pressure.";
+
   const playingRef = useRef(false);
 
   // Extract explicit Macro Duration dynamically exactly like reaction-refiner
@@ -271,7 +276,6 @@ const ChemicalReactionsPage = () => {
           }
 
           // Physics Calculation (Arrhenius-like effect)
-          const optimalTemp = currentReaction.optimalTemp || 300; // Use JSON val or default
           const tempRatio = Math.max(0.1, envConditions.temp / optimalTemp);
           const physicsMultiplier = Math.min(1.5, tempRatio);
 
@@ -289,7 +293,7 @@ const ChemicalReactionsPage = () => {
     };
     animationFrameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [envConditions.temp, currentReaction, simulationSpeed, viewMode]);
+  }, [envConditions.temp, currentReaction, simulationSpeed, viewMode, optimalTemp, macroDuration]);
 
   const togglePlay = () => {
     const newState = !isPlaying;
@@ -389,9 +393,9 @@ const ChemicalReactionsPage = () => {
             conditions={envConditions}
             setConditions={setEnvConditions}
             optimalConditions={{
-              temp: currentReaction.optimalTemp,
-              pressure: currentReaction.optimalPressure,
-              desc: currentReaction.conditionsDesc
+              temp: optimalTemp,
+              pressure: optimalPressure,
+              desc: conditionsDesc
             }}
           />
           <div className="bg-black/60 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-xl shrink-0">

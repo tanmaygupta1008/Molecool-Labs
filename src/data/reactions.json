@@ -708,7 +708,10 @@
             }
         ],
         "tableWidth": 12,
-        "tableDepth": 8.5
+        "tableDepth": 8.5,
+        "optimalTemp": 25,
+        "optimalPressure": 1,
+        "conditionsDesc": "Reacts readily at room temperature."
     },
     {
         "id": "sodium-water",
@@ -794,7 +797,10 @@
                     ]
                 }
             }
-        ]
+        ],
+        "optimalTemp": 25,
+        "optimalPressure": 1,
+        "conditionsDesc": "Violent reaction at room temperature. Safety shield required."
     },
     {
         "id": "precipitation-agcl",
@@ -1060,7 +1066,10 @@
                     ]
                 }
             }
-        ]
+        ],
+        "optimalTemp": 25,
+        "optimalPressure": 1,
+        "conditionsDesc": "Instant precipitation at room temperature."
     },
     {
         "id": "neutralization",
@@ -1432,7 +1441,10 @@
                     }
                 }
             }
-        ]
+        ],
+        "optimalTemp": 25,
+        "optimalPressure": 1,
+        "conditionsDesc": "Acid-base neutralization occurs readily at room temperature."
     },
     {
         "id": "decomposition-caco3",
@@ -1644,7 +1656,10 @@
                     }
                 }
             }
-        ]
+        ],
+        "optimalTemp": 800,
+        "optimalPressure": 1,
+        "conditionsDesc": "Requires strong heating (above 800°C) to decompose calcium carbonate."
     },
     {
         "id": "iron-cuso4",
@@ -1790,7 +1805,10 @@
                     ]
                 }
             }
-        ]
+        ],
+        "optimalTemp": 25,
+        "optimalPressure": 1,
+        "conditionsDesc": "Single displacement reaction occurs at room temperature."
     },
     {
         "id": "methane-combustion",
@@ -1880,7 +1898,10 @@
                     ]
                 }
             }
-        ]
+        ],
+        "optimalTemp": 500,
+        "optimalPressure": 1,
+        "conditionsDesc": "Requires ignition source above 500°C."
     },
     {
         "id": "electrolysis-water",
@@ -2274,7 +2295,10 @@
                     }
                 }
             }
-        ]
+        ],
+        "optimalTemp": 25,
+        "optimalPressure": 1,
+        "conditionsDesc": "Requires electric current at room temperature."
     },
     {
         "id": "nh4cl-naoh",
@@ -2546,7 +2570,10 @@
                     ]
                 }
             }
-        ]
+        ],
+        "optimalTemp": 50,
+        "optimalPressure": 1,
+        "conditionsDesc": "Gently warming the mixture accelerates the evolution of ammonia gas."
     },
     {
         "id": "habers-process",
@@ -4069,7 +4096,10 @@
             }
         ],
         "tableWidth": 25,
-        "tableDepth": 16.5
+        "tableDepth": 16.5,
+        "optimalTemp": 450,
+        "optimalPressure": 200,
+        "conditionsDesc": "Optimal: 400–450°C and ~200 atm. Iron catalyst."
     },
     {
         "id": "decomposition-of-hydrogen-peroxide",
@@ -4286,7 +4316,10 @@
                     }
                 }
             }
-        ]
+        ],
+        "optimalTemp": 25,
+        "optimalPressure": 1,
+        "conditionsDesc": "Catalyst (MnO2) decomposes H2O2 rapidly at room temperature."
     },
     {
         "id": "chlorine-water-potassium-bromide",
@@ -4780,7 +4813,10 @@
             }
         ],
         "tableWidth": 19,
-        "tableDepth": 13.5
+        "tableDepth": 13.5,
+        "optimalTemp": 25,
+        "optimalPressure": 1,
+        "conditionsDesc": "Displacement reaction occurs readily at room temperature."
     },
     {
         "id": "electrolysis-of-copper-sulfate",
@@ -5098,6 +5134,9 @@
                     }
                 }
             }
-        ]
+        ],
+        "optimalTemp": 25,
+        "optimalPressure": 1,
+        "conditionsDesc": "Electrolysis of copper sulfate solution occurs at room temperature."
     }
 ]

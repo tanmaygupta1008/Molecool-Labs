@@ -40,9 +40,8 @@
 // src/components/reactions/ReactionViewer.jsx
 'use client';
 
-import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, PerspectiveCamera } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import SafeCanvas from '@/components/SafeCanvas';
 import MacroView from './views/MacroView';
 import MicroView from './views/MicroView';
 import { Suspense } from 'react';
@@ -53,7 +52,7 @@ const ReactionViewer = ({ reaction, viewMode, progress, isPlaying, environment }
       {/* - dpr={[1, 2]}: Handles high-DPI screens (Retina)
          - antialias: true: Smooth edges
       */}
-      <Canvas dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
+      <SafeCanvas dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
 
         {/* 🎥 CAMERA ADJUSTMENT:
            - position: [0, 0, 20] -> Moved back (was 12) to fit content between sidebars.
@@ -86,16 +85,7 @@ const ReactionViewer = ({ reaction, viewMode, progress, isPlaying, environment }
             - minDistance: 5 -> Prevents clipping by zooming too close.
         */}
         <OrbitControls enablePan={true} maxDistance={35} minDistance={5} />
-
-        <EffectComposer disableNormalPass>
-          <Bloom
-            luminanceThreshold={1.2}
-            mipmapBlur
-            intensity={0.5}
-            radius={0.6}
-          />
-        </EffectComposer>
-      </Canvas>
+      </SafeCanvas>
     </div>
   );
 };
