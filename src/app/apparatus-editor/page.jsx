@@ -32,7 +32,15 @@ class CanvasErrorBoundary extends React.Component {
                     <span className="text-4xl mb-4">💥 WebGL Crash</span>
                     <h2 className="text-xl font-bold mb-2">The 3D Scene encountered a critical error:</h2>
                     <p className="bg-red-900/30 p-4 rounded text-sm max-w-2xl overflow-auto select-all">{this.state.error?.toString()}</p>
-                    <button onClick={() => this.setState({hasError: false})} className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-500">Attempt Recovery</button>
+                    <button 
+                        onClick={() => {
+                            if (this.props.onRecover) this.props.onRecover();
+                            this.setState({hasError: false});
+                        }} 
+                        className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-500 transition-colors shadow-lg active:scale-95"
+                    >
+                        Attempt Recovery
+                    </button>
                 </div>
             );
         }
@@ -94,6 +102,41 @@ const APPARATUS_MAP = {
     'WorkTable': WorkTable,
     'GasSource': GasSource,
     'WaterSource': WaterSource,
+};
+
+// Helper to resolve world position of an anchor, accounting for recursive parenting
+const resolveAnchorWorldPos = (itemId, anchorLocalId, allItems) => {
+    const item = allItems.find(i => i.id === itemId);
+    if (!item) return new THREE.Vector3();
+
+    // 1. Get local anchor position relative to item center
+    // (use neutral item state to get pure local offsets)
+    const localAnchors = getApparatusAnchors({ ...item, position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] });
+    const anchorDef = localAnchors.find(a => a.localId === anchorLocalId);
+    if (!anchorDef) return new THREE.Vector3(...(item.position || [0, 0, 0]));
+
+    const localPos = new THREE.Vector3(...anchorDef.position);
+
+    // 2. Resolve world matrix by iterating up the parent chain
+    const getWorldMatrix = (targetId) => {
+        const targetItem = allItems.find(x => x.id === targetId);
+        if (!targetItem) return new THREE.Matrix4();
+
+        const obj = new THREE.Object3D();
+        obj.position.set(...(targetItem.position || [0, 0, 0]));
+        obj.rotation.set(...(targetItem.rotation || [0, 0, 0]));
+        obj.scale.set(...(targetItem.scale || [1, 1, 1]));
+        obj.updateMatrix();
+
+        if (targetItem.parentId) {
+            const parentMatrix = getWorldMatrix(targetItem.parentId);
+            return new THREE.Matrix4().multiplyMatrices(parentMatrix, obj.matrix);
+        }
+        return obj.matrix.clone();
+    };
+
+    const worldMatrix = getWorldMatrix(itemId);
+    return localPos.applyMatrix4(worldMatrix);
 };
 
 const LabTable = ({ width = 14, depth = 10 }) => (
@@ -359,7 +402,7 @@ const LabTable = ({ width = 14, depth = 10 }) => (
 // Uses refs instead of useState so keydown/keyup NEVER trigger React re-renders.
 // All movement is consumed imperatively inside useFrame.
 const CameraController = () => {
-    const { camera } = useThree();
+    const { camera, invalidate } = useThree();
     // Ref-based movement flags — mutations here are invisible to React
     const movementRef = useRef({
         forward: false, backward: false,
@@ -369,7 +412,11 @@ const CameraController = () => {
 
     useEffect(() => {
         const handleKeyDown = (e) => {
+            // Ignore if user is typing in an input, textarea, or contenteditable
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+
             const m = movementRef.current;
+            let captured = true;
             switch (e.code) {
                 case 'KeyW': case 'ArrowUp':    m.forward  = true; break;
                 case 'KeyS': case 'ArrowDown':  m.backward = true; break;
@@ -377,10 +424,19 @@ const CameraController = () => {
                 case 'KeyD': case 'ArrowRight': m.right    = true; break;
                 case 'KeyQ': m.up   = true; break;
                 case 'KeyE': m.down = true; break;
+                default: captured = false;
+            }
+            // If it was one of our navigation keys, prevent the browser from scrolling/jumping
+            if (captured) {
+                e.preventDefault();
+                invalidate(); // WAKE UP the canvas loop
             }
         };
         const handleKeyUp = (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+
             const m = movementRef.current;
+            let captured = true;
             switch (e.code) {
                 case 'KeyW': case 'ArrowUp':    m.forward  = false; break;
                 case 'KeyS': case 'ArrowDown':  m.backward = false; break;
@@ -388,6 +444,11 @@ const CameraController = () => {
                 case 'KeyD': case 'ArrowRight': m.right    = false; break;
                 case 'KeyQ': m.up   = false; break;
                 case 'KeyE': m.down = false; break;
+                default: captured = false;
+            }
+            if (captured) {
+                e.preventDefault();
+                invalidate();
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -396,12 +457,15 @@ const CameraController = () => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
         };
-    }, []);
+    }, [invalidate]);
 
     useFrame((state, delta) => {
         const m = movementRef.current;
         // Early-exit if nothing is held — avoids work on every idle frame
         if (!m.forward && !m.backward && !m.left && !m.right && !m.up && !m.down) return;
+
+        // Since we are moving, we must keep the frame loop active in "demand" mode
+        invalidate();
 
         const speed = 10 * delta;
         const moveVec = new THREE.Vector3();
@@ -636,9 +700,17 @@ const AnchorEditor = ({ item, onUpdateItem }) => {
     );
 };
 
-const ApparatusEditorItem = React.memo(({ item, selectedId, onSelect, updateItem, onUpdateItems, transformMode, allItems, isBuilding, gridSnap, isGhost, basinBounds }) => {
+const ApparatusEditorItem = React.memo(({ item, selectedId, onSelect, updateItem, onUpdateItems, transformMode, allItems, isBuilding, gridSnap, isGhost, basinBounds, sceneRefs }) => {
     const Component = APPARATUS_MAP[item.model];
     const [group, setGroup] = useState(null);
+
+    // Register group in global refs map for dynamic parent tracking (used by Tubes/Wires)
+    useEffect(() => {
+        if (group && sceneRefs) {
+            sceneRefs.current[item.id] = group;
+            return () => { delete sceneRefs.current[item.id]; };
+        }
+    }, [group, item.id, sceneRefs]);
 
     // ── allItemsRef ───────────────────────────────────────────────────────────
     // Keeps snap logic in handleTransform (called on mouseUp) always fresh
@@ -1320,6 +1392,31 @@ const ApparatusEditorItem = React.memo(({ item, selectedId, onSelect, updateItem
                 scale: newScale,
                 parentId: finalParentId
             });
+
+            // Propagate updates to connected tubes/wires
+            // We need to find connectors connected to THIS item OR any of its descendants
+            const getDescendantIds = (parentId, items) => {
+                let ids = [];
+                items.forEach(i => {
+                    if (i.parentId === parentId) {
+                        ids.push(i.id);
+                        ids = [...ids, ...getDescendantIds(i.id, items)];
+                    }
+                });
+                return ids;
+            };
+
+            const affectedIds = [item.id, ...getDescendantIds(item.id, allItems)];
+
+            const connectedConnectors = allItems.filter(other => 
+                (other.model === 'DeliveryTube' || other.model === 'Wire') && 
+                (affectedIds.includes(other.startConnection?.parentId) || affectedIds.includes(other.endConnection?.parentId))
+            );
+
+            connectedConnectors.forEach(conn => {
+                // Force state update to persist the dynamic points calculated in useFrame
+                updateItem(conn.id, { _lastUpdate: Date.now() });
+            });
         }
     };
 
@@ -1362,9 +1459,21 @@ const ApparatusEditorItem = React.memo(({ item, selectedId, onSelect, updateItem
         }
         if (item.model === 'GasJar') { props.hasLid = item.hasLid !== false; props.holeCount = item.holeCount || 0; }
         if (item.model === 'RubberCork') props.holes = item.holes || 1;
-        if (item.model === 'DeliveryTube' && item.points?.length > 0) props.points = item.points;
-        if (item.model === 'Wire' && item.points?.length > 0) props.points = item.points;
-        if (item.model === 'Wire') props.color = item.color || 'red';
+        if (item.model === 'DeliveryTube' && item.points?.length > 0) {
+            props.points = item.points;
+            props.sceneRefs = sceneRefs;
+            props.allItems = allItems;
+            props.startConnection = item.startConnection;
+            props.endConnection = item.endConnection;
+        }
+        if (item.model === 'Wire' && item.points?.length > 0) {
+            props.points = item.points;
+            props.sceneRefs = sceneRefs;
+            props.allItems = allItems;
+            props.startConnection = item.startConnection;
+            props.endConnection = item.endConnection;
+            props.color = item.color || 'red';
+        }
         if (item.model === 'WorkTable') { props.width = item.width || 6; props.depth = item.depth || 4; }
         return props;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1969,6 +2078,14 @@ export default function ApparatusEditorPage() {
     }, [selectedReactionId]);
     const [status, setStatus] = useState('');
     const [showNewStageModal, setShowNewStageModal] = useState(false);
+    const [canvasKey, setCanvasKey] = useState(0); // Key used to force-re-mount Canvas on crash recovery
+    const sceneRefs = useRef({}); // Global map: { [itemId]: THREE.Group }
+
+    const recoverWebGL = useCallback(() => {
+        setCanvasKey(prev => prev + 1);
+        setStatus('Recovering 3D engine...');
+        setTimeout(() => setStatus(''), 3000);
+    }, []);
 
     // Tube Builder State
     const [builderState, setTubeBuilderState] = useState({ active: false, mode: 'straight', startAnchor: null });
@@ -2083,8 +2200,40 @@ export default function ApparatusEditorPage() {
                 return { ...item, ...mergedUpdate };
             });
 
+            // ─── SYNC CONNECTORS (Tubes/Wires) ────────────────────────────────
+            // Calculate final points for tubes connected to updated items/descendants
+            const finalApparatus = updatedApparatus.map(item => {
+                if (item.model === 'DeliveryTube' || item.model === 'Wire') {
+                    const sc = item.startConnection;
+                    const ec = item.endConnection;
+                    if (!sc && !ec) return item;
+
+                    const newPoints = [...(item.points || [])];
+                    let changed = false;
+
+                    if (sc) {
+                        const newStart = resolveAnchorWorldPos(sc.parentId, sc.anchorId, updatedApparatus).toArray();
+                        if (JSON.stringify(newPoints[0]) !== JSON.stringify(newStart)) {
+                            newPoints[0] = newStart;
+                            changed = true;
+                        }
+                    }
+                    if (ec) {
+                        const newEnd = resolveAnchorWorldPos(ec.parentId, ec.anchorId, updatedApparatus).toArray();
+                        const lastIdx = newPoints.length - 1;
+                        if (JSON.stringify(newPoints[lastIdx]) !== JSON.stringify(newEnd)) {
+                            newPoints[lastIdx] = newEnd;
+                            changed = true;
+                        }
+                    }
+
+                    return changed ? { ...item, points: newPoints } : item;
+                }
+                return item;
+            });
+
             const updatedStages = currentReactionLocal.stages.map((stage, idx) => 
-                idx === selectedStageIndex ? { ...stage, apparatus: updatedApparatus } : stage
+                idx === selectedStageIndex ? { ...stage, apparatus: finalApparatus } : stage
             );
 
             return prevReactions.map(r =>
@@ -2298,7 +2447,9 @@ export default function ApparatusEditorPage() {
             points: points,
             tubeMode: mode,
             isEditingPoints: false,
-            color: isWire ? color : undefined
+            color: isWire ? color : undefined,
+            startConnection: startAnchor ? { parentId: startAnchor.parentId, anchorId: startAnchor.localId } : null,
+            endConnection: endAnchor ? { parentId: endAnchor.parentId, anchorId: endAnchor.localId } : null
         };
 
         const updatedApparatus = [...(currentStage.apparatus || []), newItem];
@@ -3484,18 +3635,43 @@ export default function ApparatusEditorPage() {
 
             {/* 3D Viewport */}
             <div className="flex-1 relative bg-gradient-to-br from-neutral-800 to-neutral-900">
-                <CanvasErrorBoundary>
+                <CanvasErrorBoundary onRecover={recoverWebGL}>
                 <Canvas 
+                    key={canvasKey}
                     camera={{ position: [5, 5, 5], fov: 50 }} 
                     dpr={[1, 1.5]} 
                     frameloop="demand"
-                    gl={{ powerPreference: "high-performance", antialias: true, alpha: true, stencil: false, depth: true, preserveDrawingBuffer: false }}
+                    gl={{ 
+                        powerPreference: "high-performance", 
+                        antialias: true, 
+                        alpha: true, 
+                        stencil: false, 
+                        depth: true, 
+                        preserveDrawingBuffer: false,
+                        failIfMajorPerformanceCaveat: false
+                    }}
                     onCreated={({ gl }) => {
-                        gl.domElement.addEventListener('webglcontextlost', (e) => {
+                        const lostHandler = (e) => {
                             e.preventDefault();
-                            console.error('WebGL Context Lost.');
-                            setStatus('WebGL crashed! Resource limit exceeded. Please refresh the page manually.');
-                        });
+                            console.warn('WebGL Context Lost. Triggering recovery key update.');
+                            recoverWebGL();
+                        };
+                        const restoredHandler = () => {
+                            console.info('WebGL Context Restored.');
+                            setStatus('3D engine restored successfully.');
+                            setTimeout(() => setStatus(''), 2000);
+                        };
+
+                        gl.domElement.addEventListener('webglcontextlost', lostHandler, false);
+                        gl.domElement.addEventListener('webglcontextrestored', restoredHandler, false);
+
+                        // Cleanup listeners on unmount (important to avoid leaks!)
+                        const originalDispose = gl.dispose;
+                        gl.dispose = () => {
+                            gl.domElement.removeEventListener('webglcontextlost', lostHandler);
+                            gl.domElement.removeEventListener('webglcontextrestored', restoredHandler);
+                            if (originalDispose) originalDispose.call(gl);
+                        };
                     }}
                 >
                     <color attach="background" args={['#1a1a1a']} />
@@ -3532,6 +3708,7 @@ export default function ApparatusEditorPage() {
                             gridSnap={gridSnap}
                             isGhost={false}
                             basinBounds={basinBounds}
+                            sceneRefs={sceneRefs}
                         />
                     ))}
 

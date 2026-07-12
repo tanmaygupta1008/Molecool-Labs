@@ -147,6 +147,22 @@ const ParticleSystem = ({
         meshRef.current.instanceMatrix.needsUpdate = true;
     });
 
+    // Cleanup resources on unmount
+    useEffect(() => {
+        return () => {
+            if (meshRef.current) {
+                if (meshRef.current.geometry) meshRef.current.geometry.dispose();
+                if (meshRef.current.material) {
+                    if (Array.isArray(meshRef.current.material)) {
+                        meshRef.current.material.forEach(m => m.dispose());
+                    } else {
+                        meshRef.current.material.dispose();
+                    }
+                }
+            }
+        };
+    }, []);
+
     return (
         <instancedMesh ref={meshRef} args={[null, null, particleCount]}>
             <sphereGeometry args={[0.05, 8, 8]} />
