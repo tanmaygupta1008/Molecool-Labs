@@ -243,6 +243,20 @@ const ChemicalReactionsPage = () => {
     return Math.max(maxStepDuration, maxReactantDuration, maxExplanationDuration) || 10;
   }, [currentReaction]);
 
+  // Extract active duration dynamically based on the current view mode
+  const currentDuration = useMemo(() => {
+    if (!currentReaction) return 10;
+    if (viewMode === 'MICRO' && currentReaction.microView?.script?.tracks?.length > 0) {
+      let maxEnd = 0;
+      currentReaction.microView.script.tracks.forEach(track => {
+        const end = (parseFloat(track.startTime) || 0) + (parseFloat(track.duration) || 0);
+        if (end > maxEnd) maxEnd = end;
+      });
+      return Math.max(2, maxEnd);
+    }
+    return macroDuration;
+  }, [currentReaction, viewMode, macroDuration]);
+
   // Animation Loop
   useEffect(() => {
     let animationFrameId;
@@ -262,29 +276,14 @@ const ChemicalReactionsPage = () => {
 
           if (!currentReaction) return prev;
 
-          // Extract real duration dynamically from the active view mode
-          let duration = 10;
-          if (viewMode === 'MICRO' && currentReaction.microView?.script?.tracks?.length > 0) {
-            let maxEnd = 0;
-            currentReaction.microView.script.tracks.forEach(track => {
-              const end = (parseFloat(track.startTime) || 0) + (parseFloat(track.duration) || 0);
-              if (end > maxEnd) maxEnd = end;
-            });
-            duration = Math.max(2, maxEnd);
-          } else {
-            duration = macroDuration;
-          }
-
-          // Physics Calculation (Arrhenius-like effect)
-          const tempRatio = Math.max(0.1, envConditions.temp / optimalTemp);
-          const physicsMultiplier = Math.min(1.5, tempRatio);
-
           // Micro view is naturally slow when mapped 1:1, so we add a presentation speed multiplier
           const microSpeedBoost = viewMode === 'MICRO' ? 2.0 : 1.0;
 
           // SPEED CALCULATION:
-          // Progress increment based on exact time elapsed (dt), scaling by duration and physics speed
-          const increment = (dt * physicsMultiplier * simulationSpeed * microSpeedBoost) / duration;
+          // Progress increment based on exact time elapsed (dt), scaling by duration and playback speed.
+          // Note: We no longer slow down progress based on Arrhenius temperature factor (physicsMultiplier)
+          // so that the playback duration matches the reaction refiner's duration exactly as expected.
+          const increment = (dt * simulationSpeed * microSpeedBoost) / currentDuration;
 
           return prev + increment;
         });
@@ -293,7 +292,7 @@ const ChemicalReactionsPage = () => {
     };
     animationFrameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [envConditions.temp, currentReaction, simulationSpeed, viewMode, optimalTemp, macroDuration]);
+  }, [currentReaction, simulationSpeed, viewMode, currentDuration]);
 
   const togglePlay = () => {
     const newState = !isPlaying;
@@ -414,6 +413,7 @@ const ChemicalReactionsPage = () => {
             togglePlay={togglePlay}
             speed={simulationSpeed}
             setSpeed={setSimulationSpeed}
+            duration={currentDuration}
           />
         </div>
       </div>

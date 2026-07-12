@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { Plus, Trash2, Database, CheckCircle2, RotateCcw, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { Plus, Trash2, Pencil, Database, CheckCircle2, RotateCcw, AlertTriangle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -23,6 +23,54 @@ const FormulaText = ({ text }) => {
     );
 };
 
+const parseFormula = (formulaStr) => {
+    const counts = {};
+    const regex = /([A-Z][a-z]?)(\d*)/g;
+    let match;
+    let totalLength = 0;
+    while ((match = regex.exec(formulaStr)) !== null) {
+        const element = match[1];
+        const count = match[2] ? parseInt(match[2], 10) : 1;
+        counts[element] = (counts[element] || 0) + count;
+        totalLength += match[0].length;
+    }
+    if (totalLength !== formulaStr.length || totalLength === 0) {
+        return null;
+    }
+    return counts;
+};
+
+const validateFormulaValence = (counts) => {
+    const c = counts['C'] || 0;
+    const h = counts['H'] || 0;
+    const o = counts['O'] || 0;
+    const n = counts['N'] || 0;
+    const f = counts['F'] || 0;
+    const cl = counts['Cl'] || 0;
+    const br = counts['Br'] || 0;
+    const i = counts['I'] || 0;
+    const x = f + cl + br + i;
+
+    // 1. Odd valence atoms check: (h + n + x) must be even for neutral molecules
+    if ((h + n + x) % 2 !== 0) {
+        return {
+            valid: false,
+            error: "The total number of odd-valence atoms (H, N, Halogens) must be even for a stable neutral molecule"
+        };
+    }
+
+    // 2. Maximum saturation check: h + x <= 2c + n + 2
+    const maxMonovalent = 2 * c + n + 2;
+    if (c > 0 && (h + x) > maxMonovalent) {
+        return {
+            valid: false,
+            error: `The number of monovalent atoms (H + Halogens = ${h + x}) exceeds the maximum allowed for ${c} Carbon(s) and ${n} Nitrogen(s) (max: ${maxMonovalent})`
+        };
+    }
+
+    return { valid: true };
+};
+
 export default function IsomerChallengeManager() {
     const [challenges, setChallenges] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -33,6 +81,64 @@ export default function IsomerChallengeManager() {
     const [isAdding, setIsAdding] = useState(false);
     const [isSeeding, setIsSeeding] = useState(false);
     const [message, setMessage] = useState(null); // { type: 'success'|'error', body: string }
+
+    // Edit state
+    const [editingId, setEditingId] = useState(null);
+    const [editTarget, setEditTarget] = useState('');
+    const [editExpected, setEditExpected] = useState(1);
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+    const handleStartEdit = (challenge) => {
+        setEditingId(challenge.id);
+        setEditTarget(challenge.target);
+        setEditExpected(challenge.expected);
+    };
+
+    const handleCancelEdit = () => {
+        setEditingId(null);
+        setEditTarget('');
+        setEditExpected(1);
+    };
+
+    const handleSaveEdit = async (id) => {
+        if (!editTarget || editExpected < 1) return;
+        setIsSavingEdit(true);
+
+        const cleanTarget = editTarget.trim().toUpperCase();
+        const parsed = parseFormula(cleanTarget);
+        if (!parsed) {
+            showMessage('error', 'Invalid chemical formula format!');
+            setIsSavingEdit(false);
+            return;
+        }
+
+        // Validate valence rules
+        const validation = validateFormulaValence(parsed);
+        if (!validation.valid) {
+            const proceed = window.confirm(
+                `Warning: The formula ${cleanTarget} is chemically invalid/impossible:\n- ${validation.error}\n\nAre you sure you want to save this change anyway?`
+            );
+            if (!proceed) {
+                setIsSavingEdit(false);
+                return;
+            }
+        }
+
+        try {
+            await updateDoc(doc(db, 'isomerChallenges', id), {
+                target: cleanTarget,
+                expected: parseInt(editExpected, 10)
+            });
+            showMessage('success', 'Challenge updated successfully!');
+            setEditingId(null);
+            fetchChallenges();
+        } catch (error) {
+            console.error("Error updating challenge:", error);
+            showMessage('error', 'Failed to update challenge.');
+        } finally {
+            setIsSavingEdit(false);
+        }
+    };
 
     const router = useRouter();
 
@@ -68,13 +174,34 @@ export default function IsomerChallengeManager() {
         e.preventDefault();
         if(!target || expected < 1) return;
         setIsAdding(true);
+
+        const cleanTarget = target.trim().toUpperCase();
+        const parsed = parseFormula(cleanTarget);
+        if (!parsed) {
+            showMessage('error', 'Invalid chemical formula format! Use standard syntax like C4H10.');
+            setIsAdding(false);
+            return;
+        }
+
+        // Validate valence rules
+        const validation = validateFormulaValence(parsed);
+        if (!validation.valid) {
+            const proceed = window.confirm(
+                `Warning: The formula ${cleanTarget} is chemically invalid/impossible:\n- ${validation.error}\n\nAre you sure you want to add this challenge anyway?`
+            );
+            if (!proceed) {
+                setIsAdding(false);
+                return;
+            }
+        }
+
         try {
             await addDoc(collection(db, 'isomerChallenges'), {
-                target: target.trim().toUpperCase(),
+                target: cleanTarget,
                 expected: parseInt(expected, 10),
                 createdAt: serverTimestamp()
             });
-            showMessage('success', `${target.trim().toUpperCase()} added successfully!`);
+            showMessage('success', `${cleanTarget} added successfully!`);
             setTarget('');
             setExpected(1);
             fetchChallenges();
@@ -265,34 +392,96 @@ export default function IsomerChallengeManager() {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {challenges.map((c) => (
-                                        <div key={c.id} className="group relative bg-[#090b14] border border-white/5 hover:border-cyan-500/30 rounded-2xl p-5 shadow-lg transition-all hover:shadow-[0_8px_30px_rgba(6,182,212,0.1)] hover:-translate-y-1 overflow-hidden">
-                                            {/* Hover Glow Effect */}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                                            
-                                            <div className="flex justify-between items-start relative z-10">
-                                                <div>
-                                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Target</p>
-                                                    <h3 className="font-mono text-2xl font-extrabold text-white tracking-wide"><FormulaText text={c.target} /></h3>
-                                                </div>
-                                                <button 
-                                                    onClick={() => handleDelete(c.id, c.target)}
-                                                    className="p-2.5 rounded-xl bg-red-500/10 text-red-400 opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all hover:bg-red-500 hover:text-white"
-                                                    title="Delete Compound"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
+                                    {challenges.map((c) => {
+                                        const isEditing = editingId === c.id;
+                                        return (
+                                            <div 
+                                                key={c.id} 
+                                                className={`group relative bg-[#090b14] border rounded-2xl p-5 shadow-lg transition-all overflow-hidden ${
+                                                    isEditing 
+                                                    ? 'border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.15)]' 
+                                                    : 'border-white/5 hover:border-cyan-500/30 hover:shadow-[0_8px_30px_rgba(6,182,212,0.1)] hover:-translate-y-1'
+                                                }`}
+                                            >
+                                                {/* Hover Glow Effect */}
+                                                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                                                
+                                                {isEditing ? (
+                                                    <div className="space-y-4 relative z-10">
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-0.5">Formula</label>
+                                                            <input 
+                                                                type="text" 
+                                                                value={editTarget}
+                                                                onChange={(e) => setEditTarget(e.target.value)}
+                                                                className="w-full bg-black/60 border border-white/10 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-cyan-500 transition-all font-mono text-white text-base"
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-0.5">Expected Isomers</label>
+                                                            <input 
+                                                                type="number" 
+                                                                min="1"
+                                                                value={editExpected}
+                                                                onChange={(e) => setEditExpected(e.target.value)}
+                                                                className="w-full bg-black/60 border border-white/10 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-cyan-500 transition-all font-mono text-white text-base"
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div className="flex gap-2 pt-1.5">
+                                                            <button 
+                                                                onClick={() => handleSaveEdit(c.id)}
+                                                                disabled={isSavingEdit || !editTarget}
+                                                                className="flex-1 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.2)]"
+                                                            >
+                                                                {isSavingEdit ? 'Saving...' : 'Save'}
+                                                            </button>
+                                                            <button 
+                                                                onClick={handleCancelEdit}
+                                                                className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-bold rounded-xl transition-all"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex justify-between items-start relative z-10">
+                                                            <div>
+                                                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Target</p>
+                                                                <h3 className="font-mono text-2xl font-extrabold text-white tracking-wide"><FormulaText text={c.target} /></h3>
+                                                            </div>
+                                                            <div className="flex gap-1.5">
+                                                                <button 
+                                                                    onClick={() => handleStartEdit(c)}
+                                                                    className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all hover:bg-cyan-500 hover:text-white"
+                                                                    title="Edit Compound"
+                                                                >
+                                                                    <Pencil className="w-5 h-5" />
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => handleDelete(c.id, c.target)}
+                                                                    className="p-2.5 rounded-xl bg-red-500/10 text-red-400 opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all hover:bg-red-500 hover:text-white"
+                                                                    title="Delete Compound"
+                                                                >
+                                                                    <Trash2 className="w-5 h-5" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-4 pt-4 border-t border-white/5 flex items-end justify-between relative z-10">
+                                                            <div>
+                                                                <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Isomers</p>
+                                                                <p className="text-lg font-bold text-cyan-400 flex items-center gap-1.5">
+                                                                    {c.expected} <span className="text-xs text-gray-600 font-normal ml-1">variants required</span>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
-                                            <div className="mt-4 pt-4 border-t border-white/5 flex items-end justify-between relative z-10">
-                                                <div>
-                                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Isomers</p>
-                                                    <p className="text-lg font-bold text-cyan-400 flex items-center gap-1.5">
-                                                        {c.expected} <span className="text-xs text-gray-600 font-normal ml-1">variants required</span>
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>

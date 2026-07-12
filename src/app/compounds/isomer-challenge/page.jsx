@@ -199,14 +199,135 @@ export default function IsomerChallengePage() {
         return result || 'Empty';
     }, [script.atoms]);
 
+    const validateStructureValency = (scriptData) => {
+        const adj = {};
+        scriptData.atoms.forEach(a => adj[a.id] = []);
+        scriptData.bonds.forEach(bond => {
+            const a1 = scriptData.atoms.find(a => a.id === bond.from);
+            const a2 = scriptData.atoms.find(a => a.id === bond.to);
+            if (a1 && a2) {
+                adj[bond.from].push({ to: bond.to, order: bond.order });
+                adj[bond.to].push({ to: bond.from, order: bond.order });
+            }
+        });
+
+        for (const atom of scriptData.atoms) {
+            const neighbors = adj[atom.id] || [];
+            const totalBonds = neighbors.reduce((sum, n) => sum + (n.order || 1), 0);
+            const charge = atom.charge || 0;
+
+            switch (atom.element) {
+                case 'C': {
+                    const expected = charge === 0 ? 4 : 3;
+                    if (totalBonds !== expected) {
+                        const chargeStr = charge === 0 ? "neutral" : `charge ${charge > 0 ? '+' + charge : charge}`;
+                        return {
+                            valid: false,
+                            error: `Carbon atom has ${totalBonds} bond(s) but expects ${expected} for ${chargeStr}.`
+                        };
+                    }
+                    break;
+                }
+                case 'H': {
+                    if (charge !== 0) {
+                        return {
+                            valid: false,
+                            error: `Hydrogen atom cannot have a non-zero charge (${charge > 0 ? '+' + charge : charge}).`
+                        };
+                    }
+                    if (totalBonds !== 1) {
+                        return {
+                            valid: false,
+                            error: `Hydrogen atom must have exactly 1 bond (found ${totalBonds}).`
+                        };
+                    }
+                    break;
+                }
+                case 'O': {
+                    let expected = 2;
+                    if (charge === 1) expected = 3;
+                    else if (charge === -1) expected = 1;
+                    else if (charge !== 0) {
+                        return {
+                            valid: false,
+                            error: `Oxygen atom cannot have a charge of ${charge > 0 ? '+' + charge : charge}.`
+                        };
+                    }
+
+                    if (totalBonds !== expected) {
+                        const chargeStr = charge === 0 ? "neutral" : `charge ${charge > 0 ? '+' + charge : charge}`;
+                        return {
+                            valid: false,
+                            error: `Oxygen atom has ${totalBonds} bond(s) but expects ${expected} for ${chargeStr}.`
+                        };
+                    }
+                    break;
+                }
+                case 'N': {
+                    let expected = 3;
+                    if (charge === 1) expected = 4;
+                    else if (charge === -1) expected = 2;
+                    else if (charge !== 0) {
+                        return {
+                            valid: false,
+                            error: `Nitrogen atom cannot have a charge of ${charge > 0 ? '+' + charge : charge}.`
+                        };
+                    }
+
+                    if (totalBonds !== expected) {
+                        const chargeStr = charge === 0 ? "neutral" : `charge ${charge > 0 ? '+' + charge : charge}`;
+                        return {
+                            valid: false,
+                            error: `Nitrogen atom has ${totalBonds} bond(s) but expects ${expected} for ${chargeStr}.`
+                        };
+                    }
+                    break;
+                }
+                case 'F':
+                case 'Cl':
+                case 'Br':
+                case 'I': {
+                    let expected = 1;
+                    if (charge === -1) expected = 0;
+                    else if (charge !== 0) {
+                        return {
+                            valid: false,
+                            error: `Halogen atom (${atom.element}) cannot have a charge of ${charge > 0 ? '+' + charge : charge}.`
+                        };
+                    }
+
+                    if (totalBonds !== expected) {
+                        const chargeStr = charge === 0 ? "neutral" : `charge ${charge > 0 ? '+' + charge : charge}`;
+                        return {
+                            valid: false,
+                            error: `Halogen atom (${atom.element}) has ${totalBonds} bond(s) but expects ${expected} for ${chargeStr}.`
+                        };
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+        return { valid: true };
+    };
+
     const getCanonicalString = () => {
         const adj = {};
         script.atoms.forEach(a => adj[a.id] = []);
-        script.bonds.forEach(l => { adj[l.from].push(l.to); adj[l.to].push(l.from); });
+        script.bonds.forEach(l => {
+            adj[l.from].push({ to: l.to, order: l.order });
+            adj[l.to].push({ to: l.from, order: l.order });
+        });
 
         const atomSigs = script.atoms.map(a => {
-            const neighbors = adj[a.id].map(nId => script.atoms.find(at => at.id === nId).element).sort().join(',');
-            return `${a.element}-[${neighbors}]`;
+            const chargeStr = a.charge ? (a.charge > 0 ? `+${a.charge}` : `${a.charge}`) : '';
+            const neighbors = adj[a.id].map(n => {
+                const neighborAtom = script.atoms.find(at => at.id === n.to);
+                const nChargeStr = neighborAtom.charge ? (neighborAtom.charge > 0 ? `+${neighborAtom.charge}` : `${neighborAtom.charge}`) : '';
+                return `${neighborAtom.element}${nChargeStr}-${n.order}`;
+            }).sort().join(',');
+            return `${a.element}${chargeStr}-[${neighbors}]`;
         });
         return atomSigs.sort().join('::');
     };
@@ -217,6 +338,14 @@ export default function IsomerChallengePage() {
             return;
         }
 
+        // 1. Structural valency check
+        const valencyCheck = validateStructureValency(script);
+        if (!valencyCheck.valid) {
+            setFeedback({ type: 'error', text: `Valency Error: ${valencyCheck.error}` });
+            return;
+        }
+
+        // 2. Connectivity check
         const visited = new Set();
         const stack = script.atoms.length > 0 ? [script.atoms[0].id] : [];
         if (stack.length > 0) {

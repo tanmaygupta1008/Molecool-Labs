@@ -78,9 +78,15 @@
 // src/components/reactions/ReactionControls.jsx
 import { Play, Pause, RotateCcw, Activity, Gauge } from 'lucide-react';
 
-const ReactionControls = ({ progress, setProgress, isPlaying, togglePlay, speed, setSpeed }) => {
+const ReactionControls = ({ progress, setProgress, isPlaying, togglePlay, speed, setSpeed, duration = 10 }) => {
     
     const percentage = Math.round(progress * 100);
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
     // Cycle through speeds: 1x -> 2x -> 0.5x -> 1x
     const cycleSpeed = () => {
@@ -115,7 +121,8 @@ const ReactionControls = ({ progress, setProgress, isPlaying, togglePlay, speed,
                             <Activity size={12} className={isPlaying ? "animate-pulse text-cyan-400" : ""} />
                             Reaction Progress
                         </span>
-                        <div className="flex gap-4">
+                        <div className="flex gap-4 items-center">
+                            <span className="font-mono text-gray-400 text-xs">{formatTime(progress * duration)} / {formatTime(duration)}</span>
                             <span className="font-mono text-cyan-400 font-bold">{percentage}%</span>
                         </div>
                     </div>
