@@ -1,11 +1,13 @@
 'use client'; 
 
-import { Canvas, useFrame } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
+import SafeCanvas from '@/components/SafeCanvas';
 import { OrbitControls, Environment, Sphere, Cylinder, Html } from '@react-three/drei';
 import { Vector3, Color, Quaternion, TorusGeometry, Euler, CylinderGeometry, BufferAttribute } from 'three'; 
 import { useRef, useLayoutEffect, useState, useMemo, Suspense, useEffect } from 'react';
 import { calculateLonePairs } from '@/lib/cheminformatics';
 import { getElementData } from '@/utils/elementColors';
+import { sphereSegs, cylSegs, torusSegs, SAFE_DPR_LOD } from '@/utils/geometryLOD';
 
 const ATOM_RADIUS = 0.3; 
 const BOND_RADIUS = 0.1; 
@@ -37,11 +39,12 @@ const Atom = ({ position, element, sphereRef, isHighlighted, isDimmed, onSelectA
   const emissiveIntensity = isHighlighted ? 1.5 : 0.6;
   const opacity = isDimmed ? 0.25 : 1;
 
+  const S = sphereSegs(16);
   return (
     <Sphere 
         ref={sphereRef} 
         position={position} 
-        args={[radius, 32, 32]}
+        args={[radius, S, S]}
         onClick={(e) => { e.stopPropagation(); onSelectAtom && onSelectAtom(id); }}
         onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; }}
         onPointerOut={(e) => { document.body.style.cursor = 'auto'; }}
@@ -81,27 +84,29 @@ const LonePairOrbital = ({ atomCenter, lpPos }) => {
         }
     });
 
+    const S = sphereSegs(12);
+    const C = cylSegs(10);
     return (
         // Placed at atom center; lobe extends outward via local +Y
         <group position={atomCenter.toArray()} quaternion={quaternion}>
             {/* The lobe — tapered cylinder */}
             <mesh position={[0, 0.35, 0]}>
-                <cylinderGeometry args={[0.22, 0.04, 0.7, 16]} />
+                <cylinderGeometry args={[0.22, 0.04, 0.7, C]} />
                 <meshStandardMaterial color="#88ddff" transparent opacity={0.28} roughness={0.1} />
             </mesh>
             {/* Tip sphere cap */}
             <mesh position={[0, 0.72, 0]}>
-                <sphereGeometry args={[0.22, 16, 16]} />
+                <sphereGeometry args={[0.22, S, S]} />
                 <meshStandardMaterial color="#88ddff" transparent opacity={0.28} roughness={0.1} />
             </mesh>
             {/* Rotating electrons at the tip */}
             <group ref={electronsRef} position={[0, 0.72, 0]}>
                 <mesh position={[-0.12, 0, 0]}>
-                    <sphereGeometry args={[0.065, 16, 16]} />
+                    <sphereGeometry args={[0.065, S, S]} />
                     <meshStandardMaterial color="#ffffff" emissive="#00ffff" emissiveIntensity={0.9} />
                 </mesh>
                 <mesh position={[0.12, 0, 0]}>
-                    <sphereGeometry args={[0.065, 16, 16]} />
+                    <sphereGeometry args={[0.065, S, S]} />
                     <meshStandardMaterial color="#ffffff" emissive="#00ffff" emissiveIntensity={0.9} />
                 </mesh>
             </group>
@@ -157,7 +162,7 @@ const Bond = ({ start, end, length, showLength, atomRefs, isHighlighted, isDimme
   const geometry = useMemo(() => {
     // Single bonds use full BOND_RADIUS; multi-bonds use thinner tubes
     const r = order === 1 ? BOND_RADIUS : BOND_RADIUS * 0.65;
-    const geo = new CylinderGeometry(r, r, calculatedLength, 8, 12);
+    const geo = new CylinderGeometry(r, r, calculatedLength, cylSegs(8), 1);
     const colors = new Float32Array(geo.attributes.position.count * 3);
     geo.setAttribute('color', new BufferAttribute(colors, 3));
     return geo;
@@ -335,7 +340,7 @@ const BondAngleArc = ({ centerPos, posA, posB, arcRadius, angleRad, override, is
     return (
         <> 
             <mesh ref={meshRef}>
-                <torusGeometry args={[actualRadius, ARC_THICKNESS, 16, 100, actualAngleRad]} />
+                <torusGeometry args={[actualRadius, ARC_THICKNESS, torusSegs(12), torusSegs(64), actualAngleRad]} />
                 <meshStandardMaterial color={arcColor} side={2} /> 
                 <Html position={[labelX, labelY, 0]} center>
                     <div className={labelClass}>
@@ -509,7 +514,13 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
                 setShowLonePairs={setShowLonePairs}
             />
 
-            <Canvas camera={{ position: [0, 0, cameraDistance], fov: 60 }}>
+            {/* SafeCanvas: demand frameloop + safe GL defaults + context-loss recovery */}
+            <SafeCanvas
+                camera={{ position: [0, 0, cameraDistance], fov: 60 }}
+                dpr={SAFE_DPR_LOD}
+                frameloop={enableAutoRotate && !hasHighlight ? 'always' : 'demand'}
+                gl={{ antialias: true }}
+            >
                 <Suspense fallback={null}>
                     <Environment preset="city" />
                 </Suspense>
@@ -579,8 +590,13 @@ const Molecule3DModel = ({ structure, onElementsUsedChange, highlightedGroup, on
                     autoRotate={enableAutoRotate && !hasHighlight} 
                     autoRotateSpeed={1}
                     target={centroid.toArray()} 
+                    onChange={() => {
+                        // In demand mode, OrbitControls onChange keeps the canvas
+                        // drawing while the user drags; R3F handles this automatically
+                        // when frameloop="demand" — no explicit invalidate needed here.
+                    }}
                 />
-            </Canvas>
+            </SafeCanvas>
         </div>
     );
 };

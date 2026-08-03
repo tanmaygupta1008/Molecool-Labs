@@ -88,10 +88,12 @@
 
 // src/components/Atom3DModel.jsx
 'use client';
-import { Canvas, useLoader } from '@react-three/fiber';
+import { useLoader } from '@react-three/fiber';
+import SafeCanvas from '@/components/SafeCanvas';
 import { OrbitControls, Environment, Html } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { Suspense } from 'react';
+import { SAFE_DPR_LOD } from '@/utils/geometryLOD';
 
 // Component to load and display the GLB model
 const Model = ({ url }) => {
@@ -117,7 +119,12 @@ const Atom3DModel = ({ glbUrl }) => {
   
   return (
     <div className="h-full w-full bg-black rounded-lg">
-      <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+      {/* SafeCanvas: context-loss recovery + safe GL defaults + demand frameloop */}
+      <SafeCanvas
+        camera={{ position: [0, 0, 5], fov: 50 }}
+        dpr={SAFE_DPR_LOD}
+        frameloop="demand"
+      >
         {/* Environmental lighting */}
         <ambientLight intensity={0.5} />
         <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
@@ -131,14 +138,14 @@ const Atom3DModel = ({ glbUrl }) => {
           <Model url={glbUrl} />
         </Suspense>
 
-        {/* User controls */}
+        {/* User controls — autoRotate keeps frameloop alive */}
         <OrbitControls 
           enableZoom={true} 
           enablePan={false} 
           autoRotate 
           autoRotateSpeed={5}
         />
-      </Canvas>
+      </SafeCanvas>
     </div>
   );
 };

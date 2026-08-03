@@ -8,24 +8,48 @@
  * What it does:
  *  1. Injects SAFE_GL + SAFE_DPR automatically so every 3D page gets
  *     GPU-safe defaults without repeating config everywhere.
- *  2. Attaches webglcontextlost / webglcontextrestored listeners via
+ *  2. Defaults to frameloop="demand" — the canvas only redraws when
+ *     explicitly invalidated (orbit, pointer events, state changes).
+ *     Pass frameloop="always" for continuously animated scenes.
+ *  3. Attaches webglcontextlost / webglcontextrestored listeners via
  *     onCreated — when the GPU yanks the context it unmounts the canvas
  *     (freeing all GPU resources) and shows a recovery overlay.
- *  3. Clicking "Try Again" (or the auto-restore event) remounts the
+ *  4. Clicking "Try Again" (or the auto-restore event) remounts the
  *     Canvas fresh — Three.js rebuilds the GL context cleanly.
- *  4. Wraps everything in a CanvasErrorBoundary so React errors inside
+ *  5. Wraps everything in a CanvasErrorBoundary so React errors inside
  *     the scene don't crash the whole page.
+ *  6. Exposes an `onInvalidate` ref callback so parent components can
+ *     trigger a redraw imperatively (useful in demand mode).
  *
  * Usage — just swap <Canvas> for <SafeCanvas>:
  *   import SafeCanvas from '@/components/SafeCanvas';
  *   <SafeCanvas camera={{ position: [0, 5, 10] }}>
  *     ...scene...
  *   </SafeCanvas>
+ *
+ *   // For continuously animated scenes:
+ *   <SafeCanvas frameloop="always">...</SafeCanvas>
+ *
+ *   // To trigger a redraw from outside:
+ *   const invalidateRef = useRef(null);
+ *   <SafeCanvas onInvalidate={fn => { invalidateRef.current = fn; }}>
+ *   // then call: invalidateRef.current?.()
  */
 
-import React, { useState, useCallback, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { SAFE_GL, SAFE_DPR } from '@/lib/canvasConfig';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { SAFE_GL, SAFE_DPR, FRAMELOOP_DEFAULT } from '@/lib/canvasConfig';
+
+// ─── Invalidate bridge (demand mode) ─────────────────────────────────────────
+// A tiny R3F hook component that exposes state.invalidate to the parent.
+// Must live inside <Canvas> so useThree() works.
+function InvalidateBridge({ onInvalidate }) {
+  const { invalidate } = useThree();
+  useEffect(() => {
+    if (onInvalidate) onInvalidate(invalidate);
+  }, [invalidate, onInvalidate]);
+  return null;
+}
 
 // ─── Error Boundary ──────────────────────────────────────────────────────────
 class CanvasErrorBoundary extends React.Component {
@@ -84,10 +108,20 @@ function ContextLostOverlay({ onRetry }) {
 }
 
 // ─── SafeCanvas ───────────────────────────────────────────────────────────────
-export default function SafeCanvas({ children, onCreated, gl, dpr, ...props }) {
+export default function SafeCanvas({
+  children,
+  onCreated,
+  gl,
+  dpr,
+  frameloop,
+  onInvalidate,
+  ...props
+}) {
   const [contextLost, setContextLost] = useState(false);
   // mountKey forces a full remount of <Canvas> on recovery
   const mountKey = useRef(0);
+  // savedInvalidate holds the scene's invalidate fn so we can call it on restore
+  const savedInvalidate = useRef(null);
 
   const handleCreated = useCallback(
     (state) => {
@@ -104,6 +138,8 @@ export default function SafeCanvas({ children, onCreated, gl, dpr, ...props }) {
         console.info('[SafeCanvas] WebGL context restored — remounting canvas.');
         mountKey.current += 1;
         setContextLost(false);
+        // Request one redraw immediately after restore so the scene is visible
+        setTimeout(() => savedInvalidate.current?.(), 50);
       });
 
       // Forward to any onCreated the page already had
@@ -115,12 +151,23 @@ export default function SafeCanvas({ children, onCreated, gl, dpr, ...props }) {
   const handleRetry = useCallback(() => {
     mountKey.current += 1;
     setContextLost(false);
+    setTimeout(() => savedInvalidate.current?.(), 50);
   }, []);
+
+  const handleInvalidate = useCallback(
+    (fn) => {
+      savedInvalidate.current = fn;
+      onInvalidate?.(fn);
+    },
+    [onInvalidate]
+  );
 
   // Merge caller's gl overrides on top of our safe defaults
   const mergedGl = { ...SAFE_GL, ...gl };
   // Caller can still override DPR; default to SAFE_DPR
   const mergedDpr = dpr ?? SAFE_DPR;
+  // Caller can still override frameloop; default to demand
+  const mergedFrameloop = frameloop ?? FRAMELOOP_DEFAULT;
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -130,9 +177,12 @@ export default function SafeCanvas({ children, onCreated, gl, dpr, ...props }) {
             key={mountKey.current}
             dpr={mergedDpr}
             gl={mergedGl}
+            frameloop={mergedFrameloop}
             onCreated={handleCreated}
             {...props}
           >
+            {/* Bridge exposes invalidate to parent and saves it for context-restore */}
+            <InvalidateBridge onInvalidate={handleInvalidate} />
             {children}
           </Canvas>
         )}

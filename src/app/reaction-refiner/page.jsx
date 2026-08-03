@@ -367,7 +367,7 @@ const ReactionRefinerPage = () => {
                         />
                     ) : (
                         <div className="relative w-full h-full">
-                            <SafeCanvas dpr={[1, 2]} gl={{ antialias: true }}>
+                            <SafeCanvas dpr={[1, 1.5]} gl={{ antialias: true }} frameloop="always">
                                 <PerspectiveCamera makeDefault position={[0, 2, 8]} fov={50} />
                                 <OrbitControls makeDefault />
                                 <Suspense fallback={null}>

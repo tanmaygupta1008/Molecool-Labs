@@ -1,12 +1,14 @@
 'use client'; 
 
-import { Canvas, useFrame } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
+import SafeCanvas from '@/components/SafeCanvas';
 import { OrbitControls, Environment, Sphere, Cylinder, Plane, TransformControls } from '@react-three/drei';
 import * as THREE from 'three'; 
 import { useRef, useState, useLayoutEffect, useEffect, Suspense } from 'react';
 import { getElementData } from '@/utils/elementColors';
 import AnimatedDashedLine from '@/components/reactions/engine/AnimatedDashedLine';
 import BondLine from '@/components/reactions/engine/BondLine';
+import { sphereSegs, cylSegs, SAFE_DPR_LOD } from '@/utils/geometryLOD';
 
 // Physics Constants
 const IDEAL_BOND_LENGTH = 1.5;
@@ -269,7 +271,13 @@ export default function MoleculeBuilder3D({
     }, [nodes.length, links.length]);
 
     return (
-        <Canvas camera={{ position: [0, 5, 12], fov: 60 }} onContextMenu={(e) => e.preventDefault()}>
+        // frameloop="always" needed: VSEPR physics runs every frame via useFrame
+        <SafeCanvas
+            camera={{ position: [0, 5, 12], fov: 60 }}
+            dpr={SAFE_DPR_LOD}
+            frameloop="always"
+            onContextMenu={(e) => e.preventDefault()}
+        >
             <Suspense fallback={null}>
                 <Environment preset="night" />
             </Suspense>
@@ -329,7 +337,7 @@ export default function MoleculeBuilder3D({
                                 <meshBasicMaterial color="#00ffff" side={THREE.DoubleSide} transparent opacity={0.6} />
                             </mesh>
                         )}
-                        <Sphere ref={el => atomRefs.current[i] = el} position={node.startPos || [0,0,0]} args={[0.4, 32, 32]}>
+                        <Sphere ref={el => atomRefs.current[i] = el} position={node.startPos || [0,0,0]} args={[0.4, sphereSegs(16), sphereSegs(16)]}>
                             <meshStandardMaterial color={baseColor} emissive={isSelected ? '#00ffff' : '#000000'} emissiveIntensity={isSelected ? 0.5 : 0} />
                         </Sphere>
                     </group>
@@ -380,7 +388,7 @@ export default function MoleculeBuilder3D({
 
             {/* Render Lone Pairs pools */}
             {Array(nodes.length * 4).fill().map((_, i) => (
-                <Sphere key={`lp-${i}`} ref={el => lpRefs.current[i] = el} args={[0.2, 16, 16]} visible={false}>
+                <Sphere key={`lp-${i}`} ref={el => lpRefs.current[i] = el} args={[0.2, sphereSegs(10), sphereSegs(10)]} visible={false}>
                     <meshStandardMaterial color="#00ffcc" transparent opacity={0.3} emissive="#00ffcc" emissiveIntensity={0.8} />
                 </Sphere>
             ))}
@@ -391,6 +399,6 @@ export default function MoleculeBuilder3D({
                 enabled={orbitEnabled} 
                 mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
             />
-        </Canvas>
+        </SafeCanvas>
     );
 }
